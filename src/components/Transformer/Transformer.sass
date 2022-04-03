@@ -1,0 +1,27 @@
+@import 'styles'
+
+.p-modal
+  @extend .modal
+
+.p-modal-card
+  @extend .modal-card
+  height: calc(100vh - #{$modal-card-spacing})
+
+.p-modal-content,
+.p-modal-card
+  @extend .modal-content
+  width: 95%
+
+.p-modal-card-foot
+  @extend .modal-card-foot
+  justify-content: flex-end
+
+.transformer-control-container
+  position: absolute
+  height: 100%
+  width: 20%
+  left: 40%
+  top: 0
+  box-shadow: 0 0.5em 1em -0.125em rgba(#000, 0.1), 0 0px 0 1px rgba(#000, 0.02)
+
+

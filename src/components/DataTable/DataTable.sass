@@ -1,0 +1,113 @@
+@import 'styles'
+
+.data-container
+  height: 100%
+  width: 75%
+  overflow-y: hidden
+  overflow-x: visible
+
+$border-color: #e1e1e1
+$header-color: #f7f7f7
+$header-active-color: #eaeaea
+
+.data
+  @extend %block
+  display: inline-block;
+  .td,.th
+    padding: 0.5em 0.75em
+    vertical-align: top
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  .td
+    position: relative;
+    border: 1px solid $border-color
+    border-width: 0 1px 1px 0
+    padding: 0.5em 0.75em
+    vertical-align: top
+
+    &.private
+      background-image: url("../../assets/blur.png")
+      color: transparent
+
+  .thead
+    .th
+      &:not(:first-child)
+        border: 1px solid $border-color
+        //border-width: 0 1px 0 0
+        border-top-color: transparent
+        border-bottom-color: transparent
+        border-left-color: transparent
+        background-color: $header-color
+
+        &:focus,
+        &:focus-within,
+        &:hover
+          cursor: pointer
+          border: 2px solid #cecece
+          border-width: 1px
+          padding: calc(0.5em-2px) calc(0.75em-2px)
+
+
+
+    .resizer
+      display: inline-block;
+      overflow: auto
+
+      width: 10px;
+      height: 100%;
+      position: absolute;
+      right: 0;
+      top: 0;
+      transform: translateX(50%);
+      z-index: 1;
+      touch-action: none;
+
+  .tbody
+    .tr
+      .th
+        border: 1px solid $border-color
+        border-width: 0 0 1px 0
+        background-color: $header-color
+
+  .index
+    min-width: 40px
+    flex: 0 0 2em
+    text-align: center
+
+
+
+.field
+  padding: 0.75rem 0
+
+  .label
+    @extend .header-label
+
+  .input,
+  .select
+    font-family: Nunito Sans
+    font-style: normal
+    font-weight: normal
+    font-size: 14px
+    line-height: 16px
+    display: flex
+    align-items: center
+    letter-spacing: 0.4px
+
+    background-color: white
+    border-bottom: 2px solid #EAEAEA
+
+.header-popup
+  position: fixed
+  top: 0
+  left: 0
+  height: 100px
+  width: 400px !important
+  z-index: 10
+
+.table-loader
+  position: relative
+  top: 50%
+  width: 55%
+  margin-left: 10%
+

@@ -1,0 +1,26 @@
+@import 'styles'
+
+.drag-container
+  position: absolute
+  top: 0
+  left: 0
+  height: 100%
+  width: 100%
+
+.drag-parent
+  height: 100%
+  width: 100%
+  position: relative
+  opacity: 0
+  &:focus,
+  &:focus-within,
+  &:hover,
+  &.is-active
+    opacity: 1
+    -webkit-transition: opacity .15s ease-in-out .0s
+    transition: opacity .15s ease-in-out .0s
+
+.drag-block
+  position: absolute
+  line-height: 0
+

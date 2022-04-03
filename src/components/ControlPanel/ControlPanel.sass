@@ -1,0 +1,21 @@
+@import 'styles'
+
+.panel-tab-header
+  @extend .header-label
+  margin-top: 5px
+  margin-bottom: 5px
+
+  &:not(.is-active)
+    color: #EAEAEA
+
+.panel-block-nb
+  @extend .panel-block
+
+  &:not(:last-child)
+    border-bottom: none
+
+  &.is-button
+    cursor: pointer
+    &:hover
+      background-color: $background
+

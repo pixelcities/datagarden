@@ -1,0 +1,87 @@
+
+.div
+  &.is-vcentered
+    position: relative
+    top: 50%
+    -ms-transform: translateY(-50%);
+    transform: translateY(-50%);
+
+  @for $i from 0 through 12
+    &.is-#{$i}
+      flex: none
+      width: percentage($i / 12)
+    &.is-offset-#{$i}
+      margin-left: percentage($i / 12)
+
+    +from($desktop)
+      &.is-#{$i}-desktop
+        flex: none
+        width: percentage($i / 12)
+      &.is-offset-#{$i}-desktop
+        margin-left: percentage($i / 12)
+
+
+.header-label
+  font-family: "Nunito Sans"
+  font-style: normal
+  font-weight: 800
+  font-size: 10px
+  line-height: 16px
+  display: flex
+  align-items: center
+  letter-spacing: 0.96px
+  text-transform: uppercase
+  color: #363636
+
+  @for $i from 0 through 12
+    &.label-size-#{$i}
+      font-size: 10+$i*2px
+      line-height: 16+$i*2px
+
+  &.is-white
+    color: #FFFFFF
+
+.fineprint-label
+  /* FINEPRINTS */
+  font-family: "Nunito Sans"
+  font-style: normal
+  font-weight: normal
+  font-size: 10px
+  line-height: 10px
+
+  /* identical to box height, or 100% */
+  text-align: right
+  letter-spacing: 0.1px
+
+  /* PX GRAY */
+  color: #363636
+
+  @for $i from 0 through 12
+    &.label-size-#{$i}
+      font-size: 10+$i*2px
+      line-height: 10+$i*2px
+
+  &.is-left
+    text-align: left
+
+.button-label
+  font-family: "Nunito Sans"
+  font-style: normal
+  font-weight: 600
+  font-size: 14px
+  line-height: 18px
+
+  /* or 129% */
+  display: flex
+  align-items: center
+  letter-spacing: 0.7px
+  text-transform: uppercase
+
+  &.is-grey
+    color: #363636
+
+  @for $i from 0 through 12
+    &.label-size-#{$i}
+      font-size: 10+$i*2px
+      line-height: 10+$i*2px
+
