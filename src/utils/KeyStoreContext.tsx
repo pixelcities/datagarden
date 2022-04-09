@@ -1,5 +1,4 @@
 import React, { useRef, useState, useEffect, useContext, useMemo, FC } from "react";
-import ProgressBar from 'components/ProgressBar'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faLock } from '@fortawesome/free-solid-svg-icons'
 
@@ -22,8 +21,6 @@ export const KeyStoreProvider: FC = ({ children }) => {
   const [loading, setLoading] = useState<boolean>(false);
   const [keyStore, setKeyStore] = useState<KeyStore | undefined>();
   const [protocol, setProtocol] = useState<Protocol | undefined>();
-  const [loadProgress, setLoadProgress] = useState<number>(0);
-  const [progressResolve, setProgressResolve] = useState<(() => void) | undefined>(undefined);
   const [password, setPassword] = useState("")
   const [isLocked, setIsLocked] = useState(true)
   const [isReady, setIsReady] = useState(false)
@@ -52,15 +49,12 @@ export const KeyStoreProvider: FC = ({ children }) => {
     setLoading(true)
     setIsReady(false)
 
-    const progressBarComplete = new Promise(resolve => setProgressResolve(() => resolve))
-
-    const { KeyStore, Protocol } = await import("key-x-wasm"); setLoadProgress(1)
+    const { KeyStore, Protocol } = await import("key-x-wasm")
 
     setKeyStore(new KeyStore())
     setProtocol(new Protocol())
     setIsLocked(true)
 
-    await progressBarComplete
     setLoading(false)
   }
 
@@ -118,11 +112,14 @@ export const KeyStoreProvider: FC = ({ children }) => {
 
   return (
     <KeyStoreContext.Provider value={{keyStore, keyStoreIsReady: isReady, protocol}} >
-      { loading ?
-        (<ProgressBar duration={1000} progress={loadProgress} resolve={progressResolve} />)
-      :
-        unlockModal(children)
-      }
+      <div className={"pageloader is-bottom-to-top" + (loading ? " is-active" : "")}>
+        <span className="title">
+          Loading...
+        </span>
+      </div>
+
+      { unlockModal(children) }
+
     </KeyStoreContext.Provider>
   )
 }

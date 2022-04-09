@@ -15,6 +15,7 @@
     "axios": "^0.21.4",
     "buffer": "^6.0.3",
     "bulma": "^0.9.0",
+    "bulma-pageloader": "^0.3.0",
     "bulma-switch": "^2.0.4",
     "datafusion-wasm": "file:../datafusion-wasm/pkg",
     "gsap": "^3.6.0",
