@@ -14,6 +14,7 @@ export type {
   Column,
   Row,
   Attribute,
+  WAL,
   User,
   Metadata,
   DataURI,

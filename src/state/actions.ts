@@ -12,7 +12,8 @@ import {
   transformerUpdated,
   transformerPositionSet,
   transformerTargetAdded,
-  transformerInputAdded
+  transformerInputAdded,
+  transformerWALUpdated
 } from './slices/transformers'
 
 import {
@@ -83,6 +84,7 @@ const updateTransformer = recreateAction<typeof transformerUpdated>("UpdateTrans
 const setTransformerPosition = recreateAction<typeof transformerPositionSet>("SetTransformerPosition")
 const addTransformerTarget = recreateAction<typeof transformerTargetAdded>("AddTransformerTarget")
 const addTransformerInput = recreateAction<typeof transformerInputAdded>("AddTransformerInput")
+const updateTransformerWAL = recreateAction<typeof transformerWALUpdated>("UpdateTransformerWAL")
 const createSource = recreateAction<typeof sourceCreated>("CreateSource")
 const updateSource = recreateAction<typeof sourceUpdated>("UpdateSource")
 const createDataURI = recreateAction<typeof dataURICreated>("CreateDataURI")
@@ -102,6 +104,7 @@ const events: {[key: string]: ActionCreatorWithPayload<any, string>} = {
   "TransformerPositionSet": transformerPositionSet,
   "TransformerTargetAdded": transformerTargetAdded,
   "TransformerInputAdded": transformerInputAdded,
+  "TransformerWALUpdated": transformerWALUpdated,
   "SourceCreated": sourceCreated,
   "SourceUpdated": sourceUpdated,
   "DataURICreated": dataURICreated,
@@ -133,6 +136,7 @@ export {
   setTransformerPosition,
   addTransformerTarget,
   addTransformerInput,
+  updateTransformerWAL,
 
   addWorkspace,
   setWorkspacePosition,

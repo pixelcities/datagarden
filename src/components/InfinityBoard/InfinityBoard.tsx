@@ -172,6 +172,7 @@ const InfinityBoard: FC = (props) => {
           id={activeTransformer.id}
           collections={activeTransformer.collections}
           transformers={activeTransformer.transformers}
+          wal={activeTransformer.wal}
           onClose={() => setActiveTransformerId("")}
         />
       )

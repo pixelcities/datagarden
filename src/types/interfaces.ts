@@ -44,6 +44,12 @@ export interface Row {
   [key: string]: string
 }
 
+export interface WAL {
+  identifiers: {[key: number]: string},
+  values: {[key: number]: string},
+  transactions: string[]
+}
+
 export interface Collection extends Component {
   uri: string,
   schema: Schema,
@@ -52,7 +58,8 @@ export interface Collection extends Component {
 
 export interface Transformer extends Component {
   collections: string[],
-  transformers: string[]
+  transformers: string[],
+  wal?: WAL
 }
 
 export interface Workspace extends Component {

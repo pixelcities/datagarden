@@ -1,6 +1,6 @@
 import { createSelector, createSlice, createEntityAdapter, PayloadAction } from '@reduxjs/toolkit'
 import { RootState } from 'state/store'
-import { Transformer } from 'types'
+import { Transformer, WAL } from 'types'
 
 const transformersAdapter = createEntityAdapter<Transformer>()
 
@@ -33,6 +33,13 @@ const transformersSlice = createSlice({
       } else if (transformer && action.payload.transformer) {
         transformer.transformers.push(action.payload.transformer)
       }
+    },
+    transformerWALUpdated(state, action: PayloadAction<{id: string, workspace: string, wal: WAL}>) {
+      const transformer = state.entities[action.payload.id]
+
+      if (transformer) {
+        transformer.wal = action.payload.wal
+      }
     }
   }
 })
@@ -46,7 +53,8 @@ export const {
   transformerUpdated,
   transformerPositionSet,
   transformerTargetAdded,
-  transformerInputAdded
+  transformerInputAdded,
+  transformerWALUpdated
 } = transformersSlice.actions
 
 
