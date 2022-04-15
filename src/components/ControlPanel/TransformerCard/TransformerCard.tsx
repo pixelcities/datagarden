@@ -2,10 +2,11 @@ import React, { FC } from 'react'
 import { useDrag } from 'react-dnd'
 
 import { useAppDispatch } from 'hooks'
-import { createTransformer } from 'state/actions'
+import { createTransformer, createMetadata } from 'state/actions'
+
+import { useKeyStoreContext } from 'utils/KeyStoreContext'
 
 import sprites from 'assets/t-sprites.svg'
-
 import './TransformerCard.sass'
 
 interface TransformerCardProps {
@@ -20,6 +21,8 @@ interface Coords {
 
 const TransformerCard: FC<TransformerCardProps> = ({ title, type }) => {
   const dispatch = useAppDispatch()
+  const { keyStore } = useKeyStoreContext();
+
   const id = crypto.randomUUID()
 
   const [{ opacity }, dragRef] = useDrag(
@@ -28,6 +31,12 @@ const TransformerCard: FC<TransformerCardProps> = ({ title, type }) => {
       item: { id },
       end: (e, monitor) => {
         const result: Coords = monitor.getDropResult() || {x: 0, y: 0}
+
+        dispatch(createMetadata({
+          id: id,
+          workspace: "default",
+          metadata: keyStore?.encrypt_metadata(`${id} [${type}]`)
+        }))
 
         dispatch(createTransformer({
           id: id,

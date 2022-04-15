@@ -21,10 +21,12 @@ interface DataTableProps {
   schema: Schema,
   interactiveHeader: boolean,
   style?: any,
-  versionId?: number
+  versionId?: number,
+  highlightHeader?: boolean,
+  onHeaderClick?: (id: string) => void
 }
 
-const DataTable: FC<DataTableProps> = ({ id, schema, interactiveHeader, style, versionId }) => {
+const DataTable: FC<DataTableProps> = ({ id, schema, interactiveHeader, style, versionId, highlightHeader, onHeaderClick }) => {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const popupRef = useRef<HTMLDivElement | null>(null)
 
@@ -39,6 +41,8 @@ const DataTable: FC<DataTableProps> = ({ id, schema, interactiveHeader, style, v
 
   const nrRows = React.useMemo(() => {
     return dataFusion.nr_rows(id)
+
+  // eslint-disable-next-line
   }, [ dataFusion, id, versionId ]);
 
   useLayoutEffect(() => {
@@ -127,8 +131,11 @@ const DataTable: FC<DataTableProps> = ({ id, schema, interactiveHeader, style, v
     [ prepareRow, rows, id, dataFusion ]
   )
 
-  // TODO: hover dropdown
   const handleHeaderClick = (id: string, e: any) => {
+    if (onHeaderClick) {
+      onHeaderClick(id)
+    }
+
     if (interactiveHeader) {
       const rect = e.target.getBoundingClientRect()
 
@@ -153,7 +160,7 @@ const DataTable: FC<DataTableProps> = ({ id, schema, interactiveHeader, style, v
 
   const renderTable = (
     <div role="table" className="data" {...getTableProps()}>
-      <div role="rowgroup" className="thead">
+      <div role="rowgroup" className="thead" style={highlightHeader ? {zIndex: 100, position: "sticky"} : {}}>
         {headerGroups.map((headerGroup: any) => (
           <div role="row" className="tr" {...headerGroup.getHeaderGroupProps()}>
             <div role="row" className="index"/>
