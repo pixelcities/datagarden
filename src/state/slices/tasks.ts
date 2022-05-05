@@ -1,4 +1,4 @@
-import { createSlice, createEntityAdapter } from '@reduxjs/toolkit'
+import { createSlice, createEntityAdapter, PayloadAction } from '@reduxjs/toolkit'
 import { RootState } from 'state/store'
 import { Task } from 'types'
 
@@ -11,7 +11,9 @@ const tasksSlice = createSlice({
   initialState: initialState,
   reducers: {
     taskAssigned: tasksAdapter.upsertOne,
-    taskCompleted: tasksAdapter.removeOne
+    taskCompleted(state, action: PayloadAction<{id: string, is_complete: boolean}>) {
+      delete state.entities[action.payload.id]
+    }
   }
 })
 
