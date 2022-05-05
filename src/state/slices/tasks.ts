@@ -12,6 +12,9 @@ const tasksSlice = createSlice({
   reducers: {
     taskAssigned: tasksAdapter.upsertOne,
     taskCompleted(state, action: PayloadAction<{id: string, is_complete: boolean}>) {
+      ids = state.ids.filter(id => id !== action.payload.id)
+
+      state.ids = ids
       delete state.entities[action.payload.id]
     }
   }

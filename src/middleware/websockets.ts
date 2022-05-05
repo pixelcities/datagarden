@@ -31,6 +31,7 @@ class WebSocket {
 
       this.channel.push("init", {"type": "events"})
       this.channel.push("init", {"type": "secrets"})
+      this.channel.push("init", {"type": "tasks"})
     }
   }
 

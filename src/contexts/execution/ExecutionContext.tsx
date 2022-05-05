@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useCallback, FC } from "react";
+import React, { useEffect, useCallback, FC } from "react";
 
 import { Task } from 'types'
 import { useAppSelector, useAppDispatch } from 'hooks'
@@ -20,7 +20,6 @@ export const ExecutionProvider: FC = ({ children }) => {
   const { keyStore, protocol, keyStoreIsReady } = useKeyStoreContext()
   const { arrow, dataFusion } = useDataFusionContext()
 
-  const taskCache = useRef<any>(new Set())
   const tasks = useAppSelector(selectTasks)
 
   const taskDispatcher = useCallback((task: Task) => {
@@ -40,18 +39,21 @@ export const ExecutionProvider: FC = ({ children }) => {
     } else {
       console.log("Received unexpected task type: ", task.type)
     }
-  }, [ keyStore, protocol, arrow, dataFusion ])
+  }, [ keyStore, protocol, arrow, dataFusion, dispatch ])
 
   useEffect(() => {
     if (keyStoreIsReady) {
-      tasks.forEach(task => {
-        if (! taskCache.current.has(task.id)) {
-          taskCache.current.add(task.id)
-          taskDispatcher(task)
-        }
-      })
+
+      // Just handle one at a time for now
+      if (tasks.length >= 1) {
+        const task = tasks[0]
+
+        // When this task is completed, it will update the tasks selector
+        // and retrigger the effect until all tasks are completed.
+        taskDispatcher(task)
+      }
     }
-  }, [ keyStoreIsReady, taskCache, tasks, taskDispatcher ])
+  }, [ keyStoreIsReady, tasks, taskDispatcher ])
 
   return (
     <>
