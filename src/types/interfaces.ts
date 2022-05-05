@@ -133,3 +133,11 @@ export interface Secret {
   ciphertext: string
 }
 
+export interface Task {
+  id: string,
+  type: string,
+  task: string,
+  worker?: string,
+  is_complete?: boolean
+}
+

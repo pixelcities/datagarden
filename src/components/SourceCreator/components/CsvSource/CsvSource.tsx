@@ -1,15 +1,15 @@
 import React, { FC, useMemo, useCallback, useEffect, useState } from 'react'
 
 import { getDataTokens } from 'utils/getDataTokens'
-import { useDataFusionContext } from 'utils/DataFusionContext'
-import { useKeyStoreContext } from 'utils/KeyStoreContext'
+import { useDataFusionContext } from 'contexts'
+import { useKeyStoreContext } from 'contexts'
+import { useAuthContext } from 'contexts';
 
 import { useAppDispatch, useAppSelector } from 'hooks'
 import { createSource, createMetadata, createDataURI } from 'state/actions'
 import { selectDataURIById } from 'state/selectors'
 import { Source } from 'types'
 
-import { useAuthContext } from 'utils/AuthContext';
 
 // https://github.com/denoland/deno/issues/12754
 declare global {

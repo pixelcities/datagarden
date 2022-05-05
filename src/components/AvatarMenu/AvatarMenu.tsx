@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import avatar from 'assets/avatar.png'
 import './AvatarMenu.sass';
 
-import { useAuthContext } from 'utils/AuthContext';
+import { useAuthContext } from 'contexts';
 
 
 const MARGIN = 5

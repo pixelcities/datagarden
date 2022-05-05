@@ -10,8 +10,8 @@ import { Schema } from 'types'
 
 import HeaderDropdown from './components/HeaderDropdown';
 
-import { useDataFusionContext } from 'utils/DataFusionContext';
-import { useKeyStoreContext } from 'utils/KeyStoreContext'
+import { useDataFusionContext } from 'contexts';
+import { useKeyStoreContext } from 'contexts'
 
 import './DataTable.sass'
 import { columnPadding, scrollbarWidth } from './utils'

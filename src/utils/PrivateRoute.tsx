@@ -1,6 +1,6 @@
 import React, { FC, useEffect } from 'react';
 import { Redirect, Route, RouteProps } from 'react-router-dom';
-import { useAuthContext } from 'utils/AuthContext';
+import { useAuthContext } from 'contexts';
 
 const PrivateRoute: FC<RouteProps> = ({component: Component, ...rest}) => {
   const { isAuthenticated, setPath } = useAuthContext()

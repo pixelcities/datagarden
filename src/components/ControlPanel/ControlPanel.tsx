@@ -8,8 +8,8 @@ import { selectUsableSources, selectMetadataMap } from 'state/selectors'
 import DataSource from './DataSource'
 import TransformerCard from './TransformerCard'
 
-import { useAuthContext } from 'utils/AuthContext';
-import { useKeyStoreContext } from 'utils/KeyStoreContext'
+import { useAuthContext } from 'contexts';
+import { useKeyStoreContext } from 'contexts'
 
 import helpIcon from 'assets/help-000.svg'
 

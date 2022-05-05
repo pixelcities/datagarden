@@ -5,8 +5,8 @@ import { faUpload, faEnvelope, faLock } from '@fortawesome/free-solid-svg-icons'
 
 import Section from 'components/Section';
 
-import { useAuthContext } from 'utils/AuthContext';
-import { useKeyStoreContext } from 'utils/KeyStoreContext';
+import { useAuthContext } from 'contexts';
+import { useKeyStoreContext } from 'contexts';
 
 
 const Profile: FC = () => {

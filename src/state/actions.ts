@@ -57,6 +57,11 @@ import {
   secretShared
 } from './slices/secrets'
 
+import {
+  taskAssigned,
+  taskCompleted
+} from './slices/tasks'
+
 
 const recreateAction = <T extends ActionCreatorWithPayload<any,string>>(type: string): T => {
   return createAction(type, (action) => {
@@ -93,6 +98,7 @@ const updateMetadata = recreateAction<typeof metadataUpdated>("UpdateMetadata")
 const createUser = recreateAction<typeof userCreated>("CreateUser")
 const updateUser = recreateAction<typeof userUpdated>("UpdateUser")
 const shareSecret = recreateAction<typeof secretShared>("ShareSecret")
+const completeTask = recreateAction<typeof taskCompleted>("CompleteTask")
 
 const events: {[key: string]: ActionCreatorWithPayload<any, string>} = {
   "CollectionCreated": collectionCreated,
@@ -112,7 +118,9 @@ const events: {[key: string]: ActionCreatorWithPayload<any, string>} = {
   "MetadataUpdated": metadataUpdated,
   "UserCreated": userCreated,
   "UserUpdated": userUpdated,
-  "SecretShared": secretShared
+  "SecretShared": secretShared,
+  "TaskAssigned": taskAssigned,
+  "TaskCompleted": taskCompleted
 }
 
 export {
@@ -137,6 +145,7 @@ export {
   addTransformerTarget,
   addTransformerInput,
   updateTransformerWAL,
+  completeTask,
 
   addWorkspace,
   setWorkspacePosition,

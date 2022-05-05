@@ -12,6 +12,7 @@ import userReducer from './slices/users'
 import metadataReducer from './slices/metadata'
 import uriReducer from './slices/uri'
 import secretReducer from './slices/secrets'
+import taskReducer from './slices/tasks'
 
 const store = configureStore({
   middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(websocketMiddleware),
@@ -25,7 +26,8 @@ const store = configureStore({
     users: userReducer,
     metadata: metadataReducer,
     uris: uriReducer,
-    secrets: secretReducer
+    secrets: secretReducer,
+    tasks: taskReducer
   }
 })
 

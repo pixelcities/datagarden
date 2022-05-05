@@ -1,22 +1,23 @@
-import React from 'react';
-import { BrowserRouter as Router, Switch, Route } from 'react-router-dom';
+import React from 'react'
+import { BrowserRouter as Router, Switch, Route } from 'react-router-dom'
 import { Provider } from 'react-redux'
 import { DndProvider } from 'react-dnd'
 import { HTML5Backend } from 'react-dnd-html5-backend'
-import { gsap } from "gsap";
-import { Draggable } from "gsap/Draggable";
+import { gsap } from "gsap"
+import { Draggable } from "gsap/Draggable"
 
 import store from 'state/store'
 
-import Sources from 'pages/Sources';
-import Builder from 'pages/Builder';
-import Profile from 'pages/Profile';
-import KeyStore from 'pages/KeyStore';
+import Sources from 'pages/Sources'
+import Builder from 'pages/Builder'
+import Profile from 'pages/Profile'
+import KeyStore from 'pages/KeyStore'
 
-import PrivateRoute from 'utils/PrivateRoute';
-import { AuthProvider } from 'utils/AuthContext';
-import { DataFusionProvider } from 'utils/DataFusionContext';
-import { KeyStoreProvider } from 'utils/KeyStoreContext';
+import PrivateRoute from 'utils/PrivateRoute'
+import { AuthProvider } from 'contexts'
+import { DataFusionProvider } from 'contexts'
+import { KeyStoreProvider } from 'contexts'
+import { ExecutionProvider } from 'contexts'
 
 gsap.registerPlugin(Draggable);
 
@@ -28,24 +29,26 @@ function App() {
           <AuthProvider>
             <KeyStoreProvider>
               <DataFusionProvider>
-                <div className="App">
-                  <Switch>
-                    { /* Profile */ }
-                    <Route path="/register" component={Profile} />
-                    <Route path="/login" component={Profile} />
-                    <Route path="/logout" component={Profile} />
-                    <PrivateRoute path="/profile" component={Profile} />
+                <ExecutionProvider>
+                  <div className="App">
+                    <Switch>
+                      { /* Profile */ }
+                      <Route path="/register" component={Profile} />
+                      <Route path="/login" component={Profile} />
+                      <Route path="/logout" component={Profile} />
+                      <PrivateRoute path="/profile" component={Profile} />
 
-                    { /* Passthrough */ }
-                    <PrivateRoute path="/auth/local/confirm/:token" component={Profile} />
-                    <PrivateRoute path="/users/profile/confirm_email/:token" component={Profile} />
+                      { /* Passthrough */ }
+                      <PrivateRoute path="/auth/local/confirm/:token" component={Profile} />
+                      <PrivateRoute path="/users/profile/confirm_email/:token" component={Profile} />
 
-                    <PrivateRoute path="/keys" component={KeyStore} />
-                    <PrivateRoute path="/sources" component={Sources} />
-                    <PrivateRoute path="/" component={Builder} />
+                      <PrivateRoute path="/keys" component={KeyStore} />
+                      <PrivateRoute path="/sources" component={Sources} />
+                      <PrivateRoute path="/" component={Builder} />
 
-                  </Switch>
-                </div>
+                    </Switch>
+                  </div>
+                </ExecutionProvider>
               </DataFusionProvider>
             </KeyStoreProvider>
           </AuthProvider>

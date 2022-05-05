@@ -5,7 +5,7 @@ import { faLock } from '@fortawesome/free-solid-svg-icons'
 import { useAppSelector } from 'hooks'
 import { selectSecrets } from 'state/selectors'
 
-import { useAuthContext } from 'utils/AuthContext';
+import { useAuthContext } from 'contexts';
 
 import type { KeyStore, Protocol } from 'key-x-wasm';
 

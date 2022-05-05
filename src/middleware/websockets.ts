@@ -8,6 +8,7 @@ class WebSocket {
   callback: (event: any) => void
   socket?: Socket
   channel?: Channel
+  ds?: Channel
 
   constructor(endpoint: string, callback: (event: any) => void) {
     this.endpoint = endpoint
@@ -21,6 +22,9 @@ class WebSocket {
 
   handleChannel(user_id: string) {
     if (this.socket) {
+      this.ds = this.socket.channel(`ds:1`, {})
+      this.ds.join()
+
       this.channel = this.socket.channel(`user:${user_id}`, {})
       this.channel.join()
       this.channel.on("event", this.callback)

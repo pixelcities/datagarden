@@ -2,7 +2,7 @@ import React, { FC, useEffect } from 'react';
 import { RouteComponentProps } from 'react-router';
 import { useHistory } from "react-router-dom";
 
-import { useAuthContext } from 'utils/AuthContext';
+import { useAuthContext } from 'contexts';
 
 // TODO: add rotation token
 interface ConfirmProps {

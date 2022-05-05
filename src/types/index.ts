@@ -18,5 +18,6 @@ export type {
   User,
   Metadata,
   DataURI,
-  Secret
+  Secret,
+  Task
 } from './interfaces'

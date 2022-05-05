@@ -12,8 +12,8 @@ import { useAppDispatch, useAppSelector } from 'hooks'
 import { selectUserByEmail, selectSourceById } from 'state/selectors'
 import { shareSecret, updateSource } from 'state/actions'
 
-import { useAuthContext } from 'utils/AuthContext';
-import { useKeyStoreContext } from 'utils/KeyStoreContext'
+import { useAuthContext } from 'contexts';
+import { useKeyStoreContext } from 'contexts'
 
 
 interface HeaderDropdownProps {

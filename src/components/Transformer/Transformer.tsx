@@ -10,9 +10,9 @@ import { Schema, WAL } from 'types'
 
 import DataTable from 'components/DataTable'
 
-import { useDataFusionContext } from 'utils/DataFusionContext'
-import { useKeyStoreContext } from 'utils/KeyStoreContext'
-import { useAuthContext } from 'utils/AuthContext'
+import { useDataFusionContext } from 'contexts'
+import { useKeyStoreContext } from 'contexts'
+import { useAuthContext } from 'contexts'
 import { loadRemoteTable } from 'utils/loadRemoteTable'
 
 import './Transformer.sass'

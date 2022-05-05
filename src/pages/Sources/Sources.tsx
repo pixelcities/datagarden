@@ -12,8 +12,8 @@ import { useAppSelector } from 'hooks'
 import { selectVisibleSources, selectMetadataMap } from 'state/selectors'
 import { Source } from 'types'
 
-import { useAuthContext } from 'utils/AuthContext';
-import { useKeyStoreContext } from 'utils/KeyStoreContext'
+import { useAuthContext } from 'contexts';
+import { useKeyStoreContext } from 'contexts'
 
 import listView from 'assets/page-setting-list.svg'
 import iconView from 'assets/page-setting-icon.svg'

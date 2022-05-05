@@ -1,7 +1,7 @@
 import React, { FC, useEffect } from 'react';
 import { Redirect, useHistory } from "react-router-dom";
 
-import { useAuthContext } from 'utils/AuthContext';
+import { useAuthContext } from 'contexts';
 
 
 const Logout: FC = () => {

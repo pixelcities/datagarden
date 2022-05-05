@@ -5,7 +5,7 @@ import { Route } from "react-router-dom";
 import Navbar from 'components/Navbar'
 import Section from 'components/Section';
 
-import { useKeyStoreContext } from 'utils/KeyStoreContext'
+import { useKeyStoreContext } from 'contexts'
 
 class KeyStoreRoute extends Component<RouteComponentProps> {
   parentPath = (this.props.match.params as any).path;
