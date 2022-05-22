@@ -47,7 +47,8 @@ export interface Row {
 export interface WAL {
   identifiers: {[key: number]: string},
   values: {[key: number]: string},
-  transactions: string[]
+  transactions: string[],
+  artifacts: string[]
 }
 
 export interface Collection extends Component {

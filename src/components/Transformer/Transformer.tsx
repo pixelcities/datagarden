@@ -82,7 +82,7 @@ const TransformerSettings: FC<TransformerSettingsProps> = ({ id, wal, tableId, c
   const [valueModalIsActive, setValueModalIsActive] = useState(false)
   const [value, setValue] = useState("")
   const [query, setQuery] = useState("SELECT * FROM \"table\";")
-  const [log, setLog] = useState<WAL>(wal ?? {identifiers: {}, values: {}, transactions: []})
+  const [log, setLog] = useState<WAL>(wal ?? {identifiers: {}, values: {}, transactions: [], artifacts: []})
 
   const { dataFusion } = useDataFusionContext();
   const { keyStore } = useKeyStoreContext();
@@ -133,9 +133,10 @@ const TransformerSettings: FC<TransformerSettingsProps> = ({ id, wal, tableId, c
     const q = buildQuery(query, log, metadata, keyStore)
 
     if (tableId) {
-      dataFusion?.query(tableId, q).then(() => {
+      dataFusion?.query(tableId, q).then((artifact: string) => {
         setLog({...log, ...{
-          transactions: [...log.transactions, query]
+          transactions: [...log.transactions, query],
+          artifacts: [...log.artifacts, artifact]
         }})
         setQuery("")
 
