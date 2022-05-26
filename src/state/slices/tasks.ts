@@ -11,7 +11,7 @@ const tasksSlice = createSlice({
   initialState: initialState,
   reducers: {
     taskAssigned: tasksAdapter.upsertOne,
-    taskCompleted(state, action: PayloadAction<{id: string, is_complete: boolean}>) {
+    taskCompleted(state, action: PayloadAction<{id: string, is_completed: boolean}>) {
       const ids = state.ids.filter(id => id !== action.payload.id)
 
       state.ids = ids

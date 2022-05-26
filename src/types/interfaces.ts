@@ -137,8 +137,8 @@ export interface Secret {
 export interface Task {
   id: string,
   type: string,
-  task: string,
+  task: any,
   worker?: string,
-  is_complete?: boolean
+  is_completed?: boolean
 }
 

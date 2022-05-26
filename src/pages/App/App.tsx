@@ -29,7 +29,7 @@ function App() {
           <AuthProvider>
             <KeyStoreProvider>
               <DataFusionProvider>
-                <ExecutionProvider>
+                <ExecutionProvider store={store}>
                   <div className="App">
                     <Switch>
                       { /* Profile */ }

@@ -1,8 +1,10 @@
 import React, { useEffect, useCallback, FC } from "react";
+import { EnhancedStore } from '@reduxjs/toolkit'
 
+import { RootState } from 'state/store'
 import { Task } from 'types'
 import { useAppSelector, useAppDispatch } from 'hooks'
-import { selectTasks } from 'state/selectors'
+import { selectTasks, selectMetadataMap } from 'state/selectors'
 import { completeTask } from 'state/actions'
 
 import { useAuthContext } from 'contexts'
@@ -13,7 +15,11 @@ import { handleTask as handleProtocolTask } from './protocol'
 import { handleTask as handleTransformerTask } from './transformer'
 
 
-export const ExecutionProvider: FC = ({ children }) => {
+interface ExecutionProviderI {
+  store: EnhancedStore<RootState>
+}
+
+export const ExecutionProvider: FC<ExecutionProviderI> = ({ store, children }) => {
   const dispatch = useAppDispatch()
 
   const { user } = useAuthContext();
@@ -21,25 +27,26 @@ export const ExecutionProvider: FC = ({ children }) => {
   const { arrow, dataFusion } = useDataFusionContext()
 
   const tasks = useAppSelector(selectTasks)
+  const metadata = useAppSelector(selectMetadataMap)
 
   const taskDispatcher = useCallback((task: Task) => {
     const onComplete = () => {
       dispatch(completeTask({
         id: task.id,
-        is_complete: true
+        is_completed: true
       }))
     }
 
     if (task.type === "protocol") {
       handleProtocolTask(task, protocol, onComplete)
 
-    } else if (task.type === "transformer") {
-      handleTransformerTask(task, keyStore, arrow, dataFusion, onComplete)
+    } else if (task.type === "transformer" && user) {
+      handleTransformerTask(task, user, metadata, store, keyStore, arrow, dataFusion, onComplete)
 
     } else {
       console.log("Received unexpected task type: ", task.type)
     }
-  }, [ keyStore, protocol, arrow, dataFusion, dispatch ])
+  }, [ user, store, keyStore, protocol, arrow, dataFusion, dispatch ])
 
   useEffect(() => {
     if (keyStoreIsReady) {
