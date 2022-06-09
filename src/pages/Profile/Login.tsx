@@ -1,5 +1,5 @@
 import React, { FC, useState } from 'react';
-import { useHistory } from "react-router-dom";
+import { useHistory, Link } from "react-router-dom";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faEnvelope, faLock } from '@fortawesome/free-solid-svg-icons'
 
@@ -110,6 +110,11 @@ const Login: FC = () => {
                 </div>
               </div>
             </div>
+
+            <p className="subtitle pt-5 is-size-6 has-text-centered is-italic">
+              Don't have an account? <span style={{textDecorationLine: "underline", textDecorationStyle: "solid"}}><Link to="/register"> Register here </Link></span>
+            </p>
+
           </>
         : JSON.stringify(user) }
 

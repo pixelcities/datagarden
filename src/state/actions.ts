@@ -45,6 +45,11 @@ import {
 } from './slices/users'
 
 import {
+  setActiveDataSpace
+} from './slices/dataspaces'
+
+
+import {
   metadataCreated,
   metadataUpdated
 } from './slices/metadata'
@@ -126,6 +131,7 @@ const events: {[key: string]: ActionCreatorWithPayload<any, string>} = {
 export {
   events,
   login,
+  setActiveDataSpace,
 
   createUser,
   updateUser,

@@ -1,5 +1,5 @@
 import React, { FC, useRef, useState } from 'react'
-import { Link } from "react-router-dom";
+import { Link, useRouteMatch } from "react-router-dom";
 
 import { gsap } from 'gsap'
 
@@ -26,6 +26,9 @@ const Sidebar: FC<SidebarProps> = (props) => {
   const sidebarRef = useRef<HTMLDivElement | null>(null)
   const mainRef = useRef<HTMLDivElement | null>(null)
 
+  const { path, url } = useRouteMatch();
+  const matches = path.match(/.*(?=\/:).:\w+(.*)/)
+  const basepath = matches ? url.replace(new RegExp(`${matches[1]}$`), "") : ""
 
   const toggleMini = () => {
     if (isMini) {
@@ -55,16 +58,16 @@ const Sidebar: FC<SidebarProps> = (props) => {
                   <img src={collapseIcon} alt="" />
                 </div>
                 <ul className="menu-list">
-                  <li><Link className="menu-label has-text-centered my-3 px-0 py-0" to="/sources">
+                  <li><Link className="menu-label has-text-centered my-3 px-0 py-0" to={basepath + "/sources"}>
                     <img src={datasourceIcon} alt="" />
                   </Link></li>
-                  <li><Link className="menu-label has-text-centered my-3 px-0 py-0" to="/">
+                  <li><Link className="menu-label has-text-centered my-3 px-0 py-0" to={basepath}>
                     <img src={ecosystemIcon} alt="" />
                   </Link></li>
-                  <li><Link className="menu-label has-text-centered my-3 px-0 py-0" to="/">
+                  <li><Link className="menu-label has-text-centered my-3 px-0 py-0" to={basepath}>
                     <img src={builderIcon} alt="" />
                   </Link></li>
-                  <li><Link className="menu-label has-text-centered my-3 px-0 py-0" to="/">
+                  <li><Link className="menu-label has-text-centered my-3 px-0 py-0" to={basepath}>
                     <img src={widgetsIcon} alt="" />
                   </Link></li>
                 </ul>
@@ -77,23 +80,23 @@ const Sidebar: FC<SidebarProps> = (props) => {
                   <img src={flippedCollapseIcon} alt="" />
                 </div>
                 <ul className="menu-list">
-                  <li><Link className="button-label" to="/">Data Pool Brochure</Link></li>
-                  <li><Link className="button-label" to="/">Team Management</Link></li>
+                  <li><Link className="button-label" to={basepath}>Data Pool Brochure</Link></li>
+                  <li><Link className="button-label" to={basepath}>Team Management</Link></li>
                 </ul>
                 <ul className="menu-list">
                   <li><Link className="button-label is-active" to="/">Data Ecosystem</Link></li>
                   <li>
                     <ul>
-                      <li><Link className={"button-label" + (props.page === "sources" ? " is-active" : "")} to="/sources">Data Sources</Link></li>
-                      <li><Link className="button-label" to="/">Taxonomy</Link></li>
-                      <li><Link className={"button-label" + (props.page === "builder" ? " is-active" : "")} to="/">Pipeline Builder</Link></li>
-                      <li><Link className="button-label" to="/">Widgets</Link></li>
+                      <li><Link className={"button-label" + (props.page === "sources" ? " is-active" : "")} to={basepath + "/sources"}>Data Sources</Link></li>
+                      <li><Link className="button-label" to={basepath}>Taxonomy</Link></li>
+                      <li><Link className={"button-label" + (props.page === "builder" ? " is-active" : "")} to={basepath}>Pipeline Builder</Link></li>
+                      <li><Link className="button-label" to={basepath}>Widgets</Link></li>
                     </ul>
                   </li>
                 </ul>
                 <ul className="menu-list">
-                  <li><Link className="button-label" to="/">Privacy and Sharing</Link></li>
-                  <li><Link className="button-label" to="/">Integrations</Link></li>
+                  <li><Link className="button-label" to={basepath}>Privacy and Sharing</Link></li>
+                  <li><Link className="button-label" to={basepath}>Integrations</Link></li>
                 </ul>
               </aside>
             </div>

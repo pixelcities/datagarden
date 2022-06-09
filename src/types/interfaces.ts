@@ -142,3 +142,10 @@ export interface Task {
   is_completed?: boolean
 }
 
+export interface DataSpace {
+  id: string,
+  handle: string,
+  key_id: string,
+  name?: string
+}
+

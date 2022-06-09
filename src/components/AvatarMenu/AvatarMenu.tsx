@@ -1,5 +1,5 @@
 import React, { FC, useRef, useEffect, useState } from 'react';
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 
 import avatar from 'assets/avatar.png'
 import './AvatarMenu.sass';
@@ -19,6 +19,8 @@ const AvatarMenu: FC<AvatarMenuProps> = (props) => {
   const [isActive, setIsActive] = useState(false)
 
   const { isAuthenticated, user } = useAuthContext();
+
+  const { handle } = useParams<{handle: string}>()
 
   useEffect(() => {
     if (ref.current) {
@@ -56,10 +58,12 @@ const AvatarMenu: FC<AvatarMenuProps> = (props) => {
                 <Link className="button-label is-grey label-size-3" to="/profile"> Profile </Link>
               </li>
 
-              <li>
-                <hr className="dropdown-divider" />
-                <Link className="button-label is-grey label-size-3" to="/keys"> KeyStore </Link>
-              </li>
+              { handle ?
+                <li>
+                  <hr className="dropdown-divider" />
+                  <Link className="button-label is-grey label-size-3" to={"/" + handle + "/keys"}> KeyStore </Link>
+                </li>
+              : null }
 
               <li>
                 <hr className="dropdown-divider" />

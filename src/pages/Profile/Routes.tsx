@@ -10,45 +10,45 @@ import Profile from './Profile'
 import Confirm from './Confirm'
 
 class ProfileRoutes extends Component<RouteComponentProps> {
-  parentPath = this.props.match.path
-
   render() {
-    if (this.parentPath === "/login") {
+    const parentPath = this.props.match.path
+
+    if (parentPath === "/login") {
       return (
         <div>
           <Navbar />
-          <Route path={this.parentPath} component={Login} />
+          <Route path={parentPath} component={Login} />
         </div>
       )
 
-    } else if (this.parentPath === "/register") {
+    } else if (parentPath === "/register") {
       return (
         <div>
           <Navbar />
-          <Route path={this.parentPath} component={Register} />
+          <Route path={parentPath} component={Register} />
         </div>
       )
 
-    } else if (this.parentPath === "/logout") {
+    } else if (parentPath === "/logout") {
       return (
-        <Route path={this.parentPath} component={Logout} />
+        <Route path={parentPath} component={Logout} />
       )
 
-    } else if (this.parentPath === "/auth/local/confirm/:token") {
+    } else if (parentPath === "/auth/local/confirm/:token") {
       return (
-        <Route path={this.parentPath} component={Confirm} />
+        <Route path={parentPath} component={Confirm} />
       )
 
-    } else if (this.parentPath === "/users/profile/confirm_email/:token") {
+    } else if (parentPath === "/users/profile/confirm_email/:token") {
       return (
-        <Route path={this.parentPath} component={Confirm} />
+        <Route path={parentPath} component={Confirm} />
       )
 
     } else  {
       return (
         <div>
           <Navbar />
-          <Route path={this.parentPath} component={Profile} />
+          <Route path={parentPath} component={Profile} />
         </div>
       )
     }

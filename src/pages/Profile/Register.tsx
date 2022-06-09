@@ -1,5 +1,4 @@
 import React, { FC, useState } from 'react';
-import { useHistory } from "react-router-dom";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faEnvelope, faLock } from '@fortawesome/free-solid-svg-icons'
 
@@ -11,11 +10,10 @@ import { useKeyStoreContext } from 'contexts';
 const Register: FC = () => {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [confirmPrompt, setConfirmPrompt] = useState(false)
 
-  const { isAuthenticated, handleLogin, path } = useAuthContext();
-  const { keyStore } = useKeyStoreContext();
-
-  const history = useHistory();
+  const { isAuthenticated, handleLogin } = useAuthContext();
+  const { keyStore, protocol } = useKeyStoreContext();
 
   const handleSubmit = (e: any) => {
     e.preventDefault();
@@ -42,9 +40,14 @@ const Register: FC = () => {
         return response.json()
       }
     }).then((data) => {
-      handleLogin(data)
-      keyStore.init()
-      history.push(path)
+      setConfirmPrompt(true)
+
+      keyStore.create_named_key("protocol", 32).then((key_id: string) => {
+        protocol.register(keyStore.get_key(key_id)).then((pub_key: string) => {
+          handleLogin(data)
+          keyStore.init()
+        })
+      })
     }).catch((e) => {
       console.log(e);
     });
@@ -95,6 +98,14 @@ const Register: FC = () => {
                 </div>
               </div>
             </div>
+          </>
+        : null }
+
+        { confirmPrompt ?
+          <>
+            <p className="subtitle pt-3 is-size-5 has-text-centered is-italic">
+              An email has been sent to confirm your account.
+            </p>
           </>
         : null }
 

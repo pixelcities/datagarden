@@ -8,6 +8,7 @@ import { Draggable } from "gsap/Draggable"
 
 import store from 'state/store'
 
+import DataSpaces from 'pages/DataSpaces'
 import Sources from 'pages/Sources'
 import Builder from 'pages/Builder'
 import Profile from 'pages/Profile'
@@ -42,9 +43,12 @@ function App() {
                       <PrivateRoute path="/auth/local/confirm/:token" component={Profile} />
                       <PrivateRoute path="/users/profile/confirm_email/:token" component={Profile} />
 
-                      <PrivateRoute path="/keys" component={KeyStore} />
-                      <PrivateRoute path="/sources" component={Sources} />
-                      <PrivateRoute path="/" component={Builder} />
+                      { /* Main */ }
+                      <DataSpaces>
+                        <PrivateRoute path="/:handle/keys" component={KeyStore} />
+                        <PrivateRoute path="/:handle/sources" component={Sources} />
+                        <PrivateRoute path="/:handle/" component={Builder} />
+                      </DataSpaces>
 
                     </Switch>
                   </div>

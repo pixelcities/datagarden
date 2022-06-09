@@ -9,6 +9,7 @@ import sourceReducer from './slices/sources'
 import organisationReducer from './slices/organisations'
 import uiReducer from './slices/ui'
 import userReducer from './slices/users'
+import dataspaceReducer from './slices/dataspaces'
 import metadataReducer from './slices/metadata'
 import uriReducer from './slices/uri'
 import secretReducer from './slices/secrets'
@@ -24,6 +25,7 @@ const store = configureStore({
     organisations: organisationReducer,
     ui: uiReducer,
     users: userReducer,
+    dataspaces: dataspaceReducer,
     metadata: metadataReducer,
     uris: uriReducer,
     secrets: secretReducer,
