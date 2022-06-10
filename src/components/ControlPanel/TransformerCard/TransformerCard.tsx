@@ -1,8 +1,9 @@
 import React, { FC } from 'react'
 import { useDrag } from 'react-dnd'
 
-import { useAppDispatch } from 'hooks'
+import { useAppDispatch, useAppSelector } from 'hooks'
 import { createTransformer, createMetadata } from 'state/actions'
+import { selectActiveDataSpace } from 'state/selectors'
 
 import { useKeyStoreContext } from 'contexts'
 
@@ -22,6 +23,7 @@ interface Coords {
 const TransformerCard: FC<TransformerCardProps> = ({ title, type }) => {
   const dispatch = useAppDispatch()
   const { keyStore } = useKeyStoreContext();
+  const dataSpace = useAppSelector(selectActiveDataSpace)
 
   const id = crypto.randomUUID()
 
@@ -35,7 +37,7 @@ const TransformerCard: FC<TransformerCardProps> = ({ title, type }) => {
         dispatch(createMetadata({
           id: id,
           workspace: "default",
-          metadata: keyStore?.encrypt_metadata(`${id} [${type}]`)
+          metadata: keyStore?.encrypt_metadata(dataSpace?.key_id, `${id} [${type}]`)
         }))
 
         dispatch(createTransformer({

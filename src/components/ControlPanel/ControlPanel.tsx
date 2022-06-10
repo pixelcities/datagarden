@@ -4,7 +4,7 @@ import { useAppSelector } from 'hooks'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faSearch } from '@fortawesome/free-solid-svg-icons'
 
-import { selectUsableSources, selectMetadataMap } from 'state/selectors'
+import { selectUsableSources, selectMetadataMap, selectActiveDataSpace } from 'state/selectors'
 import DataSource from './DataSource'
 import TransformerCard from './TransformerCard'
 
@@ -22,11 +22,12 @@ const SourcesTab: FC = (props) => {
 
   const sources = useAppSelector(state => selectUsableSources(state, user))
   const metadata = useAppSelector(selectMetadataMap)
+  const dataSpace = useAppSelector(selectActiveDataSpace)
 
   const dSources = useMemo(() => {
     return sources.map(source => {
       const maybe_name = metadata[source.id]
-      const name = maybe_name && keyStoreIsReady ? keyStore?.decrypt_metadata(maybe_name) : source.id;
+      const name = maybe_name && keyStoreIsReady ? keyStore?.decrypt_metadata(dataSpace?.key_id, maybe_name) : source.id;
 
       const share = source.schema.shares.find(s => s.principal === user?.email)
 
@@ -40,7 +41,7 @@ const SourcesTab: FC = (props) => {
 
       return null
     }).filter(x => !!x)
-  }, [ sources, metadata, user, keyStore, keyStoreIsReady ])
+  }, [ sources, metadata, user, dataSpace, keyStore, keyStoreIsReady ])
 
   return (
     <>

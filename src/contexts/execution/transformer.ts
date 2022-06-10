@@ -14,6 +14,7 @@ export const handleTask = (task: Task, user: User, metadata: any, store: Enhance
   const wal = task.task
 
   if (instruction === "compute_fragment") {
+    const dataSpace = Object.values(store.getState().dataspaces.entities)[0]
     const transformer = store.getState().transformers.entities[transformer_id]
     const collections = transformer?.collections.map(id => store.getState().collections.entities[id]) ?? []
 
@@ -39,7 +40,7 @@ export const handleTask = (task: Task, user: User, metadata: any, store: Enhance
             // TODO: Check whether to use query or artifact
             Promise.all(wal.transactions.map((transaction: string) => {
               return new Promise<void>((resolve, reject) => {
-                dataFusion?.query(id, buildQuery(transaction, wal, metadata, keyStore)).then(() => resolve())
+                dataFusion?.query(id, buildQuery(transaction, wal, metadata, dataSpace, keyStore)).then(() => resolve())
               })
             })).then(() => {
               const uri = store.getState().uris.entities[id]?.uri ?? ""

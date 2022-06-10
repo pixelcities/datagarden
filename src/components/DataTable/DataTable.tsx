@@ -4,7 +4,7 @@ import { FixedSizeList } from 'react-window'
 import { TweenLite } from 'gsap'
 
 import { useAppSelector } from 'hooks'
-import { selectMetadataMap } from 'state/selectors'
+import { selectMetadataMap, selectActiveDataSpace } from 'state/selectors'
 
 import { Schema } from 'types'
 
@@ -38,6 +38,7 @@ const DataTable: FC<DataTableProps> = ({ id, schema, interactiveHeader, style, v
   const { dataFusion } = useDataFusionContext();
 
   const metadata = useAppSelector(selectMetadataMap)
+  const dataSpace = useAppSelector(selectActiveDataSpace)
 
   const nrRows = React.useMemo(() => {
     return dataFusion.nr_rows(id)
@@ -73,7 +74,7 @@ const DataTable: FC<DataTableProps> = ({ id, schema, interactiveHeader, style, v
 
       if (column) {
         const maybe_name = metadata[column.id]
-        const name = maybe_name ? keyStore?.decrypt_metadata(maybe_name) : column.id;
+        const name = maybe_name ? keyStore?.decrypt_metadata(dataSpace?.key_id, maybe_name) : column.id;
 
         attributes.push({
           accessor: column.id,
@@ -83,7 +84,7 @@ const DataTable: FC<DataTableProps> = ({ id, schema, interactiveHeader, style, v
     })
 
     return columnPadding(attributes)
-  }, [ keyStore, schema, metadata ])
+  }, [ keyStore, dataSpace, schema, metadata ])
 
   const scrollBarSize = React.useMemo(() => scrollbarWidth(), [])
 

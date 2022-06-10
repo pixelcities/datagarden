@@ -9,7 +9,7 @@ import SourceCard from 'components/SourceCard'
 import SourceCreator from 'components/SourceCreator'
 
 import { useAppSelector } from 'hooks'
-import { selectVisibleSources, selectMetadataMap } from 'state/selectors'
+import { selectVisibleSources, selectMetadataMap, selectActiveDataSpace } from 'state/selectors'
 import { Source } from 'types'
 
 import { useAuthContext } from 'contexts';
@@ -44,6 +44,7 @@ const Sources: FC = (props) => {
 
   const sources = useAppSelector(state => selectVisibleSources(state, user))
   const metadata = useAppSelector(selectMetadataMap)
+  const dataSpace = useAppSelector(selectActiveDataSpace)
 
   const addSourceHandler = () => {
     setAddSourceModalIsActive(!addSourceModalIsActive)
@@ -52,7 +53,7 @@ const Sources: FC = (props) => {
   const renderSources = useMemo(() => {
     return sources.map((source) => {
       const maybe_name = metadata[source.id]
-      const name = maybe_name && keyStoreIsReady ? keyStore?.decrypt_metadata(maybe_name) : source.id
+      const name = maybe_name && keyStoreIsReady ? keyStore?.decrypt_metadata(dataSpace?.key_id, maybe_name) : source.id
 
       return (
         <div key={source.id} className="column is-narrow">
@@ -65,7 +66,7 @@ const Sources: FC = (props) => {
         </div>
       )
     })
-  }, [ metadata, sources, keyStore, keyStoreIsReady ])
+  }, [ metadata, sources, dataSpace, keyStore, keyStoreIsReady ])
 
   return (
     <div className="page px-0 pt-0">

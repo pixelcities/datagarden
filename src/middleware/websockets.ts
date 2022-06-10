@@ -20,18 +20,28 @@ class WebSocket {
     this.socket.connect()
   }
 
-  handleChannel(user_id: string) {
+  handleUserChannel(user_id: string) {
     if (this.socket) {
-      this.ds = this.socket.channel(`ds:1`, {})
-      this.ds.join()
-
       this.channel = this.socket.channel(`user:${user_id}`, {})
       this.channel.join()
       this.channel.on("event", this.callback)
+    }
+  }
 
-      this.channel.push("init", {"type": "events"})
-      this.channel.push("init", {"type": "secrets"})
-      this.channel.push("init", {"type": "tasks"})
+  handleDsChannel(handle: string) {
+    if (this.socket) {
+      // TODO: handle switching
+      if (! this.ds) {
+        this.ds = this.socket.channel(`ds:${handle}`, {})
+        this.ds.join()
+
+        // Only init the event playback after selecting a ds
+        if (this.channel) {
+          this.channel.push("init", {"type": "events"})
+          this.channel.push("init", {"type": "secrets"})
+          this.channel.push("init", {"type": "tasks"})
+        }
+      }
     }
   }
 
@@ -46,7 +56,7 @@ class WebSocket {
           const token = resp.token
 
           this.handleSocket(token)
-          this.handleChannel(user_id)
+          this.handleUserChannel(user_id)
         })
     }).catch((e) => {
       console.log(e);
@@ -69,6 +79,12 @@ export const websocketMiddleware: Middleware<{}, any> = storeApi => {
     // the websocket by requesting a token with the now available cookie.
     if (action.type === "users/login") {
       socket.init()
+      return next(action)
+
+    // Switch to a new dataspace. This will join the relevant channel and
+    // let the server know we are working in this dataspace.
+    } else if (action.type === "dataspaces/setActiveDataSpace") {
+      socket.handleDsChannel(action.payload.handle)
       return next(action)
 
     // "Commands" are routed to the backend

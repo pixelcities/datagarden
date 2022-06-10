@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faKey } from '@fortawesome/free-solid-svg-icons'
 
 import { useAppDispatch, useAppSelector } from 'hooks'
-import { selectUsers, selectMetadataById, selectSourceById } from 'state/selectors'
+import { selectUsers, selectMetadataById, selectSourceById, selectActiveDataSpace } from 'state/selectors'
 import { updateSource, updateMetadata, shareSecret } from 'state/actions'
 
 import { Source, Schema, User } from 'types'
@@ -59,12 +59,13 @@ const SourceTable: FC<SourceTableProps> = (props) => {
   const users = useAppSelector(selectUsers)
   const titleMetadata = useAppSelector(state => selectMetadataById(state, props.id))
   const source = useAppSelector(state => selectSourceById(state, props.id))
+  const dataSpace = useAppSelector(selectActiveDataSpace)
 
   useEffect(() => {
     if (titleMetadata) {
-      setTitle(keyStore?.decrypt_metadata(titleMetadata.metadata))
+      setTitle(keyStore?.decrypt_metadata(dataSpace?.key_id, titleMetadata.metadata))
     }
-  }, [ titleMetadata, keyStore ])
+  }, [ dataSpace, titleMetadata, keyStore ])
 
   const renderShares = React.useMemo(() => {
     let res
@@ -97,7 +98,7 @@ const SourceTable: FC<SourceTableProps> = (props) => {
         dispatch(updateMetadata({
           id: tableId,
           workspace: "default",
-          metadata: keyStore?.encrypt_metadata(titleRef.current)
+          metadata: keyStore?.encrypt_metadata(dataSpace?.key_id, titleRef.current)
         }))
 
         setHandle(0)

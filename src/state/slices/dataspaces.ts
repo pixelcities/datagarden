@@ -7,7 +7,7 @@ const initialState = dataSpacesAdapter.getInitialState()
 
 // reducers
 const dataSpacesSlice = createSlice({
-  name: 'dataSpaces',
+  name: 'dataspaces',
   initialState: initialState,
   reducers: {
     setActiveDataSpace: dataSpacesAdapter.addOne,

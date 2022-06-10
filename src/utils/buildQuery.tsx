@@ -1,6 +1,6 @@
-import { WAL } from 'types'
+import { WAL, DataSpace } from 'types'
 
-export const buildQuery = (query: string, log: WAL, metadata: any, keyStore: any) => {
+export const buildQuery = (query: string, log: WAL, metadata: any, dataSpace: DataSpace | undefined, keyStore: any) => {
   let q = query
 
   Object.entries(log.identifiers).forEach(([i, id]) => {
@@ -11,7 +11,7 @@ export const buildQuery = (query: string, log: WAL, metadata: any, keyStore: any
     const maybe = metadata[v]
 
     if (maybe) {
-      const dvalue = keyStore?.decrypt_metadata(maybe)
+      const dvalue = keyStore?.decrypt_metadata(dataSpace?.key_id, maybe)
 
       q = q.replace(new RegExp(`(?<!\\$)\\$(?!\\$)(${i})`, "g"), `${dvalue}`)
 

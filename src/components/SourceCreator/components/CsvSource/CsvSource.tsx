@@ -7,7 +7,7 @@ import { useAuthContext } from 'contexts';
 
 import { useAppDispatch, useAppSelector } from 'hooks'
 import { createSource, createMetadata, createDataURI } from 'state/actions'
-import { selectDataURIById } from 'state/selectors'
+import { selectDataURIById, selectActiveDataSpace } from 'state/selectors'
 import { Source } from 'types'
 
 
@@ -57,6 +57,7 @@ const CsvSource: FC<CsvSourceProps> = ({onComplete}) => {
   const [isLoaded, setIsLoaded] = useState<boolean>(false)
 
   const dataURI = useAppSelector(state => selectDataURIById(state, tableId))
+  const dataSpace = useAppSelector(selectActiveDataSpace)
 
   const loadTable = (e: any) => {
     const f = e.target.files[0];
@@ -90,7 +91,7 @@ const CsvSource: FC<CsvSourceProps> = ({onComplete}) => {
         dispatch(createMetadata({
           id: tableId,
           workspace: "default",
-          metadata: keyStore?.encrypt_metadata(name)
+          metadata: keyStore?.encrypt_metadata(dataSpace?.key_id, name)
         }))
 
         // Publish the named columns
@@ -98,7 +99,7 @@ const CsvSource: FC<CsvSourceProps> = ({onComplete}) => {
           dispatch(createMetadata({
             id: attribute.id,
             workspace: "default",
-            metadata: keyStore?.encrypt_metadata(attribute.name)
+            metadata: keyStore?.encrypt_metadata(dataSpace?.key_id, attribute.name)
           }))
         }
 

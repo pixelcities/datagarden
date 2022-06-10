@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPlus, faCheck } from '@fortawesome/free-solid-svg-icons'
 
 import { useAppDispatch, useAppSelector } from 'hooks'
-import { selectMetadataMap, selectCollectionById } from 'state/selectors'
+import { selectMetadataMap, selectCollectionById, selectActiveDataSpace } from 'state/selectors'
 import { createMetadata, updateMetadata, updateTransformerWAL } from 'state/actions'
 
 import { Schema, WAL } from 'types'
@@ -66,6 +66,7 @@ const TransformerSettings: FC<TransformerSettingsProps> = ({ id, wal, tableId, c
   const { keyStore } = useKeyStoreContext();
 
   const metadata = useAppSelector(selectMetadataMap)
+  const dataSpace = useAppSelector(selectActiveDataSpace)
 
   useEffect(() => {
     if (tableId) {
@@ -83,7 +84,7 @@ const TransformerSettings: FC<TransformerSettingsProps> = ({ id, wal, tableId, c
 
   const replayTransactions = async (tableId: string, wal: WAL) => {
     for (let transaction of wal.transactions) {
-      await dataFusion?.query(tableId, buildQuery(transaction, wal, metadata, keyStore))
+      await dataFusion?.query(tableId, buildQuery(transaction, wal, metadata, dataSpace, keyStore))
     }
 
     onComplete()
@@ -108,7 +109,7 @@ const TransformerSettings: FC<TransformerSettingsProps> = ({ id, wal, tableId, c
   const handleQueryExecute = (e: any) => {
     e.preventDefault()
 
-    const q = buildQuery(query, log, metadata, keyStore)
+    const q = buildQuery(query, log, metadata, dataSpace, keyStore)
 
     if (tableId) {
       dataFusion?.query(tableId, q).then((artifact: string) => {
@@ -126,7 +127,7 @@ const TransformerSettings: FC<TransformerSettingsProps> = ({ id, wal, tableId, c
   const renderIdentifiers = React.useMemo(() => {
     return Object.entries(log.identifiers).map(([i, identifier]) => {
       const maybe_name = metadata[identifier]
-      const name = maybe_name ? keyStore?.decrypt_metadata(maybe_name) : identifier
+      const name = maybe_name ? keyStore?.decrypt_metadata(dataSpace?.key_id, maybe_name) : identifier
 
       return (
         <tr key={i}>
@@ -135,12 +136,12 @@ const TransformerSettings: FC<TransformerSettingsProps> = ({ id, wal, tableId, c
         </tr>
       )
     })
-  }, [log.identifiers, dimensions.width, metadata, keyStore])
+  }, [log.identifiers, dimensions.width, metadata, dataSpace, keyStore])
 
   const renderValues = React.useMemo(() => {
     return Object.entries(log.values).map(([i, value]) => {
       const maybe_name = metadata[value]
-      const name = maybe_name ? keyStore?.decrypt_metadata(maybe_name) : value
+      const name = maybe_name ? keyStore?.decrypt_metadata(dataSpace?.key_id, maybe_name) : value
 
       return (
         <tr key={i}>
@@ -149,7 +150,7 @@ const TransformerSettings: FC<TransformerSettingsProps> = ({ id, wal, tableId, c
         </tr>
       )
     })
-  }, [log.values, dimensions.width, metadata, keyStore])
+  }, [log.values, dimensions.width, metadata, dataSpace, keyStore])
 
   const renderTransactions = React.useMemo(() => {
     const r = log.transactions.map((transaction, i) => {
@@ -212,7 +213,7 @@ const TransformerSettings: FC<TransformerSettingsProps> = ({ id, wal, tableId, c
     dispatch(createMetadata({
       id: id,
       workspace: "default",
-      metadata: keyStore?.encrypt_metadata(value)
+      metadata: keyStore?.encrypt_metadata(dataSpace?.key_id, value)
     }))
 
     setLog({...log, ...{
@@ -222,7 +223,7 @@ const TransformerSettings: FC<TransformerSettingsProps> = ({ id, wal, tableId, c
     }})
 
     setValueModalIsActive(false)
-  }, [ log, setLog, value, dispatch, keyStore ])
+  }, [ dataSpace, log, setLog, value, dispatch, keyStore ])
 
   const renderValueModal = React.useMemo(() => {
     return (
@@ -349,6 +350,7 @@ const Transformer: FC<TransformerProps> = ({id, collections, transformers, wal, 
 
   const collection = useAppSelector(state => selectCollectionById(state, collections[0]))
   const metadata = useAppSelector(selectMetadataMap)
+  const dataSpace = useAppSelector(selectActiveDataSpace)
 
   useEffect(() => loadDataFusion(), [ loadDataFusion ])
   useEffect(() => {
@@ -379,12 +381,12 @@ const Transformer: FC<TransformerProps> = ({id, collections, transformers, wal, 
 
   const title = React.useMemo(() => {
     const maybe_name = metadata[id]
-    const name = maybe_name ? keyStore?.decrypt_metadata(maybe_name) : id
+    const name = maybe_name ? keyStore?.decrypt_metadata(dataSpace?.key_id, maybe_name) : id
 
     setNewTitle(name)
 
     return name
-  }, [ id, keyStore, metadata ])
+  }, [ id, dataSpace, keyStore, metadata ])
 
   const columnNames = React.useMemo(() => {
     let attributes: {[key: string]: string} = {};
@@ -392,14 +394,14 @@ const Transformer: FC<TransformerProps> = ({id, collections, transformers, wal, 
     if (collection) {
       collection.schema.columns.forEach(column => {
         const maybe_name = metadata[column.id]
-        const name = maybe_name ? keyStore?.decrypt_metadata(maybe_name) : column.id;
+        const name = maybe_name ? keyStore?.decrypt_metadata(dataSpace?.key_id, maybe_name) : column.id;
 
         attributes[column.id] = name
       })
     }
 
     return attributes
-  }, [ keyStore, collection, metadata ])
+  }, [ keyStore, dataSpace, collection, metadata ])
 
   const handleClose = () => {
     // Cleanup intermediate table
@@ -422,12 +424,12 @@ const Transformer: FC<TransformerProps> = ({id, collections, transformers, wal, 
     dispatch(updateMetadata({
       id: id,
       workspace: "default",
-      metadata: keyStore?.encrypt_metadata(newTitle)
+      metadata: keyStore?.encrypt_metadata(dataSpace?.key_id, newTitle)
     }))
 
     setIsEditingTitle(false)
 
-  }, [ id, newTitle, setIsEditingTitle, dispatch, keyStore ])
+  }, [ id, newTitle, dataSpace, setIsEditingTitle, dispatch, keyStore ])
 
   const renderTitle = React.useMemo(() => {
     if (isEditingTitle) {
