@@ -4,7 +4,7 @@ import { EnhancedStore } from '@reduxjs/toolkit'
 import { RootState } from 'state/store'
 import { Task } from 'types'
 import { useAppSelector, useAppDispatch } from 'hooks'
-import { selectTasks, selectMetadataMap } from 'state/selectors'
+import { selectTasks, selectActiveDataSpace } from 'state/selectors'
 import { completeTask } from 'state/actions'
 
 import { useAuthContext } from 'contexts'
@@ -27,12 +27,15 @@ export const ExecutionProvider: FC<ExecutionProviderI> = ({ store, children }) =
   const { arrow, dataFusion } = useDataFusionContext()
 
   const tasks = useAppSelector(selectTasks)
-  const metadata = useAppSelector(selectMetadataMap)
+  const dataSpace = useAppSelector(selectActiveDataSpace)
 
   const taskDispatcher = useCallback((task: Task) => {
-    const onComplete = () => {
+    const onComplete = (actions: any[]) => {
+      actions.forEach(action => dispatch(action))
+
       dispatch(completeTask({
         id: task.id,
+        fragments: [],
         is_completed: true
       }))
     }
@@ -41,18 +44,18 @@ export const ExecutionProvider: FC<ExecutionProviderI> = ({ store, children }) =
       handleProtocolTask(task, protocol, onComplete)
 
     } else if (task.type === "transformer" && user) {
-      handleTransformerTask(task, user, metadata, store, keyStore, arrow, dataFusion, onComplete)
+      handleTransformerTask(task, user, dataSpace, store, keyStore, protocol, arrow, dataFusion, onComplete)
 
     } else {
       console.log("Received unexpected task type: ", task.type)
     }
-  }, [ user, store, keyStore, protocol, arrow, dataFusion, dispatch ])
+  }, [ user, dataSpace, store, keyStore, protocol, arrow, dataFusion, dispatch ])
 
   useEffect(() => {
     if (keyStoreIsReady) {
 
       // Just handle one at a time for now
-      if (tasks.length >= 1) {
+      if (tasks.length >= 1 && !!dataSpace) {
         const task = tasks[0]
 
         // When this task is completed, it will update the tasks selector
@@ -60,7 +63,7 @@ export const ExecutionProvider: FC<ExecutionProviderI> = ({ store, children }) =
         taskDispatcher(task)
       }
     }
-  }, [ keyStoreIsReady, tasks, taskDispatcher ])
+  }, [ keyStoreIsReady, tasks, taskDispatcher, dataSpace ])
 
   return (
     <>

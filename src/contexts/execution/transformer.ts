@@ -1,26 +1,31 @@
 import { EnhancedStore } from '@reduxjs/toolkit'
 
-import { User } from 'types'
-import { Task } from 'types'
+import { User, DataSpace, Task, Collection, Schema } from 'types'
 import { RootState } from 'state/store'
+import { shareSecret } from 'state/actions'
 
 import { writeRemoteTable } from 'utils/writeRemoteTable'
 import { loadRemoteTable } from 'utils/loadRemoteTable'
 import { buildQuery } from 'utils/buildQuery'
 
-export const handleTask = (task: Task, user: User, metadata: any, store: EnhancedStore<RootState>, keyStore: any, arrow: any, dataFusion: any, onComplete: () => void) => {
+export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: EnhancedStore<RootState>, keyStore: any, protocol: any, arrow: any, dataFusion: any, onComplete: (actions: any[]) => void) => {
   const instruction = task.task["instruction"] || "compute_fragment"
   const transformer_id = task.task["transformer_id"] || task.task.identifiers[1]
-  const wal = task.task
+  const target_id = task.task["collection_id"]
+  const wal = task.task["wal"]
+  const fragments = task.fragments
 
   if (instruction === "compute_fragment") {
-    const dataSpace = Object.values(store.getState().dataspaces.entities)[0]
+    const target = store.getState().collections.entities[target_id]
     const transformer = store.getState().transformers.entities[transformer_id]
     const collections = transformer?.collections.map(id => store.getState().collections.entities[id]) ?? []
+    const metadata = Object.values(store.getState().metadata.entities).reduce((a, b) => ({...a, [b?.id ?? ""]: b?.metadata}), {})
+    const users = Object.values(store.getState().users.entities).reduce((a, b) => ({...a, [b?.email ?? ""]: b?.id}), {})
 
     if (transformer) {
       console.log("Received a transformer task: ", task.task)
 
+      // Load all the input collections in memory
       Promise.all(collections.map((collection) => {
         return new Promise<void>((resolve, reject) => {
           if (dataFusion?.table_exists(collection?.id)) {
@@ -31,23 +36,50 @@ export const handleTask = (task: Task, user: User, metadata: any, store: Enhance
           }
         })
       })).then(() => {
+
+        // Handle transformer tasks with just one input collection
         if (transformer.type !== "merge") {
           const collection = collections[0]
 
-          if (collection) {
+          if (collection && target) {
+            // Create a copy, in case the user was looking at this collection
             const id = dataFusion?.clone_table(collection.id, transformer_id)
 
-            // TODO: Check whether to use query or artifact
-            Promise.all(wal.transactions.map((transaction: string) => {
-              return new Promise<void>((resolve, reject) => {
-                dataFusion?.query(id, buildQuery(transaction, wal, metadata, dataSpace, keyStore)).then(() => resolve())
+            // Build a new schema, including new keys
+            rebuildSchema(id, target, collection.schema, fragments, user, users, keyStore, protocol).then(({actions, schema}) => {
+
+              // Look at the requested fragments, and determine if this requires executing the
+              // real query or if we can simply use the artifact.
+              const identifiers = Object.values(wal.identifiers)
+              const nrFragments = fragments.filter(f => identifiers.indexOf(f) !== -1)
+
+              Promise.all((() => {
+                // None of the fragments are in the query, so the artifact can be used.
+                if (nrFragments.length === 0) {
+                  return wal.artifacts.map((artifact: string) => {
+                    return new Promise<void>((resolve, reject) => {
+                      dataFusion?.apply_artifact(id, artifact).then(() => resolve())
+                    })
+                  })
+
+                // At least one of the fragments is part of the query statement, so the full query
+                // needs to be executed.
+                } else {
+                  return wal.transactions.map((transaction: string) => {
+                    return new Promise<void>((resolve, reject) => {
+                      dataFusion?.query(id, buildQuery(transaction, wal, metadata, dataSpace, keyStore)).then(() => resolve())
+                    })
+                  })
+                }
+
+              })()).then(() => {
+                const uri = task.task["uri"]
+
+                // TODO: rename columns
+                writeRemoteTable(id, uri, schema, user, arrow, dataFusion, keyStore)
+
+                onComplete(actions)
               })
-            })).then(() => {
-              const uri = store.getState().uris.entities[id]?.uri ?? ""
-
-              writeRemoteTable(id, uri, collection.schema, user, arrow, dataFusion, keyStore)
-
-              onComplete()
             })
           }
         }
@@ -56,3 +88,47 @@ export const handleTask = (task: Task, user: User, metadata: any, store: Enhance
   }
 }
 
+const rebuildSchema = async (id: string, target: Collection, old: Schema, fragments: string[], user: User, users: any, keyStore: any, protocol: any) => {
+  let schema
+  let actions: any[] = []
+
+  if (!!target.schema) {
+    schema = target.schema
+
+  } else {
+    const key_id = await keyStore?.generate_key(16)
+
+    // Re-share the schema key with everyone
+    for (const share of old.shares) {
+      if (share.principal && share.principal !== user.email) {
+        const receiver = users[share.principal]
+        const ciphertext = await protocol?.encrypt(receiver, keyStore?.get_key(key_id))
+
+        actions.push(shareSecret({
+          key_id: key_id,
+          owner: user.id,
+          receiver: receiver,
+          ciphertext: ciphertext
+        }))
+      }
+    }
+
+    schema = {
+      id: target.id,
+      key_id: key_id,
+      column_order: [],
+      columns: [],
+      shares: old.shares
+    }
+  }
+
+  schema.column_order = [...schema.column_order, ...fragments]
+  schema.columns = [...schema.columns, ...old.columns.filter(c => fragments.indexOf(c.id) !== -1)]
+
+  // TODO: Rename + rekey columns
+
+  return {
+    actions: actions,
+    schema: schema
+  }
+}

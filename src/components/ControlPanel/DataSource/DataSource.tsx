@@ -53,19 +53,20 @@ const DataSource: FC<DataSourceProps> = ({ source, title, color }) => {
       item: { source },
       end: (e, monitor) => {
         const result: Coords = monitor.getDropResult() || {x: 0, y: 0}
+        const schema = {...JSON.parse(JSON.stringify(source.schema)), ...{id: crypto.randomUUID()}}
         const payload = {
           id: source.id,
           type: "source",
           workspace: "default",
           uri: source.uri ?? "",
-          schema: source.schema,
+          schema: schema,
           targets: [],
           position: [
             result.x,
             result.y
           ],
           color: color,
-          is_ready: false
+          is_ready: true
         }
         dispatch(createCollection(payload))
       },

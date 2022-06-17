@@ -119,7 +119,7 @@ const InfinityBoard: FC = (props) => {
             zoom={zoom}
             parentCoords={coords}
             dimensions={dimensions}
-            onClick={() => setActiveCollectionId(component.id)}
+            onClick={() => setActiveCollectionId(component.is_ready ? component.id : "")}
           />
         )
 

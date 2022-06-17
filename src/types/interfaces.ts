@@ -139,6 +139,7 @@ export interface Task {
   type: string,
   task: any,
   worker?: string,
+  fragments: string[],
   is_completed?: boolean
 }
 

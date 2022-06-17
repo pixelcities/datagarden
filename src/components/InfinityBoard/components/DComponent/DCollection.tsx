@@ -1,8 +1,10 @@
-import React, { forwardRef } from 'react'
-import { useAppDispatch } from 'hooks'
+import React, { useEffect, useState, forwardRef } from 'react'
+import { useAppDispatch, useAppSelector } from 'hooks'
 import { Coords, WindowDimensions, Component } from 'types'
 import { setCollectionPosition, addCollectionTarget } from 'state/actions'
+import { selectActiveDataSpace, selectMetadataMap } from 'state/selectors'
 import DComponent from './DComponent'
+import { useKeyStoreContext } from 'contexts'
 
 import './DCollection.sass'
 
@@ -18,6 +20,8 @@ interface DCollectionProps {
 const DCollection = forwardRef<{[id: string]: any}, DCollectionProps>((props, _refs) => {
   const { collection, offset, zoom, parentCoords, dimensions, onClick } = props
   const dispatch = useAppDispatch()
+  const { keyStore } = useKeyStoreContext()
+  const [title, setTitle] = useState("")
 
   const setComponentPosition = (payload: {id: string, workspace: string, position: number[]}) => {
     dispatch(setCollectionPosition(payload))
@@ -29,6 +33,16 @@ const DCollection = forwardRef<{[id: string]: any}, DCollectionProps>((props, _r
 
   let ellipseA = collection.color
   let ellipseB = collection.color
+
+  const metadata = useAppSelector(selectMetadataMap)
+  const dataSpace = useAppSelector(selectActiveDataSpace)
+
+  useEffect(() => {
+    const maybe_name = metadata[collection.id]
+    const name = maybe_name ? keyStore?.decrypt_metadata(dataSpace?.key_id, maybe_name) : collection.id;
+
+    setTitle(name)
+  }, [ metadata, collection.id, keyStore, dataSpace ])
 
   return (
     <DComponent
@@ -50,7 +64,7 @@ const DCollection = forwardRef<{[id: string]: any}, DCollectionProps>((props, _r
             </svg>
           </span>
 
-          { "Placeholder" }
+          { title }
         </h1>
 
         <div className="bottom-elipse">

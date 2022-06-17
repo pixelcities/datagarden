@@ -2,11 +2,12 @@ import { Schema, User, Share } from 'types'
 import { getDataTokens } from 'utils/getDataTokens'
 
 export const writeRemoteTable = (tableId: string, uri: string, schema: Schema, user: User | undefined, arrow: any, dataFusion: any, keyStore: any) => {
-  const path = `/${tableId}`
+  const fragmentId = crypto.randomUUID()
+  const path = `/${fragmentId}`
 
   // Get fresh session tokens
   getDataTokens(uri).then(tokens => {
-    const s3_path = uri.split("s3://")[1] + `/${tableId}.parquet`
+    const s3_path = uri.split("s3://")[1] + `/${fragmentId}.parquet`
 
     // Get and prepare the secret keys
     let keymap = [
