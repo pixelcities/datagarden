@@ -46,7 +46,7 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
             const id = dataFusion?.clone_table(collection.id, transformer_id)
 
             // Build a new schema, including new keys
-            rebuildSchema(id, target, collection.schema, fragments, user, users, keyStore, protocol).then(({actions, schema}) => {
+            rebuildSchema(id, target, collection.schema, fragments, user, users, keyStore, protocol).then(({actions, schema, renames}) => {
 
               // Look at the requested fragments, and determine if this requires executing the
               // real query or if we can simply use the artifact.
@@ -75,7 +75,19 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
               })()).then(() => {
                 const uri = task.task["uri"]
 
-                // TODO: rename columns
+                // Update the schema with the new field names
+                const arrow_schema = dataFusion?.get_schema(id)
+                const fields = arrow_schema.fields.map((field: any) => {
+                  if (field.name in renames) {
+                    let new_field = JSON.parse(JSON.stringify(field))
+                    new_field.name = renames[field.name]
+                    return new_field
+                  }
+                  return field
+                })
+                dataFusion?.update_schema({...arrow_schema, ...{fields: fields}})
+
+                // And finally, save the table to s3
                 writeRemoteTable(id, uri, schema, user, arrow, dataFusion, keyStore)
 
                 onComplete(actions)
@@ -122,13 +134,43 @@ const rebuildSchema = async (id: string, target: Collection, old: Schema, fragme
     }
   }
 
-  schema.column_order = [...schema.column_order, ...fragments]
-  schema.columns = [...schema.columns, ...old.columns.filter(c => fragments.indexOf(c.id) !== -1)]
+  const old_columns = old.columns.filter(c => fragments.indexOf(c.id) !== -1)
+  let columns = []
+  let renames: {[key: string]: string} = {}
 
-  // TODO: Rename + rekey columns
+  for (const column of old_columns) {
+    const id = crypto.randomUUID()
+    const key_id = await keyStore?.generate_key(16)
+
+    // Re-share the column key
+    for (const share of column.shares) {
+      if (share.principal && share.principal !== user.email) {
+        const receiver = users[share.principal]
+        const ciphertext = await protocol?.encrypt(receiver, keyStore?.get_key(key_id))
+
+        actions.push(shareSecret({
+          key_id: key_id,
+          owner: user.id,
+          receiver: receiver,
+          ciphertext: ciphertext
+        }))
+      }
+    }
+
+    columns.push({...column, ...{
+      id: id,
+      key_id: key_id
+    }})
+
+    renames[column.id] = id
+  }
+
+  schema.column_order = [...schema.column_order, ...fragments]
+  schema.columns = [...schema.columns, ...columns]
 
   return {
     actions: actions,
-    schema: schema
+    schema: schema,
+    renames: renames
   }
 }
