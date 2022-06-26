@@ -1,6 +1,6 @@
 import { createSelector, createSlice, createEntityAdapter, PayloadAction } from '@reduxjs/toolkit'
 import { RootState } from 'state/store'
-import { Collection } from 'types'
+import { Collection, Schema } from 'types'
 
 const collectionsAdapter = createEntityAdapter<Collection>()
 
@@ -13,10 +13,22 @@ const collectionsSlice = createSlice({
   reducers: {
     collectionCreated: collectionsAdapter.addOne,
     collectionUpdated: collectionsAdapter.upsertOne,
+    collectionSchemaUpdated(state, action: PayloadAction<{id: string, workspace: string, schema: Schema}>) {
+      const collection = state.entities[action.payload.id]
+      if (collection) {
+        collection.schema = action.payload.schema
+      }
+    },
     collectionPositionSet(state, action: PayloadAction<{id: string, workspace: string, position: number[]}>) {
       const collection = state.entities[action.payload.id]
       if (collection) {
         collection.position = action.payload.position
+      }
+    },
+    collectionIsReadySet(state, action: PayloadAction<{id: string, workspace: string, is_ready: boolean}>) {
+      const collection = state.entities[action.payload.id]
+      if (collection) {
+        collection.is_ready = action.payload.is_ready
       }
     },
     collectionTargetAdded(state, action: PayloadAction<{id: string, workspace: string, target: string}>) {
@@ -35,7 +47,9 @@ export default collectionsSlice.reducer
 export const {
   collectionCreated,
   collectionUpdated,
+  collectionSchemaUpdated,
   collectionPositionSet,
+  collectionIsReadySet,
   collectionTargetAdded
 } = collectionsSlice.actions
 

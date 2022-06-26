@@ -2,7 +2,7 @@ import { EnhancedStore } from '@reduxjs/toolkit'
 
 import { User, DataSpace, Task, Collection, Schema } from 'types'
 import { RootState } from 'state/store'
-import { shareSecret } from 'state/actions'
+import { shareSecret, createMetadata, updateCollectionSchema } from 'state/actions'
 
 import { writeRemoteTable } from 'utils/writeRemoteTable'
 import { loadRemoteTable } from 'utils/loadRemoteTable'
@@ -46,7 +46,7 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
             const id = dataFusion?.clone_table(collection.id, transformer_id)
 
             // Build a new schema, including new keys
-            rebuildSchema(id, target, collection.schema, fragments, user, users, keyStore, protocol).then(({actions, schema, renames}) => {
+            rebuildSchema(id, target, collection.schema, fragments, user, users, metadata, dataSpace, keyStore, protocol).then(({actions, schema, renames}) => {
 
               // Look at the requested fragments, and determine if this requires executing the
               // real query or if we can simply use the artifact.
@@ -75,17 +75,19 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
               })()).then(() => {
                 const uri = task.task["uri"]
 
-                // Update the schema with the new field names
-                const arrow_schema = dataFusion?.get_schema(id)
-                const fields = arrow_schema.fields.map((field: any) => {
-                  if (field.name in renames) {
-                    let new_field = JSON.parse(JSON.stringify(field))
-                    new_field.name = renames[field.name]
-                    return new_field
-                  }
-                  return field
-                })
-                dataFusion?.update_schema({...arrow_schema, ...{fields: fields}})
+                // Update the arrow schema with the new field names
+                if (Object.keys(renames).length > 0) {
+                  const arrow_schema = dataFusion?.get_schema(id)
+                  const fields = arrow_schema.fields.map((field: any) => {
+                    if (field.name in renames) {
+                      let new_field = JSON.parse(JSON.stringify(field))
+                      new_field.name = renames[field.name]
+                      return new_field
+                    }
+                    return field
+                  })
+                  dataFusion?.update_schema(id, {...arrow_schema, ...{fields: fields}})
+                }
 
                 // And finally, save the table to s3
                 writeRemoteTable(id, uri, schema, user, arrow, dataFusion, keyStore)
@@ -100,9 +102,10 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
   }
 }
 
-const rebuildSchema = async (id: string, target: Collection, old: Schema, fragments: string[], user: User, users: any, keyStore: any, protocol: any) => {
-  let schema
+const rebuildSchema = async (id: string, target: Collection, old: Schema, fragments: string[], user: User, users: any, metadata: any, dataSpace: DataSpace | undefined, keyStore: any, protocol: any) => {
+  let schema: Schema
   let actions: any[] = []
+  let updated = false
 
   if (!!target.schema) {
     schema = target.schema
@@ -132,9 +135,26 @@ const rebuildSchema = async (id: string, target: Collection, old: Schema, fragme
       columns: [],
       shares: old.shares
     }
+
+    // Re-publish the title under the new id
+    const maybe_title = metadata[old.id]
+    if (maybe_title) {
+      const title = keyStore?.decrypt_metadata(dataSpace?.key_id, maybe_title)
+
+      actions.push(createMetadata({
+        id: target.id,
+        workspace: target.workspace,
+        metadata: keyStore?.encrypt_metadata(dataSpace?.key_id, title)
+      }))
+    }
+
+    updated = true
   }
 
-  const old_columns = old.columns.filter(c => fragments.indexOf(c.id) !== -1)
+  // This transformer task may not be the first, so the fragment could already exist in the schema
+  const new_fragments = fragments.filter(f => schema.column_order.indexOf(f) === -1)
+  const old_columns = old.columns.filter(c => new_fragments.indexOf(c.id) !== -1)
+
   let columns = []
   let renames: {[key: string]: string} = {}
 
@@ -162,11 +182,32 @@ const rebuildSchema = async (id: string, target: Collection, old: Schema, fragme
       key_id: key_id
     }})
 
+    // Re-publish the column name
+    const maybe = metadata[column.id]
+    if (maybe) {
+      const header = keyStore?.decrypt_metadata(dataSpace?.key_id, maybe)
+
+      actions.push(createMetadata({
+        id: id,
+        workspace: target.workspace,
+        metadata: keyStore?.encrypt_metadata(dataSpace?.key_id, header)
+      }))
+    }
+
     renames[column.id] = id
+    updated = true
   }
 
-  schema.column_order = [...schema.column_order, ...fragments]
+  schema.column_order = [...schema.column_order, ...new_fragments]
   schema.columns = [...schema.columns, ...columns]
+
+  if (updated) {
+    actions.push(updateCollectionSchema({
+      id: target.id,
+      workspace: target.workspace,
+      schema: schema
+    }))
+  }
 
   return {
     actions: actions,

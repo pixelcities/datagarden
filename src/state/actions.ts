@@ -3,7 +3,9 @@ import { createAction, ActionCreatorWithPayload } from '@reduxjs/toolkit'
 import {
   collectionCreated,
   collectionUpdated,
+  collectionSchemaUpdated,
   collectionPositionSet,
+  collectionIsReadySet,
   collectionTargetAdded
 } from './slices/collections'
 
@@ -87,7 +89,9 @@ const recreateAction = <T extends ActionCreatorWithPayload<any,string>>(type: st
 
 const createCollection = recreateAction<typeof collectionCreated>("CreateCollection")
 const updateCollection = recreateAction<typeof collectionUpdated>("UpdateCollection")
+const updateCollectionSchema = recreateAction<typeof collectionSchemaUpdated>("UpdateCollectionSchema")
 const setCollectionPosition = recreateAction<typeof collectionPositionSet>("SetCollectionPosition")
+const setCollectionIsReady = recreateAction<typeof collectionIsReadySet>("SetCollectionIsReady")
 const addCollectionTarget = recreateAction<typeof collectionTargetAdded>("AddCollectionTarget")
 const createTransformer = recreateAction<typeof transformerCreated>("CreateTransformer")
 const updateTransformer = recreateAction<typeof transformerUpdated>("UpdateTransformer")
@@ -108,7 +112,9 @@ const completeTask = recreateAction<typeof taskCompleted>("CompleteTask")
 const events: {[key: string]: ActionCreatorWithPayload<any, string>} = {
   "CollectionCreated": collectionCreated,
   "CollectionUpdated": collectionUpdated,
+  "CollectionSchemaUpdated": collectionSchemaUpdated,
   "CollectionPositionSet": collectionPositionSet,
+  "CollectionIsReadySet": collectionIsReadySet,
   "CollectionTargetAdded": collectionTargetAdded,
   "TransformerCreated": transformerCreated,
   "TransformerUpdated": transformerUpdated,
@@ -143,7 +149,9 @@ export {
   shareSecret,
   createCollection,
   updateCollection,
+  updateCollectionSchema,
   setCollectionPosition,
+  setCollectionIsReady,
   addCollectionTarget,
   createTransformer,
   updateTransformer,

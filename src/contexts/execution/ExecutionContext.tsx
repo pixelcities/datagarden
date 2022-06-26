@@ -35,7 +35,7 @@ export const ExecutionProvider: FC<ExecutionProviderI> = ({ store, children }) =
 
       dispatch(completeTask({
         id: task.id,
-        fragments: [],
+        fragments: task.fragments,
         is_completed: true
       }))
     }
@@ -53,6 +53,8 @@ export const ExecutionProvider: FC<ExecutionProviderI> = ({ store, children }) =
 
   useEffect(() => {
     if (keyStoreIsReady) {
+
+      console.log("About to execute task, maybe:", tasks.length, !!dataSpace)
 
       // Just handle one at a time for now
       if (tasks.length >= 1 && !!dataSpace) {

@@ -455,6 +455,17 @@ const Transformer: FC<TransformerProps> = ({id, collections, transformers, wal, 
     }
   }, [ title, isEditingTitle, newTitle, setNewTitle, onTitleChange ])
 
+  const containerHeight = React.useMemo(() => {
+    if (wal) {
+      const nrIdentifiers = Object.keys(wal.identifiers).length
+      const nrValues = Object.keys(wal.values).length
+      const nrTransactions = wal.transactions.length
+
+      return 700 + (nrIdentifiers + nrValues + nrTransactions) * 33
+    } else {
+      return 700 + 2 * 33 // default
+    }
+  }, [ wal ])
   return (
     <div className={"p-modal " + (isActive ? "is-active" : "")}>
       <div className="modal-background"></div>
@@ -475,7 +486,7 @@ const Transformer: FC<TransformerProps> = ({id, collections, transformers, wal, 
           : null
           }
 
-          <div ref={settingsRef} className="transformer-control-container">
+          <div ref={settingsRef} className="transformer-control-container" style={{minHeight: containerHeight}}>
             <TransformerSettings
               id={id}
               wal={wal}
