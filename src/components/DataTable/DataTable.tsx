@@ -195,7 +195,7 @@ const DataTable: FC<DataTableProps> = ({ id, schema, interactiveHeader, style, v
   return (
     <>
       <div ref={popupRef} className="header-popup" style={{visibility: "hidden"}}>
-        <HeaderDropdown fieldId={columnId} fieldName={columns && columns.find(c => c.accessor === columnId)?.Header} sourceId={id} settings={true} />
+        <HeaderDropdown fieldId={columnId} fieldName={columns && columns.find(c => c.accessor === columnId)?.Header} inputId={id} settings={true} />
       </div>
 
       <div ref={containerRef} className="data-container" style={style}>

@@ -6,11 +6,11 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faUser, faUserSlash, faCog, faSearch, faSortAmountUpAlt, faSortAmountDown } from '@fortawesome/free-solid-svg-icons'
 import { faClipboard } from '@fortawesome/free-regular-svg-icons'
 
-import { User, Source, Share, Column } from 'types'
+import { User, Source, Collection, Share, Column } from 'types'
 
 import { useAppDispatch, useAppSelector } from 'hooks'
-import { selectUserByEmail, selectSourceById } from 'state/selectors'
-import { shareSecret, updateSource } from 'state/actions'
+import { selectUserByEmail, selectSourceById, selectCollectionById } from 'state/selectors'
+import { shareSecret, updateSource, updateCollection } from 'state/actions'
 
 import { useAuthContext } from 'contexts';
 import { useKeyStoreContext } from 'contexts'
@@ -19,7 +19,7 @@ import { useKeyStoreContext } from 'contexts'
 interface HeaderDropdownProps {
   fieldId: string,
   fieldName?: string,
-  sourceId: string,
+  inputId: string,
   settings: boolean
 }
 
@@ -120,18 +120,30 @@ const ShareInstance: FC<ShareInstanceProps> = ({ share, updateUser }) => {
   )
 }
 
-interface ShareOptionsI {
+interface ShareDefaultOptionsI {
   me: User,
   columnId: string,
-  source: Source
 }
 
-const ShareOptions: FC<ShareOptionsI> = ({me, columnId, source}) => {
+interface ShareSourceOptionsI extends ShareDefaultOptionsI {
+  source: Source,
+  collection?: never,
+}
+
+interface ShareCollectionOptionsI extends ShareDefaultOptionsI {
+  source?: never,
+  collection: Collection
+}
+
+type ShareOptionsI = ShareSourceOptionsI | ShareCollectionOptionsI
+
+const ShareOptions: FC<ShareOptionsI> = ({ me, columnId, source, collection }) => {
   const dispatch = useAppDispatch()
 
   const { keyStore, protocol } = useKeyStoreContext();
 
-  const schema = source.schema
+  const input = (source || collection) as Source | Collection
+  const schema = input.schema
   const column = schema.columns.find(c => c.id === columnId)
   const shares = React.useMemo(() => {
     if (column) {
@@ -144,7 +156,7 @@ const ShareOptions: FC<ShareOptionsI> = ({me, columnId, source}) => {
   const setUsers = React.useCallback((column: Column) => (user: User, access: string) => {
     if (access === "FullAccess" && !(user.email in shares)) {
       let columns: Column[] = []
-      source.schema.columns.forEach((c) => {
+      input.schema.columns.forEach((c) => {
         if (c.id !== column?.id) {
           columns.push(c)
         }
@@ -168,11 +180,20 @@ const ShareOptions: FC<ShareOptionsI> = ({me, columnId, source}) => {
             ciphertext: secret
           }))
 
-          dispatch(updateSource({...source, ...{
-            schema: {...schema, ...{
-              columns: columns
-            }}
-          }}))
+          if (source) {
+            dispatch(updateSource({...source, ...{
+              schema: {...schema, ...{
+                columns: columns
+              }}
+            }}))
+
+          } else if (collection) {
+            dispatch(updateCollection({...collection, ...{
+              schema: {...schema, ...{
+                columns: columns
+              }}
+            }}))
+          }
         })
       }
 
@@ -180,7 +201,7 @@ const ShareOptions: FC<ShareOptionsI> = ({me, columnId, source}) => {
       console.log("[WARNING] Removing access requires key rotation and is not yet implemented")
 
       let columns: Column[] = []
-      source.schema.columns.forEach((c) => {
+      input.schema.columns.forEach((c) => {
         if (c.id !== column?.id) {
           columns.push(c)
         }
@@ -193,14 +214,22 @@ const ShareOptions: FC<ShareOptionsI> = ({me, columnId, source}) => {
           shares: column.shares.filter(s => s.principal !== user.email)
         })
 
-        dispatch(updateSource({...source, ...{
-          schema: {...schema, ...{
-            columns: columns
-          }}
-        }}))
+        if (source) {
+          dispatch(updateSource({...source, ...{
+            schema: {...schema, ...{
+              columns: columns
+            }}
+          }}))
+        } else if (collection) {
+          dispatch(updateCollection({...collection, ...{
+            schema: {...schema, ...{
+              columns: columns
+            }}
+          }}))
+        }
       }
     }
-  }, [ me, schema, shares, source, dispatch, keyStore, protocol ])
+  }, [ me, schema, shares, input, source, collection, dispatch, keyStore, protocol ])
 
   const [{ isOverFull }, dropRefFull] = useDrop(() => ({
     accept: "HeaderDropdown",
@@ -269,12 +298,32 @@ const ShareOptions: FC<ShareOptionsI> = ({me, columnId, source}) => {
   )
 }
 
-const HeaderDropdown: FC<HeaderDropdownProps> = ({ fieldId, fieldName, sourceId, settings }) => {
+const HeaderDropdown: FC<HeaderDropdownProps> = ({ fieldId, fieldName, inputId, settings }) => {
   const { user } = useAuthContext();
 
-  const source = useAppSelector(state => selectSourceById(state, sourceId))
+  const source = useAppSelector(state => selectSourceById(state, inputId))
+  const collection = useAppSelector(state => selectCollectionById(state, inputId))
 
   const [settingsActive, setSettingsActive] = useState<boolean>(settings)
+
+  const renderDropdown = React.useMemo(() => {
+    if (user && settingsActive && source) {
+      return (
+        <ShareOptions me={user} columnId={fieldId} source={source} />
+      )
+
+    } else if (user && settingsActive && collection) {
+      return (
+        <ShareOptions me={user} columnId={fieldId} collection={collection} />
+      )
+
+    } else {
+      return (
+        <FilterOptions />
+      )
+
+    }
+  }, [ user, settingsActive, fieldId, source, collection ])
 
   return (
     <nav className="panel" style={{background: "white"}}>
@@ -293,7 +342,7 @@ const HeaderDropdown: FC<HeaderDropdownProps> = ({ fieldId, fieldName, sourceId,
         </div>
       </div>
 
-      { settingsActive && user && source ? <ShareOptions me={user} columnId={fieldId} source={source} /> : <FilterOptions /> }
+      { renderDropdown }
 
     </nav>
   )

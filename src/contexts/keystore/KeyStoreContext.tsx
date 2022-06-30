@@ -11,8 +11,9 @@ import type { KeyStore, Protocol } from 'key-x-wasm';
 
 interface KeyStoreContextI {
   keyStore?: any
-  keyStoreIsReady?: boolean
-  protocol?: any
+  keyStoreIsReady?: boolean,
+  protocol?: any,
+  __setIsReady__?: any
 }
 
 const KeyStoreContext = React.createContext<KeyStoreContextI>({});
@@ -111,7 +112,7 @@ export const KeyStoreProvider: FC = ({ children }) => {
   }
 
   return (
-    <KeyStoreContext.Provider value={{keyStore, keyStoreIsReady: isReady, protocol}} >
+    <KeyStoreContext.Provider value={{keyStore, keyStoreIsReady: isReady, protocol, __setIsReady__: setIsReady}} >
       <div className={"pageloader is-bottom-to-top" + (loading ? " is-active" : "")}>
         <span className="title">
           Loading...

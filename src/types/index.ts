@@ -22,3 +22,7 @@ export type {
   Task,
   DataSpace
 } from './interfaces'
+
+export {
+  ExecutionError
+} from './enums'

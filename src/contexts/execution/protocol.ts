@@ -1,13 +1,15 @@
-import { Task } from 'types'
+import { Task, ExecutionError } from 'types'
 
-export const handleTask = (task: Task, protocol: any, onComplete: (actions: any[]) => void) => {
-  const instruction = task.task["instruction"]
+export const handleTask = (task: Task, protocol: any) => {
+  return new Promise<any[]>((resolve, reject) => {
+    const instruction = task.task["instruction"]
 
-  if (instruction === "add_bundles") {
-    protocol?.add_pre_key_bundles().then(() => onComplete([]))
+    if (instruction === "add_bundles") {
+      protocol?.add_pre_key_bundles().then(() => resolve([]))
 
-  } else {
-    console.log("Received unexpected task: ", task.task)
-  }
+    } else {
+      reject(ExecutionError.Failure)
+    }
+  })
 }
 

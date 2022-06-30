@@ -1,6 +1,6 @@
 import { EnhancedStore } from '@reduxjs/toolkit'
 
-import { User, DataSpace, Task, Collection, Schema } from 'types'
+import { ExecutionError, User, DataSpace, Task, Collection, Schema } from 'types'
 import { RootState } from 'state/store'
 import { shareSecret, createMetadata, updateCollectionSchema } from 'state/actions'
 
@@ -8,21 +8,28 @@ import { writeRemoteTable } from 'utils/writeRemoteTable'
 import { loadRemoteTable } from 'utils/loadRemoteTable'
 import { buildQuery } from 'utils/buildQuery'
 
-export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: EnhancedStore<RootState>, keyStore: any, protocol: any, arrow: any, dataFusion: any, onComplete: (actions: any[]) => void) => {
-  const instruction = task.task["instruction"] || "compute_fragment"
-  const transformer_id = task.task["transformer_id"] || task.task.identifiers[1]
-  const target_id = task.task["collection_id"]
-  const wal = task.task["wal"]
-  const fragments = task.fragments
+export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: EnhancedStore<RootState>, keyStore: any, protocol: any, arrow: any, dataFusion: any) => {
+  return new Promise<any[]>((resolve, reject) => {
+    const instruction = task.task["instruction"] || "compute_fragment"
+    const transformer_id = task.task["transformer_id"] || task.task.identifiers[1]
+    const target_id = task.task["collection_id"]
+    const wal = task.task["wal"]
+    const fragments = task.fragments
 
-  if (instruction === "compute_fragment") {
-    const target = store.getState().collections.entities[target_id]
-    const transformer = store.getState().transformers.entities[transformer_id]
-    const collections = transformer?.collections.map(id => store.getState().collections.entities[id]) ?? []
-    const metadata = Object.values(store.getState().metadata.entities).reduce((a, b) => ({...a, [b?.id ?? ""]: b?.metadata}), {})
-    const users = Object.values(store.getState().users.entities).reduce((a, b) => ({...a, [b?.email ?? ""]: b?.id}), {})
+    if (instruction === "compute_fragment") {
+      const target = store.getState().collections.entities[target_id]
+      const transformer = store.getState().transformers.entities[transformer_id]
+      const collections = transformer?.collections.map(id => store.getState().collections.entities[id]) ?? []
+      const metadata = Object.values(store.getState().metadata.entities).reduce((a, b) => ({...a, [b?.id ?? ""]: b?.metadata}), {})
+      const users = Object.values(store.getState().users.entities).reduce((a, b) => ({...a, [b?.email ?? ""]: b?.id}), {})
 
-    if (transformer) {
+      console.log(transformer)
+
+      if (!transformer) {
+        reject(ExecutionError.Retry)
+        return
+      }
+
       console.log("Received a transformer task: ", task.task)
 
       // Load all the input collections in memory
@@ -46,7 +53,7 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
             const id = dataFusion?.clone_table(collection.id, transformer_id)
 
             // Build a new schema, including new keys
-            rebuildSchema(id, target, collection.schema, fragments, user, users, metadata, dataSpace, keyStore, protocol).then(({actions, schema, renames}) => {
+            rebuildSchema(id, target, collection.id, collection.schema, fragments, user, users, metadata, dataSpace, keyStore, protocol).then(({actions, schema, renames}) => {
 
               // Look at the requested fragments, and determine if this requires executing the
               // real query or if we can simply use the artifact.
@@ -92,17 +99,18 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
                 // And finally, save the table to s3
                 writeRemoteTable(id, uri, schema, user, arrow, dataFusion, keyStore)
 
-                onComplete(actions)
+                resolve(actions)
               })
             })
           }
         }
       })
     }
-  }
+
+  })
 }
 
-const rebuildSchema = async (id: string, target: Collection, old: Schema, fragments: string[], user: User, users: any, metadata: any, dataSpace: DataSpace | undefined, keyStore: any, protocol: any) => {
+const rebuildSchema = async (id: string, target: Collection, oldId: string, old: Schema, fragments: string[], user: User, users: any, metadata: any, dataSpace: DataSpace | undefined, keyStore: any, protocol: any) => {
   let schema: Schema
   let actions: any[] = []
   let updated = false
@@ -137,7 +145,7 @@ const rebuildSchema = async (id: string, target: Collection, old: Schema, fragme
     }
 
     // Re-publish the title under the new id
-    const maybe_title = metadata[old.id]
+    const maybe_title = metadata[oldId]
     if (maybe_title) {
       const title = keyStore?.decrypt_metadata(dataSpace?.key_id, maybe_title)
 
@@ -198,7 +206,7 @@ const rebuildSchema = async (id: string, target: Collection, old: Schema, fragme
     updated = true
   }
 
-  schema.column_order = [...schema.column_order, ...new_fragments]
+  schema.column_order = [...schema.column_order, ...columns.map(x => x.id)]
   schema.columns = [...schema.columns, ...columns]
 
   if (updated) {

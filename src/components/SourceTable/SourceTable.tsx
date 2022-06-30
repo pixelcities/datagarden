@@ -3,8 +3,8 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faKey } from '@fortawesome/free-solid-svg-icons'
 
 import { useAppDispatch, useAppSelector } from 'hooks'
-import { selectUsers, selectMetadataById, selectSourceById, selectActiveDataSpace } from 'state/selectors'
-import { updateSource, updateMetadata, shareSecret } from 'state/actions'
+import { selectUsers, selectMetadataById, selectSourceById, selectCollectionById, selectActiveDataSpace } from 'state/selectors'
+import { updateSource, updateCollection, updateMetadata, shareSecret } from 'state/actions'
 
 import { Source, Schema, User } from 'types'
 
@@ -58,6 +58,7 @@ const SourceTable: FC<SourceTableProps> = (props) => {
   const dispatch = useAppDispatch()
   const users = useAppSelector(selectUsers)
   const titleMetadata = useAppSelector(state => selectMetadataById(state, props.id))
+  const collection = useAppSelector(state => selectCollectionById(state, props.id))
   const source = useAppSelector(state => selectSourceById(state, props.id))
   const dataSpace = useAppSelector(selectActiveDataSpace)
 
@@ -70,9 +71,11 @@ const SourceTable: FC<SourceTableProps> = (props) => {
   const renderShares = React.useMemo(() => {
     let res
 
-    if (source) {
-      const shares = source.schema.shares.filter(share => share.type !== "public" && share.principal)
-      res = shares.map(share => {
+    if (source || collection) {
+      let schema = source?.schema || collection?.schema
+
+      const shares = schema?.shares.filter(share => share.type !== "public" && share.principal)
+      res = shares?.map(share => {
         const user_share = users.find(u => u.email === share.principal)
 
         if (share.principal && user_share) {
@@ -83,7 +86,7 @@ const SourceTable: FC<SourceTableProps> = (props) => {
     }
 
     return res
-  }, [ source, users, user ] )
+  }, [ source, collection, users, user ] )
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
@@ -112,30 +115,43 @@ const SourceTable: FC<SourceTableProps> = (props) => {
       principal: selectedUser.email
     }
 
-    if (user && source) {
-      protocol?.encrypt(selectedUser.id, keyStore?.get_key(source.schema.key_id)).then((secret: string) => {
-        dispatch(shareSecret({
-          key_id: source.schema.key_id,
-          owner: user.id,
-          receiver: selectedUser.id,
-          ciphertext: secret
-        }))
-      })
+    if (user && (source || collection)) {
+      const schema = collection?.schema || source?.schema
 
-      dispatch(updateSource({
-        id: source.id,
-        workspace: source.workspace,
-        type: source.type,
-        uri: source.uri,
-        schema: {...source.schema, ...{
-          shares: [...source.schema.shares, share]
-        }},
-        is_published: source.is_published
-      }))
+      if (schema) {
+        protocol?.encrypt(selectedUser.id, keyStore?.get_key(schema.key_id)).then((secret: string) => {
+          dispatch(shareSecret({
+            key_id: schema.key_id,
+            owner: user.id,
+            receiver: selectedUser.id,
+            ciphertext: secret
+          }))
+        })
+      }
+
+      if (isCollection && collection) {
+        dispatch(updateCollection({...collection, ...{
+          schema: {...collection.schema, ...{
+            shares: [...collection.schema.shares, share]
+          }}
+        }}))
+
+      } else if (source) {
+        dispatch(updateSource({
+          id: source.id,
+          workspace: source.workspace,
+          type: source.type,
+          uri: source.uri,
+          schema: {...source.schema, ...{
+            shares: [...source.schema.shares, share]
+          }},
+          is_published: source.is_published
+        }))
+      }
     }
 
     setUserSearch("")
-  }, [ source, user, keyStore, protocol, dispatch ])
+  }, [ source, collection, isCollection, user, keyStore, protocol, dispatch ])
 
   const renderUserDropdown = React.useMemo(() => {
     const filteredUsers = userSearch !== "" ? users.filter(u => u.id !== user?.id && (u.email.indexOf(userSearch) !== -1 || (u.name?.indexOf(userSearch) ?? -1) !== -1)) : []

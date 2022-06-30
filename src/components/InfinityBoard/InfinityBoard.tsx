@@ -92,7 +92,7 @@ const InfinityBoard: FC = (props) => {
     top: buffer.y
   }
 
-  const renderComponents = () => {
+  const renderComponents = useMemo(() => {
     return components.map((component) => {
       /*
          Check if our component already has some space in the dragRefs object. If not we need
@@ -119,7 +119,7 @@ const InfinityBoard: FC = (props) => {
             zoom={zoom}
             parentCoords={coords}
             dimensions={dimensions}
-            onClick={() => setActiveCollectionId(component.is_ready ? component.id : "")}
+            onClick={() => setActiveCollectionId(component.id)}
           />
         )
 
@@ -138,9 +138,9 @@ const InfinityBoard: FC = (props) => {
         )
       }
     })
-  }
+  }, [ components, dragRefs, coords, dimensions, offset, zoom, setActiveCollectionId, setActiveTransformerId ])
 
-  const renderConnectors = () => {
+  const renderConnectors = useMemo(() => {
     return connectedComponents.map(component => {
       return component.targets.map(target =>
         <ConnectedConnector
@@ -154,10 +154,10 @@ const InfinityBoard: FC = (props) => {
         />
       )
     })
-  }
+  }, [ connectedComponents, dragRefs, offset, zoom, dimensions ])
 
   const renderModal = useMemo(() => {
-    if (activeCollection) {
+    if (activeCollection && activeCollection.is_ready) {
       return (
         <Collection
           id={activeCollection.id}
@@ -188,9 +188,9 @@ const InfinityBoard: FC = (props) => {
 
         <div ref={dropRef} style={style} >
 
-          {renderComponents()}
+          { renderComponents }
 
-          {renderConnectors()}
+          { renderConnectors }
 
         </div>
 

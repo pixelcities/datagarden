@@ -14,7 +14,7 @@ const Login: FC = () => {
   const [error, setError] = useState(false)
 
   const { isAuthenticated, handleLogin, path, user } = useAuthContext();
-  const { keyStore, protocol } = useKeyStoreContext();
+  const { keyStore, protocol, __setIsReady__ } = useKeyStoreContext();
 
   const history = useHistory();
 
@@ -46,7 +46,9 @@ const Login: FC = () => {
       handleLogin(data)
       keyStore?.init().then(() => {
         const secret_key = keyStore?.get_named_key("protocol")
-        protocol?.init(secret_key)
+        protocol?.init(secret_key).then(() => {
+          __setIsReady__(true)
+        })
       })
 
       history.push(path)
