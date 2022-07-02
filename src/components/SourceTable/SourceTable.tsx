@@ -51,7 +51,9 @@ const SourceTable: FC<SourceTableProps> = (props) => {
 
     // Pull it in instead
     } else if (props.id && props.uri && !tableId) {
-      loadRemoteTable(props.id, props.uri, schema, user, arrow, dataFusion, keyStore, () => setTableId(props.id))
+      loadRemoteTable(props.id, props.uri, schema, user, arrow, dataFusion, keyStore)
+        .then(() => setTableId(props.id))
+        .catch(() => {}) // probably already loaded
     }
   }, [props, schema, user, arrow, dataFusion, keyStore, tableId])
 

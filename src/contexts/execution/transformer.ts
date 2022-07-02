@@ -23,8 +23,6 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
       const metadata = Object.values(store.getState().metadata.entities).reduce((a, b) => ({...a, [b?.id ?? ""]: b?.metadata}), {})
       const users = Object.values(store.getState().users.entities).reduce((a, b) => ({...a, [b?.email ?? ""]: b?.id}), {})
 
-      console.log(transformer)
-
       if (!transformer) {
         reject(ExecutionError.Retry)
         return
@@ -39,7 +37,7 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
             resolve()
 
           } else if (collection?.id && collection?.uri) {
-            loadRemoteTable(collection.id, collection.uri, collection.schema, user, arrow, dataFusion, keyStore, resolve)
+            loadRemoteTable(collection.id, collection.uri, collection.schema, user, arrow, dataFusion, keyStore, fragments).then(() => resolve())
           }
         })
       })).then(() => {
@@ -82,10 +80,13 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
               })()).then(() => {
                 const uri = task.task["uri"]
 
-                // Update the arrow schema with the new field names
+                // Limit the schema to just the fragments
+                const arrow_schema = dataFusion?.get_schema(id)
+                const fields = arrow_schema.fields.filter((field: any) => fragments.indexOf(field.name) !== -1)
+
+                // Maybe update the arrow schema with the new field names
                 if (Object.keys(renames).length > 0) {
-                  const arrow_schema = dataFusion?.get_schema(id)
-                  const fields = arrow_schema.fields.map((field: any) => {
+                  const new_fields = fields.map((field: any) => {
                     if (field.name in renames) {
                       let new_field = JSON.parse(JSON.stringify(field))
                       new_field.name = renames[field.name]
@@ -93,6 +94,8 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
                     }
                     return field
                   })
+                  dataFusion?.update_schema(id, {...arrow_schema, ...{fields: new_fields}})
+                } else {
                   dataFusion?.update_schema(id, {...arrow_schema, ...{fields: fields}})
                 }
 
@@ -116,7 +119,7 @@ const rebuildSchema = async (id: string, target: Collection, oldId: string, old:
   let updated = false
 
   if (!!target.schema) {
-    schema = target.schema
+    schema = JSON.parse(JSON.stringify(target.schema))
 
   } else {
     const key_id = await keyStore?.generate_key(16)
@@ -160,7 +163,7 @@ const rebuildSchema = async (id: string, target: Collection, oldId: string, old:
   }
 
   // This transformer task may not be the first, so the fragment could already exist in the schema
-  const new_fragments = fragments.filter(f => schema.column_order.indexOf(f) === -1)
+  const new_fragments = fragments.filter(f => schema.column_order.indexOf(f) === -1) // TODO: fix bug
   const old_columns = old.columns.filter(c => new_fragments.indexOf(c.id) !== -1)
 
   let columns = []
@@ -206,16 +209,21 @@ const rebuildSchema = async (id: string, target: Collection, oldId: string, old:
     updated = true
   }
 
-  schema.column_order = [...schema.column_order, ...columns.map(x => x.id)]
-  schema.columns = [...schema.columns, ...columns]
-
   if (updated) {
+    schema.column_order = [...schema.column_order, ...columns.map(x => x.id)]
+    schema.columns = [...schema.columns, ...columns]
+
     actions.push(updateCollectionSchema({
       id: target.id,
       workspace: target.workspace,
       schema: schema
     }))
   }
+
+  // After updating the real schema, return a limited one that
+  // only includes the fragment columns.
+  schema.column_order = columns.map(x => x.id)
+  schema.columns = columns
 
   return {
     actions: actions,

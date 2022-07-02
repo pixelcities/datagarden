@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useCallback, FC } from "react";
+import React, { useEffect, useMemo, useRef, useCallback, FC } from "react";
 import { EnhancedStore } from '@reduxjs/toolkit'
 import { Mutex } from 'async-mutex'
 import { RootState } from 'state/store'
@@ -30,10 +30,15 @@ export const ExecutionProvider: FC<ExecutionProviderI> = ({ store, children }) =
   const tasks = useAppSelector(selectTasks)
   const dataSpace = useAppSelector(selectActiveDataSpace)
 
+  const taskCache = useRef<any>(new Set())
   const taskDispatcher = useCallback(() => {
     if (keyStoreIsReady && user) {
-      if (tasks.length >= 1 && !!dataSpace) {
-        const task = tasks[0]
+
+      // Filter out any previously completed tasks, in case we raced the event roundtrip
+      const newTasks = tasks.filter(t => !taskCache.current.has(t.id))
+
+      if (newTasks.length >= 1 && !!dataSpace) {
+        const task = newTasks[0]
 
         mutex.runExclusive(async () => {
           const result = (() => {
@@ -49,6 +54,7 @@ export const ExecutionProvider: FC<ExecutionProviderI> = ({ store, children }) =
             .then((actions: any[]) => {
               actions.forEach(action => dispatch(action))
 
+              taskCache.current.add(task.id)
               dispatch(completeTask({
                 id: task.id,
                 fragments: task.fragments,
@@ -61,7 +67,7 @@ export const ExecutionProvider: FC<ExecutionProviderI> = ({ store, children }) =
         })
       }
     }
-  }, [ user, tasks, dataSpace, store, keyStore, keyStoreIsReady, protocol, arrow, dataFusion, dispatch, mutex ])
+  }, [ user, tasks, taskCache, dataSpace, store, keyStore, keyStoreIsReady, protocol, arrow, dataFusion, dispatch, mutex ])
 
   useEffect(() => {
     const interval = setInterval(taskDispatcher, 10000)

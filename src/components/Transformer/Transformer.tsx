@@ -358,7 +358,7 @@ const Transformer: FC<TransformerProps> = ({id, collections, transformers, wal, 
       setInputId(collection.id)
 
     } else if (collection?.id && collection.uri && !inputId) {
-      loadRemoteTable(collection.id, collection.uri, collection.schema, user, arrow, dataFusion, keyStore, () => setInputId(collection.id))
+      loadRemoteTable(collection.id, collection.uri, collection.schema, user, arrow, dataFusion, keyStore).then(() => setInputId(collection.id))
     }
   }, [collection, user, arrow, dataFusion, keyStore, inputId])
 

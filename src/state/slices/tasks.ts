@@ -14,10 +14,8 @@ const tasksSlice = createSlice({
     taskCompleted(state, action: PayloadAction<{id: string, fragments: string[], is_completed: boolean}>) {
       const ids = state.ids.filter(id => id !== action.payload.id)
 
-      if (action.payload.is_completed) {
-        state.ids = ids
-        delete state.entities[action.payload.id]
-      }
+      state.ids = ids
+      delete state.entities[action.payload.id]
     }
   }
 })
