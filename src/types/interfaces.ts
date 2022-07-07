@@ -140,6 +140,7 @@ export interface Task {
   task: any,
   worker?: string,
   fragments: string[],
+  metadata: {[key: string]: any},
   is_completed?: boolean
 }
 

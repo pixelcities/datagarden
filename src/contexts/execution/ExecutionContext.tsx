@@ -51,13 +51,14 @@ export const ExecutionProvider: FC<ExecutionProviderI> = ({ store, children }) =
           })
 
           result()
-            .then((actions: any[]) => {
+            .then(({actions, metadata}) => {
               actions.forEach(action => dispatch(action))
 
               taskCache.current.add(task.id)
               dispatch(completeTask({
                 id: task.id,
                 fragments: task.fragments,
+                metadata: metadata,
                 is_completed: true
               }))
             })

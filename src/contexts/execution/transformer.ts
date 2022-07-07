@@ -9,12 +9,13 @@ import { loadRemoteTable } from 'utils/loadRemoteTable'
 import { buildQuery } from 'utils/buildQuery'
 
 export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: EnhancedStore<RootState>, keyStore: any, protocol: any, arrow: any, dataFusion: any) => {
-  return new Promise<any[]>((resolve, reject) => {
+  return new Promise<{actions: any[], metadata: {[key: string]: any}}>((resolve, reject) => {
     const instruction = task.task["instruction"] || "compute_fragment"
     const transformer_id = task.task["transformer_id"] || task.task.identifiers[1]
     const target_id = task.task["collection_id"]
     const wal = task.task["wal"]
     const fragments = task.fragments
+    const task_meta = task.metadata
 
     if (instruction === "compute_fragment") {
       const target = store.getState().collections.entities[target_id]
@@ -51,7 +52,7 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
             const id = dataFusion?.clone_table(collection.id, transformer_id)
 
             // Build a new schema, including new keys
-            rebuildSchema(id, target, collection.id, collection.schema, fragments, user, users, metadata, dataSpace, keyStore, protocol).then(({actions, schema, renames}) => {
+            rebuildSchema(id, target, collection.id, collection.schema, fragments, task_meta, user, users, metadata, dataSpace, keyStore, protocol).then(({actions, schema, renames, meta}) => {
 
               // Look at the requested fragments, and determine if this requires executing the
               // real query or if we can simply use the artifact.
@@ -102,7 +103,10 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
                 // And finally, save the table to s3
                 writeRemoteTable(id, uri, schema, user, arrow, dataFusion, keyStore)
 
-                resolve(actions)
+                resolve({
+                  actions: actions,
+                  metadata: meta
+                })
               })
             })
           }
@@ -113,13 +117,14 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
   })
 }
 
-const rebuildSchema = async (id: string, target: Collection, oldId: string, old: Schema, fragments: string[], user: User, users: any, metadata: any, dataSpace: DataSpace | undefined, keyStore: any, protocol: any) => {
+const rebuildSchema = async (id: string, target: Collection, oldId: string, old: Schema, fragments: string[], taskMeta: {[key: string]: any}, user: User, users: any, metadata: any, dataSpace: DataSpace | undefined, keyStore: any, protocol: any) => {
   let schema: Schema
   let actions: any[] = []
+  let meta = JSON.parse(JSON.stringify(taskMeta))
   let updated = false
 
-  if (!!target.schema) {
-    schema = JSON.parse(JSON.stringify(target.schema))
+  if ("schema" in taskMeta) {
+    schema = meta["schema"]
 
   } else {
     const key_id = await keyStore?.generate_key(16)
@@ -213,11 +218,14 @@ const rebuildSchema = async (id: string, target: Collection, oldId: string, old:
     schema.column_order = [...schema.column_order, ...columns.map(x => x.id)]
     schema.columns = [...schema.columns, ...columns]
 
+    const schemaClone = JSON.parse(JSON.stringify(schema))
     actions.push(updateCollectionSchema({
       id: target.id,
       workspace: target.workspace,
-      schema: schema
+      schema: schemaClone
     }))
+
+    meta["schema"] = schemaClone
   }
 
   // After updating the real schema, return a limited one that
@@ -228,6 +236,7 @@ const rebuildSchema = async (id: string, target: Collection, oldId: string, old:
   return {
     actions: actions,
     schema: schema,
-    renames: renames
+    renames: renames,
+    meta: meta
   }
 }
