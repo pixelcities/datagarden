@@ -167,9 +167,15 @@ const rebuildSchema = async (id: string, target: Collection, oldId: string, old:
     updated = true
   }
 
-  // This transformer task may not be the first, so the fragment could already exist in the schema
-  const new_fragments = fragments.filter(f => schema.column_order.indexOf(f) === -1) // TODO: fix bug
-  const old_columns = old.columns.filter(c => new_fragments.indexOf(c.id) !== -1)
+  // This transformer task may not be the first, so the fragment could already exist in the schema. Start
+  // with finding the linked concept of the fragments because the fragment (column) id itself will have changed.
+  const concepts = fragments.map(f => old.columns.find(c => c.id === f)?.concept_id)
+
+  // Filter out the concepts that are already present in the schema
+  const new_concepts = concepts.filter(conceptId => !schema.columns.find(col => col.concept_id === conceptId))
+
+  // And finally filter the old columns with the concept ids that are left
+  const old_columns = old.columns.filter(c => new_concepts.indexOf(c.concept_id) !== -1)
 
   let columns = []
   let renames: {[key: string]: string} = {}

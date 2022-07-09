@@ -27,6 +27,7 @@ const loadCsv = (text: string | ArrayBuffer | null | undefined) => {
     const attributes = header.split(",").map((column) => {
       return {
         id: crypto.randomUUID(),
+        concept_id: crypto.randomUUID(),
         name: column
       }
     })
@@ -162,6 +163,7 @@ const CsvSource: FC<CsvSourceProps> = ({onComplete}) => {
 
       columns.push({
         id: attribute.id,
+        concept_id: attribute.concept_id,
         key_id: key_id,
         shares: [
           {

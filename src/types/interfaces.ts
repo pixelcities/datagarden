@@ -80,6 +80,7 @@ export interface Share {
 
 export interface Column {
   id: string,
+  concept_id: string,
   key_id: string,
   shares: Share[],
   metadata?: any

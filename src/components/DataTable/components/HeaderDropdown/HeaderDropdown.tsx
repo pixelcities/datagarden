@@ -165,6 +165,7 @@ const ShareOptions: FC<ShareOptionsI> = ({ me, columnId, source, collection }) =
       if (column) {
         columns.push({
           id: column.id,
+          concept_id: column.concept_id,
           key_id: column.key_id,
           shares: [...column.shares ?? [], {
             type: "full",
@@ -210,6 +211,7 @@ const ShareOptions: FC<ShareOptionsI> = ({ me, columnId, source, collection }) =
       if (column) {
         columns.push({
           id: column.id,
+          concept_id: column.concept_id,
           key_id: column.key_id,
           shares: column.shares.filter(s => s.principal !== user.email)
         })
