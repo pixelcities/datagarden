@@ -132,22 +132,22 @@ const CsvSource: FC<CsvSourceProps> = ({onComplete}) => {
             }
 
             // Save the table
-            arrow.write_remote_parquet(path, s3_path, tokens.access_key, tokens.secret_key, tokens.session_token, keymap)
+            arrow.write_remote_parquet(path, s3_path, tokens.access_key, tokens.secret_key, tokens.session_token, keymap).then(() => {
+              // Save the metadata
+              const source = {
+                id: tableId,
+                workspace: "default",
+                type: "csv",
+                uri: uri,
+                schema: schema,
+                is_published: false
+              }
 
-            // Save the metadata
-            const source = {
-              id: tableId,
-              workspace: "default",
-              type: "csv",
-              uri: uri,
-              schema: schema,
-              is_published: false
-            }
+              dispatch(createSource(source))
+              onComplete(source)
 
-            dispatch(createSource(source))
-            onComplete(source)
-
-            setIsLoaded(true)
+              setIsLoaded(true)
+            })
           })
         })
       })

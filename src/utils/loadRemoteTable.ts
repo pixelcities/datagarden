@@ -41,32 +41,14 @@ export const loadRemoteTable = (tableId: string, uri: string, schema: Schema, us
           }
 
           // Load the remote table
-          arrow.read_remote_parquet(s3_path, path, tokens.access_key, tokens.secret_key, tokens.session_token, keymap)
+          arrow.read_remote_parquet(s3_path, path, tokens.access_key, tokens.secret_key, tokens.session_token, keymap).then(() => {
 
-          // The arrow call is non-blocking, and still runs in the background. We have to wait
-          // for the resulting dataset to be downloaded, but it does not return a promise. Simple
-          // solution is to ping the "filesystem".
-          //
-          // TODO: Actually return a promise somehow
-          const interval = setInterval(() => {
-            const fs = arrow["FS"].analyzePath(path, false)
+            // Move to datafusion
+            dataFusion.load_table(arrow["FS"].readFile(path, {}), tableId)
 
-            if (fs.exists) {
-              clearInterval(interval)
-
-              // Move to datafusion
-              dataFusion.load_table(arrow["FS"].readFile(path, {}), tableId)
-
-              resolve()
-              release()
-            }
-          }, 100)
-
-          setTimeout(() => {
-            clearInterval(interval)
-            reject()
+            resolve()
             release()
-          }, 15000)
+          })
         })
       })
 
