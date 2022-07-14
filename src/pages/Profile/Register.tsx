@@ -1,6 +1,6 @@
 import React, { FC, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faEnvelope, faLock } from '@fortawesome/free-solid-svg-icons'
+import { faEnvelope, faLock, faHandshake } from '@fortawesome/free-solid-svg-icons'
 
 import Section from 'components/Section';
 
@@ -10,6 +10,7 @@ import { useKeyStoreContext } from 'contexts';
 const Register: FC = () => {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [invite, setInvite] = useState("")
   const [confirmPrompt, setConfirmPrompt] = useState(false)
 
   const { isAuthenticated, handleLogin } = useAuthContext();
@@ -30,6 +31,7 @@ const Register: FC = () => {
         "user": {
           "email": email,
           "password": hashedPassword,
+          "invite": invite,
           "remember_me": "true"
         },
       })
@@ -85,6 +87,14 @@ const Register: FC = () => {
                         <input className="input" type="password" placeholder="Password" value={password} onChange={(e: any) => setPassword(e.target.value)} />
                         <span className="icon is-small is-left">
                           <FontAwesomeIcon icon={faLock} size="xs"/>
+                        </span>
+                      </p>
+                    </div>
+                    <div className="field">
+                      <p className="control has-icons-left">
+                        <input className="input" type="password" placeholder="Invite code" value={invite} onChange={(e: any) => setInvite(e.target.value)} />
+                        <span className="icon is-small is-left">
+                          <FontAwesomeIcon icon={faHandshake} size="xs"/>
                         </span>
                       </p>
                     </div>

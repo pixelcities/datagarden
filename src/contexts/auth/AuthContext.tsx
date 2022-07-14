@@ -46,7 +46,7 @@ export const AuthProvider: FC = ({ children }) => {
   // Just check if the session is authenticated, if not it attempts to redirect so just error out
   useEffect(() => {
     if (!isAuthenticated) {
-      fetch("http://localhost:5000/users/me", {
+      fetch(process.env.REACT_APP_API_BASE_PATH + "/users/me", {
         method: "GET",
         credentials: "include",
         headers: {

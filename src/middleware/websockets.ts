@@ -71,7 +71,7 @@ export const websocketMiddleware: Middleware<{}, any> = storeApi => {
     }
   };
 
-  let socket = new WebSocket("ws://localhost:5000/socket", onMessage(storeApi))
+  let socket = new WebSocket(process.env.REACT_APP_WS_BASE_PATH + "/socket", onMessage(storeApi))
 
   return next => action => {
 
