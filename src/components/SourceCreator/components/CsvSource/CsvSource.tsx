@@ -78,7 +78,7 @@ const CsvSource: FC<CsvSourceProps> = ({onComplete}) => {
       const uri = dataURI?.uri ?? ""
 
       // Get fresh session tokens
-      getDataTokens(uri).then(tokens => {
+      getDataTokens(uri + `/${tableId}.parquet`, "write").then(tokens => {
         const s3_path = uri.split("s3://")[1] + `/${tableId}.parquet`
 
         // Load the csv and transform it to an arrow table

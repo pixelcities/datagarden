@@ -7,7 +7,7 @@ export const writeRemoteTable = (tableId: string, uri: string, schema: Schema, u
     const path = `/${fragmentId}`
 
     // Get fresh session tokens
-    getDataTokens(uri).then(tokens => {
+    getDataTokens(uri + `/${fragmentId}.parquet`, "write").then(tokens => {
       const s3_path = uri.split("s3://")[1] + `/${fragmentId}.parquet`
 
       // Get and prepare the secret keys

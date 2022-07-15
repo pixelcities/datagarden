@@ -1,4 +1,4 @@
-export const getDataTokens = async (uri: string) => {
+export const getDataTokens = async (uri: string, mode: string) => {
   return fetch(process.env.REACT_APP_API_BASE_PATH + "/users/datatokens", {
     method: "POST",
     credentials: "include",
@@ -6,7 +6,8 @@ export const getDataTokens = async (uri: string) => {
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
-      "uri": uri
+      "uri": uri,
+      "mode": mode
     })
   }).then((response) => {
     if (!response.ok) {

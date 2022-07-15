@@ -18,7 +18,7 @@ export const loadRemoteTable = (tableId: string, uri: string, schema: Schema, us
         }
 
         // Get fresh session tokens
-        getDataTokens(uri).then(tokens => {
+        getDataTokens(uri, "read").then(tokens => {
           const s3_path = uri.split("s3://")[1]
 
           // Get and prepare the secret keys
