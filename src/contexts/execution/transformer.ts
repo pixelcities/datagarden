@@ -59,6 +59,7 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
               const identifiers = Object.values(wal.identifiers)
               const nrFragments = fragments.filter(f => identifiers.indexOf(f) !== -1)
 
+              // TODO: use await to ensure correct order
               Promise.all((() => {
                 // None of the fragments are in the query, so the artifact can be used.
                 if (nrFragments.length === 0) {
@@ -71,9 +72,28 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
                 // At least one of the fragments is part of the query statement, so the full query
                 // needs to be executed.
                 } else {
-                  return wal.transactions.map((transaction: string) => {
+                  return wal.transactions.map((transaction: string, i: number) => {
                     return new Promise<void>((resolve, reject) => {
-                      dataFusion?.query(id, buildQuery(transaction, wal, metadata, dataSpace, keyStore)).then(() => resolve())
+                      const cloneId = dataFusion?.clone_table(id, "")
+
+                      dataFusion?.query(id, buildQuery(transaction, wal, metadata, dataSpace, keyStore)).then(() => {
+                        const resultSchema = dataFusion?.get_schema(id)
+                        const resultColumns: string[] = resultSchema.fields.map((field: any) => field.name)
+
+                        // Verify that the query returned all the fragments
+                        if (fragments.filter(fragment => resultColumns.indexOf(fragment) === -1).length === 0) {
+                          dataFusion?.drop_table(cloneId)
+                          resolve()
+
+                        // If not, apply the artifact regardless and merge the results.
+                        } else {
+                          dataFusion?.apply_artifact(cloneId, wal.artifacts[i]).then(() => {
+                            dataFusion?.merge_table(cloneId, id)
+                            dataFusion?.move_table(cloneId, id)
+                            resolve()
+                          })
+                        }
+                      })
                     })
                   })
                 }
