@@ -3,7 +3,7 @@ import useEventListener from './useEventListener'
 
 import { Coords } from 'types'
 
-const ORIGIN = Object.freeze({x: 0, y: 0})
+const ORIGIN: {x: number, y: number} = Object.freeze({x: 0, y: 0})
 
 const usePan = (ref: RefObject<HTMLElement | null>, zoom: number): Coords => {
   const [offset, setOffset] = useState<Coords>(ORIGIN)

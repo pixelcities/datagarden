@@ -19,7 +19,7 @@ import { ConnectedConnector } from './components/Connector'
 import './InfinityBoard.sass';
 
 
-const ORIGIN = Object.freeze({x: 0, y: 0})
+const ORIGIN: {x: number, y: number} = Object.freeze({x: 0, y: 0})
 
 const InfinityBoard: FC = (props) => {
   const [dimensions, setDimensions] = useState({height: 0, width: 0});

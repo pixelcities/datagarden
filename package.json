@@ -13,14 +13,9 @@
     "@reduxjs/toolkit": "^1.7.2",
     "arrow-wasm": "file:../arrow-wasm/src",
     "async-mutex": "^0.3.2",
-    "buffer": "^6.0.3",
-    "bulma": "^0.9.0",
-    "bulma-pageloader": "^0.3.0",
-    "bulma-switch": "^2.0.4",
     "datafusion-wasm": "file:../datafusion-wasm/pkg",
     "gsap": "^3.6.0",
     "key-x-wasm": "file:../key-x-wasm/pkg",
-    "node-sass": "^6.0.1",
     "re-reselect": "^4.0.0",
     "react": "^16.13.1",
     "react-dnd": "^14.0.1",
@@ -30,11 +25,9 @@
     "react-helmet": "^6.1.0",
     "react-redux": "^7.2.2",
     "react-router-dom": "^5.2.0",
-    "react-scripts": "^5.0.0",
     "react-table": "^7.6.3",
     "react-window": "^1.8.6",
-    "remove": "^0.1.5",
-    "socket.io-client": "^3.1.2",
+    "sass": "^1.53.0",
     "typescript": "^4.2.3"
   },
   "scripts": {
@@ -62,6 +55,9 @@
     ]
   },
   "devDependencies": {
+    "bulma": "^0.9.0",
+    "bulma-switch": "^2.0.4",
+    "@deckar01/bulma-pageloader": "^2.2.1",
     "@craco/craco": "^7.0.0-alpha.0",
     "@creativebulma/bulma-divider": "^1.1.0",
     "@types/gsap": "^1.20.2",
@@ -69,12 +65,13 @@
     "@types/node": "^14.14.32",
     "@types/phoenix": "^1.5.3",
     "@types/react": "^17.0.3",
-    "@types/react-dnd": "^3.0.2",
     "@types/react-dom": "^17.0.1",
     "@types/react-redux": "^7.1.16",
     "@types/react-router-dom": "^5.1.7",
     "@types/react-table": "^7.0.29",
     "@types/react-window": "^1.8.2",
-    "copy-webpack-plugin": "^6.4.1"
+    "buffer": "^6.0.3",
+    "copy-webpack-plugin": "^6.4.1",
+    "react-scripts": "^5.0.0"
   }
 }
