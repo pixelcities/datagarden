@@ -7,6 +7,7 @@ import { RootState } from 'state/store'
 import {
   selectCollections,
   selectCollectionById,
+  selectCollectionsByIds,
   selectCollectionIds
 } from './slices/collections'
 
@@ -121,6 +122,7 @@ export const selectSourcesWithOwner = createSelector(
 export {
   selectCollections,
   selectCollectionById,
+  selectCollectionsByIds,
   selectCollectionIds,
   selectTransformers,
   selectTransformerById,

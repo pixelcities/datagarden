@@ -60,6 +60,12 @@ export const {
   selectById: selectCollectionById
 } = collectionsAdapter.getSelectors<RootState>(state => state.collections)
 
+export const selectCollectionsByIds = createSelector(
+  selectCollections,
+  (_: RootState, ids: string[]) => ids,
+  (collections, ids): Collection[] => collections.filter(collection => ids.indexOf(collection.id) !== -1)
+)
+
 export const selectCollectionIds = createSelector(
   selectCollections,
   collections => collections.map(collection => collection.id)

@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCheck } from '@fortawesome/free-solid-svg-icons'
 
 import { useAppDispatch, useAppSelector } from 'hooks'
-import { selectMetadataMap, selectCollectionById, selectActiveDataSpace } from 'state/selectors'
+import { selectMetadataMap, selectTransformerById, selectCollectionsByIds, selectActiveDataSpace } from 'state/selectors'
 import { updateMetadata } from 'state/actions'
 
 import { WAL } from 'types'
@@ -34,7 +34,8 @@ const Transformer: FC<TransformerProps> = ({id, collections, transformers, wal, 
   const settingsRef = useRef<HTMLDivElement | null>(null)
   const [dimensions, setDimensions] = useState({height: 0, width: 0});
   const [isActive, setIsActive] = useState(true)
-  const [inputId, setInputId] = useState<string | null>(null)
+  const [leftInputId, setLeftInputId] = useState<string | null>(null)
+  const [rightInputId, setRightInputId] = useState<string | null>(null)
   const [previewId, setPreviewId] = useState<string | null>(null)
   const [versionId, setVersionId] = useState<number>(0)
   const [highlightHeader, setHighlightHeader] = useState(false)
@@ -46,25 +47,38 @@ const Transformer: FC<TransformerProps> = ({id, collections, transformers, wal, 
   const { keyStore } = useKeyStoreContext();
   const { arrow, dataFusion, loadDataFusion } = useDataFusionContext();
 
-  const collection = useAppSelector(state => selectCollectionById(state, collections[0]))
+  const transformer = useAppSelector(state => selectTransformerById(state, id))
+  const inputCollections = useAppSelector(state => selectCollectionsByIds(state, collections))
   const metadata = useAppSelector(selectMetadataMap)
   const dataSpace = useAppSelector(selectActiveDataSpace)
 
   useEffect(() => loadDataFusion(), [ loadDataFusion ])
   useEffect(() => {
-    if (collection && !inputId && dataFusion?.table_exists(collection.id)) {
-      setInputId(collection.id)
+    if (!leftInputId) {
+      Promise.all(inputCollections.map((collection) => {
+        return new Promise<void>((resolve, reject) => {
+          if (dataFusion?.table_exists(collection.id)) {
+            resolve()
 
-    } else if (collection?.id && collection.uri && !inputId) {
-      loadRemoteTable(collection.id, collection.uri, collection.schema, user, arrow, dataFusion, keyStore).then(() => setInputId(collection.id))
+          } else {
+            loadRemoteTable(collection.id, collection.uri, collection.schema, user, arrow, dataFusion, keyStore).then(() => resolve())
+          }
+        })
+      })).then(() => {
+        setLeftInputId(inputCollections[0].id)
+
+        if (inputCollections.length > 1) {
+          setRightInputId(inputCollections[1].id)
+        }
+      })
     }
-  }, [collection, user, arrow, dataFusion, keyStore, inputId])
+  }, [inputCollections, user, arrow, dataFusion, keyStore, leftInputId])
 
   useEffect(() => {
-    if (inputId) {
-      setPreviewId(dataFusion?.clone_table(inputId, id))
+    if (leftInputId) {
+      setPreviewId(dataFusion?.clone_table(leftInputId, id))
     }
-  }, [ id, inputId, dataFusion ])
+  }, [ id, leftInputId, dataFusion ])
 
   useLayoutEffect(() => {
     if (settingsRef.current) {
@@ -89,17 +103,17 @@ const Transformer: FC<TransformerProps> = ({id, collections, transformers, wal, 
   const columnNames = React.useMemo(() => {
     let attributes: {[key: string]: string} = {};
 
-    if (collection) {
+    inputCollections.forEach(collection => {
       collection.schema.columns.forEach(column => {
         const maybe_name = metadata[column.id]
         const name = maybe_name ? keyStore?.decrypt_metadata(dataSpace?.key_id, maybe_name) : column.id;
 
         attributes[column.id] = name
       })
-    }
+    })
 
     return attributes
-  }, [ keyStore, dataSpace, collection, metadata ])
+  }, [ keyStore, dataSpace, inputCollections, metadata ])
 
   const handleClose = () => {
     // Cleanup intermediate table
@@ -175,12 +189,22 @@ const Transformer: FC<TransformerProps> = ({id, collections, transformers, wal, 
         </header>
 
         <section className="modal-card-body is-relative px-0 py-0">
-          { inputId && collection ?
+          { leftInputId && inputCollections[0] ?
             <DataTable
-              id={inputId}
-              schema={collection.schema}
+              id={leftInputId}
+              schema={inputCollections[0].schema}
               interactiveHeader={false}
-              style={{width: "40%"}}
+              style={{width: "40%", height: (rightInputId ? "50%" : "100%")}}
+            />
+          : null
+          }
+
+          { rightInputId && inputCollections[1] ?
+            <DataTable
+              id={rightInputId}
+              schema={inputCollections[1].schema}
+              interactiveHeader={false}
+              style={{width: "40%", height: "50%"}}
             />
           : null
           }
@@ -188,20 +212,23 @@ const Transformer: FC<TransformerProps> = ({id, collections, transformers, wal, 
           <div ref={settingsRef} className="transformer-control-container" style={{minHeight: containerHeight}}>
             <TransformerSettings
               id={id}
+              type={transformer?.type}
               wal={wal}
               tableId={previewId}
+              leftId={leftInputId}
+              rightId={rightInputId}
               columnNames={columnNames}
-              schema={collection?.schema}
+              schemas={inputCollections.map(collection => collection.schema)}
               dimensions={dimensions}
               setHeaderCallback={handleHeaderCallback}
               onComplete={() => setVersionId(versionId + 1)}
             />
           </div>
 
-          { previewId && collection ?
+          { previewId && inputCollections ?
             <DataTable
               id={previewId}
-              schema={collection.schema}
+              schema={inputCollections[0].schema}
               interactiveHeader={false}
               style={{width: "40%", left: "60%", position: "absolute", top: 0}}
               versionId={versionId}
