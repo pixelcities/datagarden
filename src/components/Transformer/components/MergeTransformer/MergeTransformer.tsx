@@ -44,19 +44,23 @@ const MergeTransformer: FC<MergeTransformerProps> = ({ id, wal, tableId, leftId,
     const leftColumnId = Object.keys(columnNames).find(id => columnNames[id] === leftColumn)
     const rightColumnId = Object.keys(columnNames).find(id => columnNames[id] === rightColumn)
 
-    const leftSelect = leftSchema.columns.map(column => `"${leftId}"."${column.id}"`)
-    const rightSelect = rightSchema.columns.map(column => `"${rightId}"."${column.id}"`)
-    const select = [...leftSelect, ...rightSelect].join(", ")
+    const query = `SELECT "${leftColumnId}", "${rightColumnId}" FROM "${leftId}" ${joinType} "${rightId}" ON "${leftColumnId}" = "${rightColumnId}" ORDER BY 1, 2`
 
-    const query = `SELECT ${select} FROM "${leftId}" ${joinType} "${rightId}" ON "${leftId}"."${leftColumnId}" = "${rightId}"."${rightColumnId}"`
+    dataFusion?.join(tableId, leftId, rightId, query).then((artifacts: string[]) => {
+      const leftClone = dataFusion?.clone_table(leftId, "")
+      const rightClone = dataFusion?.clone_table(rightId, "")
 
-    dataFusion?.query(tableId, leftId, rightId, query).then((artifacts: string[]) => {
-      console.log(artifacts)
+      dataFusion?.apply_artifact(leftClone, artifacts[0]).then(() => {
+        dataFusion?.apply_artifact(rightClone, artifacts[1]).then(() => {
+          dataFusion?.append_table(leftClone, rightClone)
+          dataFusion?.move_table(leftClone, tableId)
 
-      onComplete()
+          onComplete()
+        })
+      })
     })
 
-  }, [ tableId, leftId, rightId, leftSchema, rightSchema, leftColumn, rightColumn, joinType, columnNames, dataFusion, onComplete ])
+  }, [ tableId, leftId, rightId, leftColumn, rightColumn, joinType, columnNames, dataFusion, onComplete ])
 
   const handleCommit = () => {}
 

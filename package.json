@@ -55,11 +55,9 @@
     ]
   },
   "devDependencies": {
-    "bulma": "^0.9.0",
-    "bulma-switch": "^2.0.4",
-    "@deckar01/bulma-pageloader": "^2.2.1",
     "@craco/craco": "^7.0.0-alpha.0",
     "@creativebulma/bulma-divider": "^1.1.0",
+    "@deckar01/bulma-pageloader": "^2.2.1",
     "@types/gsap": "^1.20.2",
     "@types/jest": "^26.0.20",
     "@types/node": "^14.14.32",
@@ -71,6 +69,8 @@
     "@types/react-table": "^7.0.29",
     "@types/react-window": "^1.8.2",
     "buffer": "^6.0.3",
+    "bulma": "^0.9.0",
+    "bulma-switch": "^2.0.4",
     "copy-webpack-plugin": "^6.4.1",
     "react-scripts": "^5.0.0"
   }

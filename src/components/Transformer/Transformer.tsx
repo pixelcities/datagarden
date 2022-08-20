@@ -6,7 +6,7 @@ import { useAppDispatch, useAppSelector } from 'hooks'
 import { selectMetadataMap, selectTransformerById, selectCollectionsByIds, selectActiveDataSpace } from 'state/selectors'
 import { updateMetadata } from 'state/actions'
 
-import { WAL } from 'types'
+import { Schema, WAL } from 'types'
 
 import DataTable from 'components/DataTable'
 import TransformerSettings from './TransformerSettings'
@@ -37,6 +37,7 @@ const Transformer: FC<TransformerProps> = ({id, collections, transformers, wal, 
   const [leftInputId, setLeftInputId] = useState<string | null>(null)
   const [rightInputId, setRightInputId] = useState<string | null>(null)
   const [previewId, setPreviewId] = useState<string | null>(null)
+  const [previewSchema, setPreviewSchema] = useState<Schema | null>(null)
   const [versionId, setVersionId] = useState<number>(0)
   const [highlightHeader, setHighlightHeader] = useState(false)
   const [onHeaderClick, setOnHeaderClick] = useState<any>(undefined)
@@ -75,10 +76,27 @@ const Transformer: FC<TransformerProps> = ({id, collections, transformers, wal, 
   }, [inputCollections, user, arrow, dataFusion, keyStore, leftInputId])
 
   useEffect(() => {
+    if (rightInputId) {
+      const leftSchema = inputCollections[0].schema
+      const rightSchema = inputCollections[1].schema
+
+      // Dummy merge the two schemas for preview purposes
+      setPreviewSchema({
+        id: id,
+        key_id: "",
+        column_order: [...leftSchema.column_order, ...rightSchema.column_order],
+        columns: [...leftSchema.columns, ...rightSchema.columns],
+        shares: [...leftSchema.shares, ...rightSchema.shares]
+      })
+
+    } else {
+      setPreviewSchema(inputCollections[0].schema)
+    }
+
     if (leftInputId) {
       setPreviewId(dataFusion?.clone_table(leftInputId, id))
     }
-  }, [ id, leftInputId, dataFusion ])
+  }, [ id, leftInputId, rightInputId, inputCollections, dataFusion ])
 
   useLayoutEffect(() => {
     if (settingsRef.current) {
@@ -225,10 +243,10 @@ const Transformer: FC<TransformerProps> = ({id, collections, transformers, wal, 
             />
           </div>
 
-          { previewId && inputCollections ?
+          { previewId && previewSchema && inputCollections ?
             <DataTable
               id={previewId}
-              schema={inputCollections[0].schema}
+              schema={previewSchema}
               interactiveHeader={false}
               style={{width: "40%", left: "60%", position: "absolute", top: 0}}
               versionId={versionId}
