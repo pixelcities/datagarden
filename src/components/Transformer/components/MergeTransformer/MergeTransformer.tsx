@@ -46,8 +46,8 @@ const MergeTransformer: FC<MergeTransformerProps> = ({ id, wal, tableId, leftId,
   const handleMerge = React.useCallback((e: any) => {
     e.preventDefault()
 
-    const leftColumnId = Object.keys(columnNames).find(id => columnNames[id] === leftColumn)
-    const rightColumnId = Object.keys(columnNames).find(id => columnNames[id] === rightColumn)
+    const leftColumnId = Object.keys(columnNames).find(id => leftSchema.column_order.indexOf(id) !== -1 && columnNames[id] === leftColumn)
+    const rightColumnId = Object.keys(columnNames).find(id => rightSchema.column_order.indexOf(id) !== -1 && columnNames[id] === rightColumn)
 
     if (leftId && rightId && leftColumnId && rightColumnId) {
       // Check if the identifiers need to be added to the log
@@ -111,7 +111,7 @@ const MergeTransformer: FC<MergeTransformerProps> = ({ id, wal, tableId, leftId,
         <div className="field pb-0">
           <label className="label">Join Type</label>
           <Dropdown
-            items={["LEFT JOIN", "FULL JOIN"]}
+            items={["LEFT JOIN", "INNER JOIN", "FULL JOIN"]}
             onClick={(item: string) => setJoinType(item)}
           />
         </div>
