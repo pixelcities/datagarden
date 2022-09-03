@@ -9,7 +9,7 @@ import { DataSpace } from 'types'
 
 import { useAppDispatch, useAppSelector } from 'hooks'
 import { selectActiveDataSpace } from 'state/selectors'
-import { setActiveDataSpace } from 'state/actions'
+import { leaveDataSpace, setActiveDataSpace } from 'state/actions'
 
 
 const DataSpacesRoute: FC = ({ children }) => {
@@ -49,6 +49,10 @@ const DataSpaces: FC = (props) => {
   const dispatch = useAppDispatch()
 
   const [dataSpaces, setDataSpaces] = useState<DataSpace[]>([])
+
+  useEffect(() => {
+    dispatch(leaveDataSpace())
+  }, [ dispatch ])
 
   useEffect(() => {
     fetch(process.env.REACT_APP_API_BASE_PATH + "/spaces", {

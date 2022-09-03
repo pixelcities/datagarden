@@ -1,4 +1,4 @@
-import { configureStore } from '@reduxjs/toolkit'
+import { configureStore, combineReducers, AnyAction } from '@reduxjs/toolkit'
 
 import { websocketMiddleware } from 'middleware/websockets'
 
@@ -15,23 +15,32 @@ import uriReducer from './slices/uri'
 import secretReducer from './slices/secrets'
 import taskReducer from './slices/tasks'
 
+
+const rootReducer = combineReducers({
+  collections: collectionsReducer,
+  transformers: transformersReducer,
+  workspaces: workspacesReducer,
+  sources: sourceReducer,
+  organisations: organisationReducer,
+  ui: uiReducer,
+  users: userReducer,
+  dataspaces: dataspaceReducer,
+  metadata: metadataReducer,
+  uris: uriReducer,
+  secrets: secretReducer,
+  tasks: taskReducer
+})
+
 const store = configureStore({
   middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(websocketMiddleware),
-  reducer: {
-    collections: collectionsReducer,
-    transformers: transformersReducer,
-    workspaces: workspacesReducer,
-    sources: sourceReducer,
-    organisations: organisationReducer,
-    ui: uiReducer,
-    users: userReducer,
-    dataspaces: dataspaceReducer,
-    metadata: metadataReducer,
-    uris: uriReducer,
-    secrets: secretReducer,
-    tasks: taskReducer
+  reducer: (state: any, action: AnyAction) => {
+    if (action.type === "dataspaces/leaveDataSpace") {
+      return rootReducer(undefined, action)
+    }
+    return rootReducer(state, action)
   }
 })
+
 
 export default store
 

@@ -30,7 +30,6 @@ class WebSocket {
 
   handleDsChannel(handle: string) {
     if (this.socket) {
-      // TODO: handle switching
       if (! this.ds) {
         this.ds = this.socket.channel(`ds:${handle}`, {})
         this.ds.join()
@@ -42,6 +41,13 @@ class WebSocket {
           this.channel.push("init", {"type": "tasks"})
         }
       }
+    }
+  }
+
+  leaveDsChannel() {
+    if (this.socket && this.ds) {
+      this.ds.leave()
+      this.ds = undefined
     }
   }
 
@@ -79,6 +85,11 @@ export const websocketMiddleware: Middleware<{}, any> = storeApi => {
     // the websocket by requesting a token with the now available cookie.
     if (action.type === "users/login") {
       socket.init()
+      return next(action)
+
+    // Leave, if possible, the current active dataspace.
+    } else if (action.type === "dataspaces/leaveDataSpace") {
+      socket.leaveDsChannel()
       return next(action)
 
     // Switch to a new dataspace. This will join the relevant channel and

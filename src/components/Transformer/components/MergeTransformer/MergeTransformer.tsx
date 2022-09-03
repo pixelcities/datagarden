@@ -92,7 +92,7 @@ const MergeTransformer: FC<MergeTransformerProps> = ({ id, wal, tableId, leftId,
       console.log("Cannot build query: missing identifier")
     }
 
-  }, [ tableId, leftId, rightId, leftColumn, rightColumn, joinType, columnNames, log, dataFusion, onComplete ])
+  }, [ tableId, leftId, rightId, leftSchema.column_order, rightSchema.column_order, leftColumn, rightColumn, joinType, columnNames, log, dataFusion, onComplete ])
 
   const handleCommit = () => {
     dispatch(updateTransformerWAL({

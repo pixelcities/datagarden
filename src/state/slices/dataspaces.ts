@@ -11,6 +11,7 @@ const dataSpacesSlice = createSlice({
   initialState: initialState,
   reducers: {
     setActiveDataSpace: dataSpacesAdapter.addOne,
+    leaveDataSpace: dataSpacesAdapter.removeAll,
   }
 })
 
@@ -19,7 +20,8 @@ export default dataSpacesSlice.reducer
 
 // actions
 export const {
-  setActiveDataSpace
+  setActiveDataSpace,
+  leaveDataSpace
 } = dataSpacesSlice.actions
 
 // selectors
