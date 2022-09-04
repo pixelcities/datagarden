@@ -34,9 +34,21 @@ const rootReducer = combineReducers({
 const store = configureStore({
   middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(websocketMiddleware),
   reducer: (state: any, action: AnyAction) => {
+    // All state is unique per dataspace
+    //
+    // To help this fact, there are some special actions that are intercepted
+    // in the root reducer. One to wipe the state clean when leaving a dataspace,
+    // and another to quickly restore local cached state. Both are managed by the
+    // websockets middleware as it should stay in sync with the server.
+
     if (action.type === "dataspaces/leaveDataSpace") {
       return rootReducer(undefined, action)
     }
+
+    if (action.type === "dataspaces/loadDataSpace") {
+      return rootReducer({...state, ...action.payload}, action)
+    }
+
     return rootReducer(state, action)
   }
 })

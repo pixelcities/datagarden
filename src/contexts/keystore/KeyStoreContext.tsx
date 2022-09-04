@@ -16,6 +16,8 @@ interface KeyStoreContextI {
   __setIsReady__?: any
 }
 
+let keyStoreRef: KeyStore | undefined
+
 const KeyStoreContext = React.createContext<KeyStoreContextI>({});
 
 export const KeyStoreProvider: FC = ({ children }) => {
@@ -52,7 +54,8 @@ export const KeyStoreProvider: FC = ({ children }) => {
 
     const { KeyStore, Protocol } = await import("key-x-wasm")
 
-    setKeyStore(new KeyStore())
+    keyStoreRef = new KeyStore()
+    setKeyStore(keyStoreRef)
     setProtocol(new Protocol())
     setIsLocked(true)
 
@@ -126,4 +129,6 @@ export const KeyStoreProvider: FC = ({ children }) => {
 }
 
 export const useKeyStoreContext = () =>  useContext(KeyStoreContext);
-
+export {
+  keyStoreRef
+}

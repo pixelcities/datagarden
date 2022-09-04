@@ -1,5 +1,6 @@
-import { Middleware, MiddlewareAPI, Dispatch, AnyAction } from "redux";
-import { events } from 'state/actions'
+import { Middleware, MiddlewareAPI, Dispatch, AnyAction } from "redux"
+import { events, loadDataSpace } from 'state/actions'
+import { getState, saveState } from 'utils/localStorage'
 
 import { Socket, Channel } from 'phoenix';
 
@@ -28,7 +29,7 @@ class WebSocket {
     }
   }
 
-  handleDsChannel(handle: string) {
+  handleDsChannel(handle: string, eventId: number) {
     if (this.socket) {
       if (! this.ds) {
         this.ds = this.socket.channel(`ds:${handle}`, {})
@@ -36,7 +37,7 @@ class WebSocket {
 
         // Only init the event playback after selecting a ds
         if (this.channel) {
-          this.channel.push("init", {"type": "events"})
+          this.channel.push("init", {"type": "events", "payload": eventId})
           this.channel.push("init", {"type": "secrets"})
           this.channel.push("init", {"type": "tasks"})
         }
@@ -72,6 +73,10 @@ class WebSocket {
 
 export const websocketMiddleware: Middleware<{}, any> = storeApi => {
   const onMessage = (store: MiddlewareAPI<Dispatch<AnyAction>>) => (event: any) => {
+    if (Math.random() <= 0.1) {
+      saveState(event.id, storeApi.getState())
+    }
+
     if (event.type in events) {
       store.dispatch(events[event.type](event.payload));
     }
@@ -93,9 +98,16 @@ export const websocketMiddleware: Middleware<{}, any> = storeApi => {
       return next(action)
 
     // Switch to a new dataspace. This will join the relevant channel and
-    // let the server know we are working in this dataspace.
+    // let the server know we are working in this dataspace. This will also
+    // attempt to restore previous state to speedup event replay.
     } else if (action.type === "dataspaces/setActiveDataSpace") {
-      socket.handleDsChannel(action.payload.handle)
+      const { id, state } = getState(action.payload.handle, action.payload.key_id)
+
+      if (state) {
+        storeApi.dispatch(loadDataSpace(state))
+      }
+
+      socket.handleDsChannel(action.payload.handle, id)
       return next(action)
 
     // "Commands" are routed to the backend

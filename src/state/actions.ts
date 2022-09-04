@@ -48,7 +48,8 @@ import {
 
 import {
   setActiveDataSpace,
-  leaveDataSpace
+  leaveDataSpace,
+  loadDataSpace
 } from './slices/dataspaces'
 
 
@@ -140,6 +141,7 @@ export {
   login,
   setActiveDataSpace,
   leaveDataSpace,
+  loadDataSpace,
 
   createUser,
   updateUser,

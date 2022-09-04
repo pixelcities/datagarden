@@ -1,4 +1,4 @@
-import { createSelector, createSlice, createEntityAdapter } from '@reduxjs/toolkit'
+import { createSelector, createSlice, createEntityAdapter, createAction } from '@reduxjs/toolkit'
 import { RootState } from 'state/store'
 import { DataSpace } from 'types'
 
@@ -23,6 +23,12 @@ export const {
   setActiveDataSpace,
   leaveDataSpace
 } = dataSpacesSlice.actions
+
+// A special internal action that is only used to quickly restore state
+// when cached local storage is present.
+//
+// See also: state/store.ts
+export const loadDataSpace = createAction<any>('dataspaces/loadDataSpace')
 
 // selectors
 export const {
