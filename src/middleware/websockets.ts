@@ -4,11 +4,12 @@ import { getState, saveState } from 'utils/localStorage'
 
 import { Socket, Channel } from 'phoenix';
 
+
 class WebSocket {
   endpoint: string
   callback: (event: any) => void
   socket?: Socket
-  channel?: Channel
+  user?: Channel
   ds?: Channel
 
   constructor(endpoint: string, callback: (event: any) => void) {
@@ -23,30 +24,40 @@ class WebSocket {
 
   handleUserChannel(user_id: string) {
     if (this.socket) {
-      this.channel = this.socket.channel(`user:${user_id}`, {})
-      this.channel.join()
-      this.channel.on("event", this.callback)
+      this.user = this.socket.channel(`user:${user_id}`, {})
+      this.user.join()
     }
   }
 
   handleDsChannel(handle: string, eventId: number) {
     if (this.socket) {
-      if (! this.ds) {
+      if (! this.ds && this.user) {
         this.ds = this.socket.channel(`ds:${handle}`, {})
         this.ds.join()
 
+        const ref = this.user.on("history", this.callback)
+
         // Only init the event playback after selecting a ds
-        if (this.channel) {
-          this.channel.push("init", {"type": "events", "payload": eventId})
-          this.channel.push("init", {"type": "secrets"})
-          this.channel.push("init", {"type": "tasks"})
-        }
+        this.ds.push("init", {"type": "events", "payload": eventId})
+          .receive("ok", () => {
+
+            // TODO: small moment where no messages are handled
+            this.ds?.off("history", ref)
+            this.ds?.on("event", this.callback)
+            this.user?.on("event", this.callback)
+
+            this.ds?.push("init", {"type": "secrets"})
+            this.ds?.push("init", {"type": "tasks"})
+          })
+
       }
     }
   }
 
   leaveDsChannel() {
-    if (this.socket && this.ds) {
+    if (this.socket && this.ds && this.user) {
+      this.user.off("event")
+
       this.ds.leave()
       this.ds = undefined
     }
@@ -73,12 +84,12 @@ class WebSocket {
 
 export const websocketMiddleware: Middleware<{}, any> = storeApi => {
   const onMessage = (store: MiddlewareAPI<Dispatch<AnyAction>>) => (event: any) => {
-    if (Math.random() <= 0.1) {
-      saveState(event.id, storeApi.getState())
-    }
-
     if (event.type in events) {
       store.dispatch(events[event.type](event.payload));
+
+      if (event.id && Math.random() <= 0.1) {
+        saveState(event.id, storeApi.getState())
+      }
     }
   };
 
@@ -114,7 +125,7 @@ export const websocketMiddleware: Middleware<{}, any> = storeApi => {
     //
     // See also: src/state/actions.ts
     } else if ("command" in action.payload) {
-      socket.channel?.push("action", action.payload.command);
+      socket.ds?.push("action", action.payload.command);
 
     // anything else
     } else {
