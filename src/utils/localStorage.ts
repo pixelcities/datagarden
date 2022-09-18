@@ -45,7 +45,12 @@ const getState = (handle: string, keyId: string) => {
   }
 }
 
+const resetState = (handle: string) => {
+  localStorage.removeItem(handle)
+}
+
 export {
   saveState,
-  getState
+  getState,
+  resetState
 }

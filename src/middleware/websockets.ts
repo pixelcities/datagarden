@@ -1,6 +1,6 @@
 import { Middleware, MiddlewareAPI, Dispatch, AnyAction } from "redux"
 import { events, loadDataSpace } from 'state/actions'
-import { getState, saveState } from 'utils/localStorage'
+import { getState, saveState, resetState } from 'utils/localStorage'
 
 import { Socket, Channel } from 'phoenix';
 
@@ -49,7 +49,11 @@ class WebSocket {
             this.ds?.push("init", {"type": "secrets"})
             this.ds?.push("init", {"type": "tasks"})
           })
-
+          .receive("error", () => {
+            console.log("Error when requesting subscriptions")
+            resetState(handle)
+            window.location.reload()
+          })
       }
     }
   }
