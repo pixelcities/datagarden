@@ -1,10 +1,11 @@
-import React, { FC, useRef, useEffect, useState } from 'react';
+import React, { FC, useRef, useEffect, useState } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faKey } from '@fortawesome/free-solid-svg-icons'
+import Joyride, { Placement } from 'react-joyride'
 
 import { useAppDispatch, useAppSelector } from 'hooks'
 import { selectUsers, selectMetadataById, selectSourceById, selectCollectionById, selectActiveDataSpace } from 'state/selectors'
-import { updateSource, updateCollection, updateMetadata, shareSecret } from 'state/actions'
+import { updateSource, deleteSource, updateCollection, updateMetadata, shareSecret } from 'state/actions'
 
 import { Source, Schema, User } from 'types'
 
@@ -17,6 +18,61 @@ import { useAuthContext } from 'contexts'
 import { loadRemoteTable } from 'utils/loadRemoteTable'
 
 import './SourceTable.sass'
+
+const tour = [
+  {
+    target: "#data-intro",
+    placementBeacon: "top" as Placement,
+    title: "Viewing data",
+    content: (
+      <>
+        <p className="has-text-justified">
+          Datasets are immutable in DataGarden. You instead add functions in the pipeline builder that operate on the datasets.
+          Instead, the data viewer allows you to inspect (intermediary) data, and share any columns with other users that need access.
+        </p>
+        <br />
+        <p className="has-text-justified">
+          You share data on a column by column basis. After granting a user access to the dataset they by default can only
+          read the title and column names, but not any of the data. Sharing a column is achieved by clicking on a header and adding the
+          user with a quick drag and drop.
+        </p>
+      </>
+    )
+  },
+  {
+    target: "#share-intro",
+    placementBeacon: "top" as Placement,
+    title: "Sharing data",
+    content: (
+      <>
+        <p className="has-text-justified">
+          As an example, you may share this dataset with a user called <span className="is-italic"> alice@pixelcities.io </span>.
+        </p>
+        <br />
+        <p className="has-text-justified">
+          Next, you can share individual columns by clicking on the column header and granting her access.
+        </p>
+      </>
+    )
+  },
+  {
+    target: "#publish",
+    placementBeacon: "top-start" as Placement,
+    title: "Publishing data",
+    content: (
+      <>
+        <p className="has-text-justified">
+          Finally, you publish a data source so that is available in the pipeline builder.
+        </p>
+        <br />
+        <p className="has-text-justified">
+          When published, you can safely close this modal and headover to the <span className="has-text-weight-bold"> Pipeline Builder </span>
+        </p>
+      </>
+    )
+  }
+]
+
 
 
 interface SourceTableProps {
@@ -111,6 +167,11 @@ const SourceTable: FC<SourceTableProps> = (props) => {
     }
   }
 
+  const handleClose = React.useCallback(() => {
+    setIsActive(false)
+    onClose()
+  }, [ setIsActive, onClose ])
+
   const shareSchemaWithUser = React.useCallback((selectedUser: User) => {
     const share = {
       type: "full",
@@ -180,7 +241,7 @@ const SourceTable: FC<SourceTableProps> = (props) => {
 
     return (
       <div className="field">
-        <label className="label pb-2"> Release process </label>
+        <label id="publish" className="label pb-2"> Release process </label>
 
         <div onClick={() => handlePublish(source)}>
           <input type="checkbox" className="switch" checked={source?.is_published ?? false} readOnly={true} />
@@ -191,6 +252,30 @@ const SourceTable: FC<SourceTableProps> = (props) => {
       </div>
     )
   }, [ source, dispatch ])
+
+  const renderDelete = React.useMemo(() => {
+    const handleDelete = (source: Source | undefined) => {
+      if (source) {
+        dispatch(deleteSource({
+          id: source.id,
+          workspace: source.workspace
+        }))
+        handleClose()
+      }
+    }
+
+    if (!isCollection) {
+      return (
+        <div className="column is-one-quarter">
+          <button className="button is-danger is-outlined is-pulled-right mr-3" onClick={() => handleDelete(source)}> Delete </button>
+        </div>
+      )
+    } else {
+      return (
+        <></>
+      )
+    }
+  }, [ source, isCollection, dispatch, handleClose ])
 
   const renderSettings = (
     <div className="is-relative px-4 py-4" style={{height: "100%"}}>
@@ -207,8 +292,6 @@ const SourceTable: FC<SourceTableProps> = (props) => {
           <div className="select is-fullwidth">
             <select>
               <option>Private</option>
-              <option>Internal</option>
-              <option>Public</option>
             </select>
           </div>
           <div className="icon is-small is-left pb-2">
@@ -218,7 +301,7 @@ const SourceTable: FC<SourceTableProps> = (props) => {
       </div>
 
       <div className="field">
-        <label className="label">Explicit shares</label>
+        <label id="share-intro" className="label">Explicit shares</label>
           <div className="control pb-5">
             <div className={"dropdown" + (renderUserDropdown.length > 0 ? " is-active" : "")} style={{width: "100%"}}>
               <div className="dropdown-trigger" style={{width: "100%"}}>
@@ -240,23 +323,38 @@ const SourceTable: FC<SourceTableProps> = (props) => {
       { !(isCollection === true) && renderPublish }
 
       <div className="settings-footer">
-        <p className="fineprint-label">
-          Last updated at: 2021-04-01
-        </p>
+        <div className="columns">
+          <div className="column is-three-quarters">
+            <p className="fineprint-label ml-3" style={{position: "absolute", bottom: "0px"}}>
+              Last updated at: { source?.date || collection?.date }
+            </p>
+          </div>
+
+          { renderDelete }
+
+        </div>
       </div>
 
     </div>
   )
 
-  const handleClose = () => {
-    setIsActive(false)
-    onClose()
-  }
-
   return (
     <div className={"p-modal " + (isActive ? "is-active" : "")}>
       <div className="modal-background"></div>
-      <div className="p-modal-card">
+
+      { !(isCollection === true) ?
+        <Joyride
+          steps={tour}
+          styles={{
+            options: {
+              primaryColor: "#e49bcf"
+            }
+          }}
+          continuous={true}
+        />
+        : null }
+
+      <div id="data-intro" className="p-modal-card">
         <header className="modal-card-head">
           <p className="modal-card-title">{title}</p>
           <button className="delete" aria-label="close" onClick={handleClose}></button>

@@ -1,4 +1,4 @@
-import { createSelector, createSlice, createEntityAdapter } from '@reduxjs/toolkit'
+import { createSelector, createSlice, createEntityAdapter, PayloadAction } from '@reduxjs/toolkit'
 import { RootState } from 'state/store'
 import { Source, User, Share } from 'types'
 
@@ -12,7 +12,13 @@ const sourcesSlice = createSlice({
   initialState: initialState,
   reducers: {
     sourceCreated: sourcesAdapter.addOne,
-    sourceUpdated: sourcesAdapter.upsertOne
+    sourceUpdated: sourcesAdapter.upsertOne,
+    sourceDeleted(state, action: PayloadAction<{id: string, workspace: string}>) {
+      const ids = state.ids.filter(id => id !== action.payload.id)
+
+      state.ids = ids
+      delete state.entities[action.payload.id]
+    }
   }
 })
 
@@ -22,7 +28,8 @@ export default sourcesSlice.reducer
 // actions
 export const {
   sourceCreated,
-  sourceUpdated
+  sourceUpdated,
+  sourceDeleted
 } = sourcesSlice.actions
 
 

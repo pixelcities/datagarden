@@ -32,6 +32,7 @@ export interface Component {
   targets: string[],
   position: number[],
   color?: string,
+  date?: string,
   is_ready: boolean
 }
 
@@ -101,7 +102,7 @@ export interface Source {
   type: string,
   owner?: string,
   uri?: string,
-  updatedAt?: string,
+  date?: string,
   sizeHint?: string,
   accessHint?: string,
   schema: Schema,

@@ -1,11 +1,12 @@
-import React, { FC, useState } from 'react';
+import React, { FC, useState } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faEnvelope, faLock, faHandshake } from '@fortawesome/free-solid-svg-icons'
 
-import Section from 'components/Section';
+import Section from 'components/Section'
 
-import { useAuthContext } from 'contexts';
-import { useKeyStoreContext } from 'contexts';
+import { useAuthContext } from 'contexts'
+import { useKeyStoreContext } from 'contexts'
+
 
 const Register: FC = () => {
   const [email, setEmail] = useState("")
@@ -43,6 +44,9 @@ const Register: FC = () => {
       }
     }).then((data) => {
       setConfirmPrompt(true)
+
+      // Ensure we start fresh
+      localStorage.clear()
 
       keyStore.create_named_key("protocol", 32).then((key_id: string) => {
         protocol.register(keyStore.get_key(key_id)).then((pub_key: string) => {

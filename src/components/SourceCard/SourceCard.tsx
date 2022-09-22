@@ -65,7 +65,7 @@ const SourceCard: FC<SourceCardProps> = (props) => {
 
   return (
     <div id={props.sourceId ?? title} onClick={props.onClick} style={{width: 216}}>
-      <div style={{cursor: "pointer"}}>
+      <div style={{cursor: "pointer", position: "relative", width: "220", height: "204"}}>
         { cardWithSource(props.type) }
       </div>
 

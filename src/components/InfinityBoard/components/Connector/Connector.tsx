@@ -106,20 +106,22 @@ const ConnectedConnector = forwardRef<{[id: string]: any}, ConnectedConnectorPro
   const sourceBCallback = sourceBRefs.current?.draggableCallback
 
   const updateConnectorPath = useCallback(() => {
-    const rect1 = sourceBDragRef.current.getBoundingClientRect()
-    const rect2 = sourceADragRef.current.getBoundingClientRect()
+    if (sourceADragRef.current && sourceBDragRef.current) {
+      const rect1 = sourceBDragRef.current.getBoundingClientRect()
+      const rect2 = sourceADragRef.current.getBoundingClientRect()
 
-    const x1 = +gsap.getProperty(sourceBDragRef.current, "x")
-    const y1 = +gsap.getProperty(sourceBDragRef.current, "y")+rect1.height/zoom/2
-    const x2 = +gsap.getProperty(sourceADragRef.current, "x")+rect2.width/zoom
-    const y2 = +gsap.getProperty(sourceADragRef.current, "y")+rect2.height/zoom/2
+      const x1 = +gsap.getProperty(sourceBDragRef.current, "x")
+      const y1 = +gsap.getProperty(sourceBDragRef.current, "y")+rect1.height/zoom/2
+      const x2 = +gsap.getProperty(sourceADragRef.current, "x")+rect2.width/zoom
+      const y2 = +gsap.getProperty(sourceADragRef.current, "y")+rect2.height/zoom/2
 
-    const dx = Math.abs(x2 - x1) * bezierWeight;
+      const dx = Math.abs(x2 - x1) * bezierWeight;
 
-    const dx1 = x1 - dx;
-    const dx2 = x2 + dx;
+      const dx1 = x1 - dx;
+      const dx2 = x2 + dx;
 
-    setPathData(`M${x1} ${y1} C ${dx1} ${y1} ${dx2} ${y2} ${x2} ${y2}`)
+      setPathData(`M${x1} ${y1} C ${dx1} ${y1} ${dx2} ${y2} ${x2} ${y2}`)
+    }
   }, [sourceADragRef, sourceBDragRef, zoom])
 
   sourceACallback?.addEventListener("drag", updateConnectorPath)

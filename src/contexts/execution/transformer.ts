@@ -42,7 +42,6 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
           }
         })
       })).then(() => {
-
         // Handle transformer tasks with just one input collection
         if (transformer.type !== "merge") {
           const collection = collections[0]

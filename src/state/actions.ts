@@ -6,7 +6,9 @@ import {
   collectionSchemaUpdated,
   collectionPositionSet,
   collectionIsReadySet,
-  collectionTargetAdded
+  collectionTargetAdded,
+  collectionTargetRemoved,
+  collectionDeleted
 } from './slices/collections'
 
 import {
@@ -15,7 +17,8 @@ import {
   transformerPositionSet,
   transformerTargetAdded,
   transformerInputAdded,
-  transformerWALUpdated
+  transformerWALUpdated,
+  transformerDeleted
 } from './slices/transformers'
 
 import {
@@ -26,7 +29,8 @@ import {
 
 import {
   sourceCreated,
-  sourceUpdated
+  sourceUpdated,
+  sourceDeleted
 } from './slices/sources'
 
 import {
@@ -95,14 +99,17 @@ const updateCollectionSchema = recreateAction<typeof collectionSchemaUpdated>("U
 const setCollectionPosition = recreateAction<typeof collectionPositionSet>("SetCollectionPosition")
 const setCollectionIsReady = recreateAction<typeof collectionIsReadySet>("SetCollectionIsReady")
 const addCollectionTarget = recreateAction<typeof collectionTargetAdded>("AddCollectionTarget")
+const deleteCollection = recreateAction<typeof collectionDeleted>("DeleteCollection")
 const createTransformer = recreateAction<typeof transformerCreated>("CreateTransformer")
 const updateTransformer = recreateAction<typeof transformerUpdated>("UpdateTransformer")
 const setTransformerPosition = recreateAction<typeof transformerPositionSet>("SetTransformerPosition")
 const addTransformerTarget = recreateAction<typeof transformerTargetAdded>("AddTransformerTarget")
 const addTransformerInput = recreateAction<typeof transformerInputAdded>("AddTransformerInput")
 const updateTransformerWAL = recreateAction<typeof transformerWALUpdated>("UpdateTransformerWAL")
+const deleteTransformer = recreateAction<typeof transformerDeleted>("DeleteTransformer")
 const createSource = recreateAction<typeof sourceCreated>("CreateSource")
 const updateSource = recreateAction<typeof sourceUpdated>("UpdateSource")
+const deleteSource = recreateAction<typeof sourceDeleted>("DeleteSource")
 const createDataURI = recreateAction<typeof dataURICreated>("CreateDataURI")
 const createMetadata = recreateAction<typeof metadataCreated>("CreateMetadata")
 const updateMetadata = recreateAction<typeof metadataUpdated>("UpdateMetadata")
@@ -118,14 +125,18 @@ const events: {[key: string]: ActionCreatorWithPayload<any, string>} = {
   "CollectionPositionSet": collectionPositionSet,
   "CollectionIsReadySet": collectionIsReadySet,
   "CollectionTargetAdded": collectionTargetAdded,
+  "CollectionTargetRemoved": collectionTargetRemoved,
+  "CollectionDeleted": collectionDeleted,
   "TransformerCreated": transformerCreated,
   "TransformerUpdated": transformerUpdated,
   "TransformerPositionSet": transformerPositionSet,
   "TransformerTargetAdded": transformerTargetAdded,
   "TransformerInputAdded": transformerInputAdded,
   "TransformerWALUpdated": transformerWALUpdated,
+  "TransformerDeleted": transformerDeleted,
   "SourceCreated": sourceCreated,
   "SourceUpdated": sourceUpdated,
+  "SourceDeleted": sourceDeleted,
   "DataURICreated": dataURICreated,
   "MetadataCreated": metadataCreated,
   "MetadataUpdated": metadataUpdated,
@@ -147,6 +158,7 @@ export {
   updateUser,
   createSource,
   updateSource,
+  deleteSource,
   createMetadata,
   updateMetadata,
   createDataURI,
@@ -157,12 +169,14 @@ export {
   setCollectionPosition,
   setCollectionIsReady,
   addCollectionTarget,
+  deleteCollection,
   createTransformer,
   updateTransformer,
   setTransformerPosition,
   addTransformerTarget,
   addTransformerInput,
   updateTransformerWAL,
+  deleteTransformer,
   completeTask,
 
   addWorkspace,

@@ -4,7 +4,6 @@ import { Link } from 'react-router-dom';
 import logo from 'assets/logo-white.svg'
 import notifications from 'assets/notifications.svg'
 import help from 'assets/help.svg'
-import search from 'assets/search.svg'
 
 import AvatarMenu from 'components/AvatarMenu'
 
@@ -22,10 +21,6 @@ class Navbar extends Component {
         </div>
 
         <div className="navbar-end">
-          <div className="navbar-item">
-            <img src={search} alt="search" width="20" height="20"/>
-          </div>
-
           <div className="navbar-item">
             <img src={help} alt="help" width="20" height="20"/>
           </div>

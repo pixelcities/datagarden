@@ -45,13 +45,15 @@ const SourcesTab: FC = (props) => {
 
   return (
     <>
-      <div className="panel-block-nb">
-        <p className="header-label">
-          Data Space Sources
-        </p>
-      </div>
+      <div id="collection-intro">
+        <div className="panel-block-nb">
+          <p className="header-label">
+            Data Space Sources
+          </p>
+        </div>
 
-      { dSources }
+        { dSources }
+      </div>
 
       <div className="panel-block" />
 
@@ -91,13 +93,13 @@ const WorkspaceTab: FC = (props) => {
           <TransformerCard title="Merge" type="merge" />
         </div>
         <div className="column is-4 mt-4">
-          <TransformerCard title="Function" type="function" />
+          <TransformerCard title="Function" type="function" isDisabled={true} />
         </div>
         <div className="column is-4 mt-4">
-          <TransformerCard title="Aggregate" type="aggregate" />
+          <TransformerCard title="Aggregate" type="aggregate" isDisabled={true} />
         </div>
         <div className="column is-4 mt-4">
-          <TransformerCard title="Filter" type="filter" />
+          <TransformerCard title="Filter" type="filter" isDisabled={true} />
         </div>
         <div className="column is-4 mt-4">
           <TransformerCard title="Custom" type="custom" />
@@ -111,7 +113,7 @@ const WorkspaceTab: FC = (props) => {
       </div>
       <div className="columns ml-3 is-gapless is-multiline">
         <div className="column is-4 mt-4">
-          <TransformerCard title="Geocode" type="geocode" />
+          <TransformerCard title="Geocode" type="geocode" isDisabled={true} />
         </div>
       </div>
 
@@ -136,7 +138,7 @@ const WorkspaceTab: FC = (props) => {
       </div>
       <div className="columns ml-3 is-gapless is-multiline">
         <div className="column is-4 mt-4">
-          <TransformerCard title="Graph" type="graph" />
+          <TransformerCard title="Graph" type="graph" isDisabled={true} />
         </div>
       </div>
 
@@ -147,10 +149,10 @@ const WorkspaceTab: FC = (props) => {
       </div>
       <div className="columns ml-3 is-gapless is-multiline">
         <div className="column is-4 mt-4">
-          <TransformerCard title="API" type="api" />
+          <TransformerCard title="API" type="api" isDisabled={true} />
         </div>
         <div className="column is-4 mt-4">
-          <TransformerCard title="CSV" type="csv" />
+          <TransformerCard title="CSV" type="csv" isDisabled={true} />
         </div>
       </div>
 
@@ -165,7 +167,7 @@ const ControlPanel: FC = (props) => {
     <>
       <nav className="panel" style={{height: "100%"}}>
         <p className="panel-tabs">
-          <Link to="#workspace" className={"panel-tab-header" + (activeTab === "workspace" ? " is-active" : "")} onClick={() => setActiveTab("workspace")}>Workspace</Link>
+          <Link id="workspace-intro" to="#workspace" className={"panel-tab-header" + (activeTab === "workspace" ? " is-active" : "")} onClick={() => setActiveTab("workspace")}>Workspace</Link>
           <Link to="#sources" className={"panel-tab-header" + (activeTab === "sources" ? " is-active" : "")} onClick={() => setActiveTab("sources")}>Sources</Link>
           <Link to="#comments" className={"panel-tab-header" + (activeTab === "comments" ? " is-active" : "")} onClick={() => setActiveTab("comments")}>Comments</Link>
         </p>

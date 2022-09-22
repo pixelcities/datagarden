@@ -1,4 +1,5 @@
 import React, { forwardRef, useEffect, useRef, useState, useLayoutEffect, CSSProperties } from 'react'
+import Joyride, { Placement } from 'react-joyride'
 
 import { gsap, TweenLite } from 'gsap'
 import { Draggable } from 'gsap/Draggable'
@@ -20,16 +21,18 @@ interface DComponentProps {
   children: React.ReactNode,
   setComponentPosition: (payload: {id: string, workspace: string, position: number[]}) => void,
   addComponentTarget: any,
+  deleteComponent: (payload: {id: string, workspace: string}) => void,
   onClick: any
 }
 
 const DComponent = forwardRef<{[id: string]: any}, DComponentProps>((props, _refs) => {
   const refs: React.MutableRefObject<{[id: string]: any}> = (_refs as React.MutableRefObject<{[id: string]: any}>)
-  const { component, offset, zoom, parentCoords, setComponentPosition, addComponentTarget, onClick, children } = props
+  const { component, offset, zoom, parentCoords, setComponentPosition, addComponentTarget, deleteComponent, onClick, children } = props
 
   const dispatch = useAppDispatch()
 
   const [ dims, setDims ] = useState({height: 0, width: 0})
+  const [ hintIsClosed, setHintIsClosed ] = useState(false)
 
   const ref = refs.current?.dragRef
   const proxyRef = useRef<SVGCircleElement | null>(null)
@@ -82,7 +85,7 @@ const DComponent = forwardRef<{[id: string]: any}, DComponentProps>((props, _ref
   }, [ ref, component, offset ])
 
   // Small semicircles that capture a drag event for the connector
-  const dragCircle = () => {
+  const dragCircle = React.useMemo(() => {
     const minHeight = 70
     const divHeight = dims.height > minHeight ? dims.height : minHeight
     const radius = divHeight / 8
@@ -90,24 +93,48 @@ const DComponent = forwardRef<{[id: string]: any}, DComponentProps>((props, _ref
     const fill = "#b3b3b3"
     const fillOpacity = 0.8
 
-    return (
-      <div className="drag-container">
-        <div id={component.id} className="drag-parent">
-        <div className="drag-block" style={{top: `calc(50% - ${radius}px)`, left: `-${radius}px`}}>
-          <svg xmlns="http://www.w3.org/2000/svg" width={radius} height={radius*2}>
-            <circle className="drag-connector-left" cx={radius} cy={radius} r={radius} style={{strokeWidth: "0", fill: fill, fillOpacity: fillOpacity}}/>
-          </svg>
-        </div>
+    const handleCloseTooltip = (e: any) => {
+      if (e.action === "close" && e.lifecycle === "complete") {
+        setHintIsClosed(true)
+      }
+    }
 
-        <div className="drag-block" style={{top: `calc(50% - ${radius}px)`, right: `${-radius}px`}}>
-          <svg xmlns="http://www.w3.org/2000/svg" width={radius} height={radius*2}>
-            <circle className="drag-connector-right" cx={0} cy={radius} r={radius} style={{strokeWidth: "0", fill: fill, fillOpacity: fillOpacity}}/>
-          </svg>
-        </div>
+    if (component.type === "source" || component.type === "collection") {
+      return (
+        <div className="drag-container">
+          <div id={component.id} className="drag-parent">
 
-      </div></div>
-    )
-  }
+          <Joyride
+            run={!hintIsClosed}
+            steps={[{
+              target: "#drag-intro",
+              placementBeacon: "auto" as Placement,
+              content: "Connect a dataset to a function by dragging a connector from here"
+            }]}
+            styles={{
+              options: {
+                primaryColor: "#e49bcf"
+              }
+            }}
+            callback={handleCloseTooltip}
+          />
+
+          <div id="drag-intro" className="drag-block" style={{top: `calc(50% - ${radius}px)`, right: `${-radius}px`}}>
+            <svg xmlns="http://www.w3.org/2000/svg" width={radius} height={radius*2}>
+              <circle className="drag-connector-right" cx={0} cy={radius} r={radius} style={{strokeWidth: "0", fill: fill, fillOpacity: fillOpacity}}/>
+            </svg>
+          </div>
+
+        </div></div>
+      )
+    } else {
+      return (
+        <div className="drag-container">
+          <div id={component.id} className="drag-parent" />
+        </div>
+      )
+    }
+  }, [ dims, component, hintIsClosed, setHintIsClosed ])
 
   useLayoutEffect(() => {
     offsetRef.current = offset
@@ -185,6 +212,13 @@ const DComponent = forwardRef<{[id: string]: any}, DComponentProps>((props, _ref
             })
 
 
+          } else if (targetId === "deleteComponent") {
+            deleteComponent({
+              id: component.id,
+              workspace: "default"
+            })
+
+
           } else if (targetId) {
             addComponentTarget({
               id: component.id,
@@ -226,7 +260,7 @@ const DComponent = forwardRef<{[id: string]: any}, DComponentProps>((props, _ref
 
       <div ref={ref} key={component.id} style={style}>
         { children }
-        { dragCircle() }
+        { dragCircle }
       </div>
     </>
   )

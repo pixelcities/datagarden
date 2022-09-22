@@ -12,7 +12,8 @@ import './TransformerCard.sass'
 
 interface TransformerCardProps {
   title: string,
-  type: string
+  type: string,
+  isDisabled?: boolean
 }
 
 interface Coords {
@@ -20,7 +21,7 @@ interface Coords {
   y: number
 }
 
-const TransformerCard: FC<TransformerCardProps> = ({ title, type }) => {
+const TransformerCard: FC<TransformerCardProps> = ({ title, type, isDisabled }) => {
   const dispatch = useAppDispatch()
   const { keyStore } = useKeyStoreContext();
   const dataSpace = useAppSelector(selectActiveDataSpace)
@@ -61,8 +62,8 @@ const TransformerCard: FC<TransformerCardProps> = ({ title, type }) => {
   return (
     <>
       <div className="card-block"
-        ref={dragRef}
-        style={{opacity: opacity, cursor: "grab" }}
+        ref={isDisabled ? null : dragRef}
+        style={{opacity: opacity, cursor: (isDisabled ? "default" : "pointer"), backgroundColor: (isDisabled ? "#3c3c3c3d" : "#ffffff")}}
       >
         <svg className="card-icon" xmlns="http://www.w3.org/2000/svg" width={40} height={40}>
           <use href={sprites + "#" + type} style={{color: "black"}} />

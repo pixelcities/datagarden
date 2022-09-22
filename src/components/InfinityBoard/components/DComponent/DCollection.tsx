@@ -1,7 +1,7 @@
 import React, { useEffect, useState, forwardRef } from 'react'
 import { useAppDispatch, useAppSelector } from 'hooks'
 import { Coords, WindowDimensions, Component } from 'types'
-import { setCollectionPosition, addCollectionTarget } from 'state/actions'
+import { setCollectionPosition, addCollectionTarget, deleteCollection } from 'state/actions'
 import { selectActiveDataSpace, selectMetadataMap } from 'state/selectors'
 import DComponent from './DComponent'
 import { useKeyStoreContext } from 'contexts'
@@ -31,6 +31,10 @@ const DCollection = forwardRef<{[id: string]: any}, DCollectionProps>((props, _r
     dispatch(addCollectionTarget(payload))
   }
 
+  const deleteComponent = (payload: {id: string, workspace: string}) => {
+    dispatch(deleteCollection(payload))
+  }
+
   let ellipseA = collection.color
   let ellipseB = collection.color
 
@@ -54,6 +58,7 @@ const DCollection = forwardRef<{[id: string]: any}, DCollectionProps>((props, _r
       dimensions={dimensions}
       setComponentPosition={setComponentPosition}
       addComponentTarget={addComponentTarget}
+      deleteComponent={deleteComponent}
       onClick={onClick}
     >
       <div className="data-box" style={{position: "relative", backgroundColor: (collection.is_ready ? collection.color : "#aaaaaa")}}>
@@ -75,7 +80,7 @@ const DCollection = forwardRef<{[id: string]: any}, DCollectionProps>((props, _r
         </div>
 
         <p className="bottom-date">
-          2021/03/13
+        { (collection?.date || "").split("T")[0] }
         </p>
 
 

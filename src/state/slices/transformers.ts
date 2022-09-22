@@ -40,6 +40,12 @@ const transformersSlice = createSlice({
       if (transformer) {
         transformer.wal = action.payload.wal
       }
+    },
+    transformerDeleted(state, action: PayloadAction<{id: string, workspace: string}>) {
+      const ids = state.ids.filter(id => id !== action.payload.id)
+
+      state.ids = ids
+      delete state.entities[action.payload.id]
     }
   }
 })
@@ -54,7 +60,8 @@ export const {
   transformerPositionSet,
   transformerTargetAdded,
   transformerInputAdded,
-  transformerWALUpdated
+  transformerWALUpdated,
+  transformerDeleted
 } = transformersSlice.actions
 
 

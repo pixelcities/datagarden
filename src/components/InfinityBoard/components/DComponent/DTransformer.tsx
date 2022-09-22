@@ -2,7 +2,7 @@ import React, { forwardRef } from 'react'
 import { useAppSelector, useAppDispatch } from 'hooks'
 import { selectTransformerById } from 'state/selectors'
 import { Coords, WindowDimensions, Component } from 'types'
-import { addTransformerTarget, setTransformerPosition } from 'state/actions'
+import { addTransformerTarget, setTransformerPosition, deleteTransformer } from 'state/actions'
 import DComponent from './DComponent'
 
 import sprites from 'assets/t-sprites.svg'
@@ -29,6 +29,10 @@ const DTransformer = forwardRef<{[id: string]: any}, DTransformerProps>((props, 
     dispatch(addTransformerTarget(payload))
   }
 
+  const deleteComponent = (payload: any) => {
+    dispatch(deleteTransformer(payload))
+  }
+
   return (
     <DComponent
       ref={_refs}
@@ -39,6 +43,7 @@ const DTransformer = forwardRef<{[id: string]: any}, DTransformerProps>((props, 
       dimensions={dimensions}
       setComponentPosition={setComponentPosition}
       addComponentTarget={addComponentTarget}
+      deleteComponent={deleteComponent}
       onClick={onClick}
     >
       <svg xmlns="http://www.w3.org/2000/svg" width={40} height={40}>

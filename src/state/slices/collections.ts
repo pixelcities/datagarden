@@ -36,6 +36,20 @@ const collectionsSlice = createSlice({
       if (collection) {
         collection.targets.push(action.payload.target)
       }
+    },
+    collectionTargetRemoved(state, action: PayloadAction<{id: string, workspace: string, target: string}>) {
+      const collection = state.entities[action.payload.id]
+      if (collection) {
+        const targets = collection.targets.filter(t => t !== action.payload.target)
+
+        collection.targets = targets
+      }
+    },
+    collectionDeleted(state, action: PayloadAction<{id: string, workspace: string}>) {
+      const ids = state.ids.filter(id => id !== action.payload.id)
+
+      state.ids = ids
+      delete state.entities[action.payload.id]
     }
   }
 })
@@ -50,7 +64,9 @@ export const {
   collectionSchemaUpdated,
   collectionPositionSet,
   collectionIsReadySet,
-  collectionTargetAdded
+  collectionTargetAdded,
+  collectionTargetRemoved,
+  collectionDeleted
 } = collectionsSlice.actions
 
 

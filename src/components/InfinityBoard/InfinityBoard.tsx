@@ -166,7 +166,7 @@ const InfinityBoard: FC = (props) => {
           onClose={() => setActiveCollectionId("")}
         />
       )
-    } else if (activeTransformer) {
+    } else if (activeTransformer && activeTransformer.collections.length > (activeTransformer.type === "merge" ? 1 : 0)) {
       return (
         <Transformer
           id={activeTransformer.id}
@@ -184,7 +184,7 @@ const InfinityBoard: FC = (props) => {
 
       { renderModal }
 
-      <div style={{position: "relative", overflow: "hidden", height: "100%", width: "100%"}} ref={ref}>
+      <div id="builder-intro" style={{position: "relative", overflow: "hidden", height: "100%", width: "100%"}} ref={ref}>
 
         <div ref={dropRef} style={style} >
 
@@ -203,9 +203,7 @@ const InfinityBoard: FC = (props) => {
           </nav>
         </div>
 
-        <div style={{position: "absolute", bottom: "30px", left: "30px"}}>
-          <span>{"{\"x\": " + offset.x + ", \"y\": " + offset.y + ", \"z\": " + zoom + "}"}</span>
-        </div>
+        <div id="deleteComponent" className="delete" style={{position: "absolute", bottom: "30px", left: "30px", width: "20px", height: "20px"}} />
 
         <div className="preview" style={{position: "absolute", bottom: "30px", right: "30px", width: "200px", height: "200px" }}>
           <CanvasPreview
