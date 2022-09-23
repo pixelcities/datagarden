@@ -99,7 +99,7 @@ const WorkspaceTab: FC = (props) => {
           <TransformerCard title="Aggregate" type="aggregate" isDisabled={true} />
         </div>
         <div className="column is-4 mt-4">
-          <TransformerCard title="Filter" type="filter" isDisabled={true} />
+          <TransformerCard title="Filter" type="filter" />
         </div>
         <div className="column is-4 mt-4">
           <TransformerCard title="Custom" type="custom" />

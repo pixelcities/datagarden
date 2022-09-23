@@ -3,6 +3,7 @@ import React, { FC } from 'react';
 import { Schema, WAL } from 'types'
 import CustomTransformer from './components/CustomTransformer'
 import MergeTransformer from './components/MergeTransformer'
+import FilterTransformer from './components/FilterTransformer'
 
 
 interface TransformerSettingsProps {
@@ -36,6 +37,14 @@ const TransformerSettings: FC<TransformerSettingsProps> = (props) => {
       <MergeTransformer
         leftSchema={props.schemas[0]}
         rightSchema={props.schemas[1]}
+        {...props}
+      />
+    )
+
+  } else if (transformerType === "filter") {
+    return (
+      <FilterTransformer
+        schema={props.schemas[0]}
         {...props}
       />
     )
