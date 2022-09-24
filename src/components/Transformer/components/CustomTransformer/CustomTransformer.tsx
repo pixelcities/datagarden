@@ -1,7 +1,8 @@
 import React, { FC, useState, useEffect } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPlus } from '@fortawesome/free-solid-svg-icons'
-import Joyride, { Placement } from 'react-joyride'
+
+import Onboarding from './Onboarding'
 
 import { useAppDispatch, useAppSelector } from 'hooks'
 import { selectMetadataMap, selectActiveDataSpace } from 'state/selectors'
@@ -277,35 +278,7 @@ const CustomTransformer: FC<CustomTransformerProps> = ({ id, wal, tableId, colum
   return (
     <div className="is-relative px-4 py-4" style={{height: "100%"}}>
 
-      <Joyride
-        steps={[{
-          target: "#query-intro",
-          placementBeacon: "auto" as Placement,
-          content: (
-            <>
-              <p className="has-text-justified">
-                This is the advanced query builder. While not user friendly is supports most SQL statements, which means
-                anything is possible!
-              </p>
-              <br />
-              <p className="has-text-justified">
-                If familiar with SQL, you may write any statement but be sure to replace the table and column identifiers with references. You can add
-                new columns by clicking the plus icon next to the identifiers overview.
-              </p>
-              <br />
-              <p className="has-text-justified">
-                If not familiar, or if you are happy with the results: nothing is final until you click <span className="has-text-weight-bold"> commit</span>.
-                When commiting the results, they are computed in the background and the new dataset is created. Have fun!
-              </p>.
-            </>
-          )
-        }]}
-        styles={{
-          options: {
-            primaryColor: "#e49bcf"
-          }
-        }}
-      />
+      <Onboarding />
 
       { renderIdModal }
       { renderValueModal }

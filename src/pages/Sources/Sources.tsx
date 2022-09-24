@@ -1,13 +1,13 @@
 import React, { FC, Component, useState, useMemo } from 'react'
 import { RouteComponentProps } from 'react-router'
 import { Route } from "react-router-dom"
-import Joyride, { Placement } from 'react-joyride'
 
 import Navbar from 'components/Navbar'
 import Sidebar from 'components/Sidebar'
 import SourceTable from 'components/SourceTable'
 import SourceCard from 'components/SourceCard'
 import SourceCreator from 'components/SourceCreator'
+import Onboarding from './Onboarding'
 
 import { useAppSelector } from 'hooks'
 import { selectVisibleSources, selectMetadataMap, selectActiveDataSpace } from 'state/selectors'
@@ -21,41 +21,6 @@ import iconView from 'assets/page-setting-icon.svg'
 
 import './Sources.sass'
 
-const tour = [
-  {
-    target: "#sources-intro",
-    placementBeacon: "top-end" as Placement,
-    title: "Adding a new data source",
-    content: (
-      <>
-        <p className="has-text-justified">
-          All data sources are first loaded into your browser without leaving the computer. Next, you can setup what other
-          users within this data space should be able to see this data, down to the column. The data is then encrypted and
-          uploaded so that it can be reused in the future.
-        </p>
-        <br />
-        <p className="has-text-justified">
-          Whenever you share a part of a dataset with another user, you seamlessly set up a secure communication channel to
-          send them the encryption key. Whenever they come online next, they will receive your message and add the key to their
-          keystore.
-        </p>
-      </>
-    )
-  },
-  {
-    target: "#sources-intro",
-    placementBeacon: "top-end" as Placement,
-    title: "Adding a new data source",
-    content: (
-      <>
-        <p className="has-text-justified">
-          You can upload a new dataset now. Please note that only csv files are supported at this moment.
-        </p>
-      </>
-    )
-  }
-]
-
 
 class SourcesRoute extends Component<RouteComponentProps> {
   parentPath = (this.props.match.params as any).path;
@@ -64,16 +29,7 @@ class SourcesRoute extends Component<RouteComponentProps> {
     return (
       <div>
         <Navbar />
-
-        <Joyride
-          steps={tour}
-          styles={{
-            options: {
-              primaryColor: "#e49bcf"
-            }
-          }}
-          continuous={true}
-        />
+        <Onboarding />
 
         <Sidebar page="sources" isMini={false}>
           <Route path={this.parentPath} component={Sources} />

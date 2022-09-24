@@ -1,8 +1,9 @@
 import React, { forwardRef, useEffect, useRef, useState, useLayoutEffect, CSSProperties } from 'react'
-import Joyride, { Placement } from 'react-joyride'
 
 import { gsap, TweenLite } from 'gsap'
 import { Draggable } from 'gsap/Draggable'
+
+import OnboardingSteps from 'components/OnboardingSteps'
 
 import { useAppDispatch } from 'hooks'
 import { setComponentDimensions } from 'state/actions'
@@ -32,7 +33,6 @@ const DComponent = forwardRef<{[id: string]: any}, DComponentProps>((props, _ref
   const dispatch = useAppDispatch()
 
   const [ dims, setDims ] = useState({height: 0, width: 0})
-  const [ hintIsClosed, setHintIsClosed ] = useState(false)
 
   const ref = refs.current?.dragRef
   const proxyRef = useRef<SVGCircleElement | null>(null)
@@ -42,6 +42,7 @@ const DComponent = forwardRef<{[id: string]: any}, DComponentProps>((props, _ref
   const zoomRef = useRef<number>(zoom)
   const parentCoordsRef = useRef<Coords>(parentCoords)
   const dimsRef = useRef<WindowDimensions>(dims)
+  const initialRenderRef = useRef(true)
 
 
   /*
@@ -84,6 +85,28 @@ const DComponent = forwardRef<{[id: string]: any}, DComponentProps>((props, _ref
     })
   }, [ ref, component, offset ])
 
+  // Only render the onboarding hint when the canvas has not moved yet. This hint
+  // is generally only showed once, so it is not currently worth it to handle
+  // moving the beacon along with the canvas.
+  const renderOnboarding = React.useMemo(() => {
+    if (initialRenderRef.current === true) {
+      initialRenderRef.current = false
+
+      return (
+        <OnboardingSteps
+          name={"onboarding-draggable"}
+          steps={[{
+            target: `#drag-intro-${component.id}`,
+            placementBeacon: "auto",
+            content: "Connect a dataset to a function by dragging a connector from here"
+          }]}
+        />
+      )
+    }
+
+  // eslint-disable-next-line
+  }, [ component.id, zoom, offset ])
+
   // Small semicircles that capture a drag event for the connector
   const dragCircle = React.useMemo(() => {
     const minHeight = 70
@@ -93,33 +116,14 @@ const DComponent = forwardRef<{[id: string]: any}, DComponentProps>((props, _ref
     const fill = "#b3b3b3"
     const fillOpacity = 0.8
 
-    const handleCloseTooltip = (e: any) => {
-      if (e.action === "close" && e.lifecycle === "complete") {
-        setHintIsClosed(true)
-      }
-    }
-
     if (component.type === "source" || component.type === "collection") {
       return (
         <div className="drag-container">
           <div id={component.id} className="drag-parent">
 
-          <Joyride
-            run={!hintIsClosed}
-            steps={[{
-              target: "#drag-intro",
-              placementBeacon: "auto" as Placement,
-              content: "Connect a dataset to a function by dragging a connector from here"
-            }]}
-            styles={{
-              options: {
-                primaryColor: "#e49bcf"
-              }
-            }}
-            callback={handleCloseTooltip}
-          />
+          { renderOnboarding }
 
-          <div id="drag-intro" className="drag-block" style={{top: `calc(50% - ${radius}px)`, right: `${-radius}px`}}>
+          <div id={"drag-intro-" + component.id} className="drag-block" style={{top: `calc(50% - ${radius}px)`, right: `${-radius}px`}}>
             <svg xmlns="http://www.w3.org/2000/svg" width={radius} height={radius*2}>
               <circle className="drag-connector-right" cx={0} cy={radius} r={radius} style={{strokeWidth: "0", fill: fill, fillOpacity: fillOpacity}}/>
             </svg>
@@ -134,7 +138,7 @@ const DComponent = forwardRef<{[id: string]: any}, DComponentProps>((props, _ref
         </div>
       )
     }
-  }, [ dims, component, hintIsClosed, setHintIsClosed ])
+  }, [ dims, component, renderOnboarding ])
 
   useLayoutEffect(() => {
     offsetRef.current = offset
