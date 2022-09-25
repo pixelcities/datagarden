@@ -1,12 +1,12 @@
 import React, { FC, useRef, useEffect, useState } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faKey } from '@fortawesome/free-solid-svg-icons'
+import { faKey, faFileCsv } from '@fortawesome/free-solid-svg-icons'
 
 import { useAppDispatch, useAppSelector } from 'hooks'
 import { selectUsers, selectMetadataById, selectSourceById, selectCollectionById, selectActiveDataSpace } from 'state/selectors'
 import { updateSource, deleteSource, updateCollection, updateMetadata, shareSecret } from 'state/actions'
 
-import { Source, Schema, User } from 'types'
+import { Source, Collection, Schema, User } from 'types'
 
 import DataTable from 'components/DataTable'
 import ShareCard from 'components/ShareCard'
@@ -39,6 +39,7 @@ const SourceTable: FC<SourceTableProps> = (props) => {
   const [handle, setHandle] = useState<number>(0)
   const [isActive, setIsActive] = useState(true)
   const [tableId, setTableId] = useState<string | null>(null)
+  const [downloadUrl, setDownloadUrl] = useState<string | null>(null)
 
   const { user } = useAuthContext();
   const { keyStore, protocol } = useKeyStoreContext();
@@ -222,6 +223,60 @@ const SourceTable: FC<SourceTableProps> = (props) => {
     }
   }, [ source, isCollection, dispatch, handleClose ])
 
+  const renderDownloadButton = React.useMemo(() => {
+    const handleDownload = (collection: Collection | undefined) => {
+      if (collection) {
+        const csv = dataFusion?.export_csv(collection.id)
+        const blob = new Blob([csv], { type: "text/csv" })
+
+        setDownloadUrl(window.URL.createObjectURL(blob))
+      }
+    }
+
+    if (isCollection) {
+      return (
+        <div className="column is-one-quarter">
+          <button className="button is-primary is-outlined is-pulled-right mr-3" onClick={() => handleDownload(collection)}> Download </button>
+        </div>
+      )
+    } else {
+      return (
+        <></>
+      )
+    }
+  }, [ collection, isCollection, dataFusion ])
+
+  const handlePostDownload = (url: string) => {
+    window.setTimeout(() => {
+      window.URL.revokeObjectURL(url)
+    }, 5000)
+
+    setDownloadUrl(null)
+  }
+
+  const renderDownloadModal = React.useMemo(() => {
+    if (downloadUrl) {
+      return (
+        <div id="test123" className="modal is-active">
+          <div className="modal-background"></div>
+          <div className="modal-content">
+            <div className="box">
+              <p className="buttons">
+                <a className="button is-large" href={downloadUrl} download={title + ".csv"} onClick={() => handlePostDownload(downloadUrl)}>
+                  <span className="icon is-medium">
+                    <FontAwesomeIcon icon={faFileCsv} color="#4f4f4f" size="lg"/>
+                  </span>
+                </a>
+              </p>
+            </div>
+          </div>
+
+           <button className="modal-close is-large" aria-label="close" onClick={() => setDownloadUrl(null)}></button>
+        </div>
+      )
+    }
+  }, [ downloadUrl, setDownloadUrl, title ])
+
   const renderSettings = (
     <div className="is-relative px-4 py-4" style={{height: "100%"}}>
       <div className="field">
@@ -276,6 +331,7 @@ const SourceTable: FC<SourceTableProps> = (props) => {
           </div>
 
           { renderDelete }
+          { renderDownloadButton }
 
         </div>
       </div>
@@ -288,6 +344,8 @@ const SourceTable: FC<SourceTableProps> = (props) => {
       <div className="modal-background"></div>
 
       { !(isCollection === true) ? <Onboarding /> : null }
+
+      { downloadUrl && renderDownloadModal }
 
       <div id="data-intro" className="p-modal-card">
         <header className="modal-card-head">
