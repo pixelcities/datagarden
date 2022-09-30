@@ -86,3 +86,18 @@
       font-size: 10+$i*2px
       line-height: 10+$i*2px
 
+.message-box
+  @extend .message
+
+  .message-header
+    @extend .header-label
+    color: #000
+    background-color: #fff !important
+    border-radius: 6px
+    box-shadow: 0 0.5em 1em -0.125em rgba(#000, 0.1), 0 0px 0 1px rgba(#000, 0.02)
+    margin-bottom: 2rem
+    height: 55px
+    cursor: pointer
+
+  .message-body
+    margin-top: -2rem

@@ -60,6 +60,12 @@ import {
 } from './slices/metadata'
 
 import {
+  selectConcepts,
+  selectConceptById,
+  selectConceptMap
+} from './slices/concepts'
+
+import {
   selectDataURIById
 } from './slices/uri'
 
@@ -148,6 +154,9 @@ export {
   selectMetadata,
   selectMetadataById,
   selectMetadataMap,
+  selectConcepts,
+  selectConceptById,
+  selectConceptMap,
   selectDataURIById,
   selectSecrets,
   selectTasks

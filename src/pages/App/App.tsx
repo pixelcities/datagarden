@@ -10,6 +10,7 @@ import store from 'state/store'
 
 import DataSpaces from 'pages/DataSpaces'
 import Sources from 'pages/Sources'
+import Taxonomy from 'pages/Taxonomy'
 import Builder from 'pages/Builder'
 import Profile from 'pages/Profile'
 import KeyStore from 'pages/KeyStore'
@@ -47,6 +48,7 @@ function App() {
                       <DataSpaces>
                         <PrivateRoute path="/:handle/keys" component={KeyStore} />
                         <PrivateRoute path="/:handle/sources" component={Sources} />
+                        <PrivateRoute path="/:handle/taxonomy" component={Taxonomy} />
                         <PrivateRoute path="/:handle/" component={Builder} />
                       </DataSpaces>
 

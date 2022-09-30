@@ -1,4 +1,5 @@
-// interfaces.ts
+import { DataType } from './enums'
+
 
 export interface Coords {
   x: number,
@@ -121,6 +122,23 @@ export interface Metadata {
   id: string,
   workspace: string,
   metadata: string
+}
+
+// ConceptAnnotations
+export interface ConceptA {
+  id: string,
+  workspace: string,
+  name: string,
+  dataType?: DataType,
+  aggregateFn?: string,
+  broader?: string,
+  narrower?: string
+}
+
+export interface Concept {
+  id: string,
+  workspace: string,
+  concept: string
 }
 
 export interface DataURI {

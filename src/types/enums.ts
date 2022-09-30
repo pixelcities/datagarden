@@ -3,3 +3,9 @@ export enum ExecutionError {
   Failure = 1,
 }
 
+export enum DataType {
+  String = "string",
+  RelativeNumber = "relnum",
+  AbsoluteNumber = "absnum",
+  Other = "other",
+}

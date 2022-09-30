@@ -17,6 +17,8 @@ export type {
   WAL,
   User,
   Metadata,
+  Concept,
+  ConceptA,
   DataURI,
   Secret,
   Task,
@@ -24,5 +26,6 @@ export type {
 } from './interfaces'
 
 export {
-  ExecutionError
+  ExecutionError,
+  DataType
 } from './enums'

@@ -56,11 +56,15 @@ import {
   loadDataSpace
 } from './slices/dataspaces'
 
-
 import {
   metadataCreated,
   metadataUpdated
 } from './slices/metadata'
+
+import {
+  conceptCreated,
+  conceptUpdated
+} from './slices/concepts'
 
 import {
   dataURICreated
@@ -113,6 +117,8 @@ const deleteSource = recreateAction<typeof sourceDeleted>("DeleteSource")
 const createDataURI = recreateAction<typeof dataURICreated>("CreateDataURI")
 const createMetadata = recreateAction<typeof metadataCreated>("CreateMetadata")
 const updateMetadata = recreateAction<typeof metadataUpdated>("UpdateMetadata")
+const createConcept = recreateAction<typeof conceptCreated>("CreateConcept")
+const updateConcept = recreateAction<typeof conceptUpdated>("UpdateConcept")
 const createUser = recreateAction<typeof userCreated>("CreateUser")
 const updateUser = recreateAction<typeof userUpdated>("UpdateUser")
 const shareSecret = recreateAction<typeof secretShared>("ShareSecret")
@@ -140,6 +146,8 @@ const events: {[key: string]: ActionCreatorWithPayload<any, string>} = {
   "DataURICreated": dataURICreated,
   "MetadataCreated": metadataCreated,
   "MetadataUpdated": metadataUpdated,
+  "ConceptCreated": conceptCreated,
+  "ConceptUpdated": conceptUpdated,
   "UserCreated": userCreated,
   "UserUpdated": userUpdated,
   "SecretShared": secretShared,
@@ -161,6 +169,8 @@ export {
   deleteSource,
   createMetadata,
   updateMetadata,
+  createConcept,
+  updateConcept,
   createDataURI,
   shareSecret,
   createCollection,

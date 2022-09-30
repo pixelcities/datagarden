@@ -61,7 +61,7 @@ const Sidebar: FC<SidebarProps> = (props) => {
                   <li><Link className="menu-label has-text-centered my-3 px-0 py-0" to={basepath + "/sources"}>
                     <img src={datasourceIcon} alt="" />
                   </Link></li>
-                  <li><Link className="menu-label has-text-centered my-3 px-0 py-0" style={{cursor: "default"}} to={basepath}>
+                  <li><Link className="menu-label has-text-centered my-3 px-0 py-0" to={basepath + "/taxonomy"}>
                     <img src={ecosystemIcon} alt="" />
                   </Link></li>
                   <li><Link className="menu-label has-text-centered my-3 px-0 py-0" to={basepath}>
@@ -87,7 +87,7 @@ const Sidebar: FC<SidebarProps> = (props) => {
                   <li>
                     <ul>
                       <li><Link className={"button-label" + (props.page === "sources" ? " is-active" : "")} to={basepath + "/sources"}>Data Sources</Link></li>
-                      <li><Link className="button-label" style={{cursor: "default", color: "#a2a2a2"}} to={basepath}>Taxonomy</Link></li>
+                      <li><Link className={"button-label"  + (props.page === "taxonomy" ? " is-active" : "")} to={basepath + "/taxonomy"}>Taxonomy</Link></li>
                       <li><Link className={"button-label" + (props.page === "builder" ? " is-active" : "")} to={basepath}>Pipeline Builder</Link></li>
                       <li><Link className="button-label" style={{cursor: "default", color: "#a2a2a2"}} to={basepath}>Widgets</Link></li>
                     </ul>

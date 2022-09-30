@@ -11,6 +11,7 @@ import uiReducer from './slices/ui'
 import userReducer from './slices/users'
 import dataspaceReducer from './slices/dataspaces'
 import metadataReducer from './slices/metadata'
+import conceptReducer from './slices/concepts'
 import uriReducer from './slices/uri'
 import secretReducer from './slices/secrets'
 import taskReducer from './slices/tasks'
@@ -26,6 +27,7 @@ const rootReducer = combineReducers({
   users: userReducer,
   dataspaces: dataspaceReducer,
   metadata: metadataReducer,
+  concepts: conceptReducer,
   uris: uriReducer,
   secrets: secretReducer,
   tasks: taskReducer
