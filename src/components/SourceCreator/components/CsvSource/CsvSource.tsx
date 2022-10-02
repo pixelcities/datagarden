@@ -6,10 +6,10 @@ import { useKeyStoreContext } from 'contexts'
 import { useAuthContext } from 'contexts';
 
 import { useAppDispatch, useAppSelector } from 'hooks'
-import { createSource, createMetadata, createDataURI } from 'state/actions'
+import { createSource, createMetadata, createConcept, createDataURI } from 'state/actions'
 import { selectDataURIById, selectActiveDataSpace } from 'state/selectors'
-import { Source } from 'types'
-
+import { Source, DataType } from 'types'
+import { emptyTaxonomy } from 'utils/taxonomy'
 
 // https://github.com/denoland/deno/issues/12754
 declare global {
@@ -88,65 +88,99 @@ const CsvSource: FC<CsvSourceProps> = ({onComplete}) => {
         const _table = arrow["FS"].readFile(path, {})
         dataFusion.load_table(_table, tableId)
 
-        // Publish the title
-        dispatch(createMetadata({
-          id: tableId,
-          workspace: "default",
-          metadata: keyStore?.encrypt_metadata(dataSpace?.key_id, name)
-        }))
+        dataFusion.describe_table(tableId).then((tableDescription: any) => {
 
-        // Publish the named columns
-        for (let attribute of attributes) {
+          // Publish the title
           dispatch(createMetadata({
-            id: attribute.id,
+            id: tableId,
             workspace: "default",
-            metadata: keyStore?.encrypt_metadata(dataSpace?.key_id, attribute.name)
+            metadata: keyStore?.encrypt_metadata(dataSpace?.key_id, name)
           }))
-        }
 
-        // Generate the keys
-        generateColumnsWithKeys(attributes, user?.email ?? "").then((columns) => {
-          keyStore?.generate_key(16).then((key_id: string) => {
-            const schema = {
-              id: tableId,
-              key_id: key_id,
-              column_order: columns.map(c => c.id),
-              columns: columns,
-              shares: [
-                {
-                  type: "owner",
-                  principal: user?.email
+          // Publish the concepts
+          const taxonomy = emptyTaxonomy(dataSpace?.key_id)
+
+          for (let attribute of attributes) {
+            const description = tableDescription.descriptions.find((d: any) => d.name === attribute.id)
+
+            let dataType = DataType.Other
+            let aggregateFn = "array_agg"
+
+            if (description) {
+              if (description.data_type.indexOf("Int") !== -1 || description.data_type.indexOf("Float") !== -1) {
+                // Very basic check to auto assign the right aggregate function type
+                if (description.min > 0 && (description.max <= 1 || description.max <= 100)) {
+                  dataType = DataType.RelativeNumber
+                  aggregateFn = "avg"
+
+                } else {
+                  dataType = DataType.AbsoluteNumber
+                  aggregateFn = "sum"
                 }
-              ]
-            }
-
-            // TODO: this should be the metadata key when it is shared internally
-            let keymap = [
-              "__FOOTER", key_id, keyStore?.get_key(key_id)
-            ]
-
-            for (let column of columns) {
-              keymap.push(column.id)
-              keymap.push(column.key_id)
-              keymap.push(keyStore?.get_key(column.key_id))
-            }
-
-            // Save the table
-            arrow.write_remote_parquet(path, s3_path, tokens.access_key, tokens.secret_key, tokens.session_token, keymap).then(() => {
-              // Save the metadata
-              const source = {
-                id: tableId,
-                workspace: "default",
-                type: "csv",
-                uri: uri,
-                schema: schema,
-                is_published: false
               }
 
-              dispatch(createSource(source))
-              onComplete(source)
+              if (description.data_type === "Utf8") {
+                dataType = DataType.String
+              }
+            }
 
-              setIsLoaded(true)
+            const concept = taxonomy.serialize({
+              id: attribute.concept_id,
+              workspace: "default",
+              name: attribute.name,
+              dataType: dataType,
+              aggregateFn: aggregateFn
+            })
+
+            if (concept) {
+              dispatch(createConcept(concept))
+            }
+          }
+
+          // Generate the keys
+          generateColumnsWithKeys(attributes, user?.email ?? "").then((columns) => {
+            keyStore?.generate_key(16).then((key_id: string) => {
+              const schema = {
+                id: tableId,
+                key_id: key_id,
+                column_order: columns.map(c => c.id),
+                columns: columns,
+                shares: [
+                  {
+                    type: "owner",
+                    principal: user?.email
+                  }
+                ]
+              }
+
+              // TODO: this should be the metadata key when it is shared internally
+              let keymap = [
+                "__FOOTER", key_id, keyStore?.get_key(key_id)
+              ]
+
+              for (let column of columns) {
+                keymap.push(column.id)
+                keymap.push(column.key_id)
+                keymap.push(keyStore?.get_key(column.key_id))
+              }
+
+              // Save the table
+              arrow.write_remote_parquet(path, s3_path, tokens.access_key, tokens.secret_key, tokens.session_token, keymap).then(() => {
+                // Save the metadata
+                const source = {
+                  id: tableId,
+                  workspace: "default",
+                  type: "csv",
+                  uri: uri,
+                  schema: schema,
+                  is_published: false
+                }
+
+                dispatch(createSource(source))
+                onComplete(source)
+
+                setIsLoaded(true)
+              })
             })
           })
         })

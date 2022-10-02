@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext, FC } from "react";
+import React, { useState, useEffect, useContext, FC } from "react"
 
 interface DataFusionContextI {
   arrow?: any
@@ -7,13 +7,13 @@ interface DataFusionContextI {
   loadDataFusion: () => void
 }
 
-const DataFusionContext = React.createContext<DataFusionContextI>({loadArrow: () => {}, loadDataFusion: () => {}});
+const DataFusionContext = React.createContext<DataFusionContextI>({loadArrow: () => {}, loadDataFusion: () => {}})
 
 export const DataFusionProvider: FC = ({ children }) => {
-  const [loading, setLoading] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false)
 
-  const [arrow, setArrow] = useState<any>(null);
-  const [dataFusion,setDataFusion]=useState<any>(null);
+  const [arrow, setArrow] = useState<any>(null)
+  const [dataFusion,setDataFusion]=useState<any>(null)
 
   const init = async () => {
     // Load all the heavy wasm stuff
@@ -21,10 +21,10 @@ export const DataFusionProvider: FC = ({ children }) => {
     const { Arrow } = await import("arrow-wasm")
 
     const _arrow = await Arrow()
-    const _datafusion = new DataFusion();
+    const _datafusion = new DataFusion()
 
-    setArrow(_arrow);
-    setDataFusion(_datafusion);
+    setArrow(_arrow)
+    setDataFusion(_datafusion)
 
     // Ready
     setLoading(false)
@@ -47,7 +47,7 @@ export const DataFusionProvider: FC = ({ children }) => {
   }
 
   useEffect(()=> {
-    init();
+    init()
   },[])
 
   return (
@@ -63,5 +63,5 @@ export const DataFusionProvider: FC = ({ children }) => {
   )
 }
 
-export const useDataFusionContext = () =>  useContext(DataFusionContext);
+export const useDataFusionContext = () =>  useContext(DataFusionContext)
 

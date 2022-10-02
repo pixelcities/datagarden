@@ -75,7 +75,7 @@ const ConceptDetail: FC<ConceptDetailI> = ({ concept }) => {
     }
   }
 
-  type keys = keyof typeof DataType
+  type DataTypeKey = keyof typeof DataType
 
   return (
     <div>
@@ -90,8 +90,8 @@ const ConceptDetail: FC<ConceptDetailI> = ({ concept }) => {
         <div className="field pb-0">
           <label className="label">Data Type</label>
           <Dropdown
-            items={["String", "RelativeNumber", "AbsoluteNumber"]}
-            onClick={(item: string) => setDataType((DataType[item as keys]))}
+            items={Object.keys(DataType).sort((a, b) => b === dataType ? 1 : 0)}
+            onClick={(item: string) => setDataType((DataType[item as DataTypeKey]))}
           />
         </div>
 

@@ -4,8 +4,8 @@ export enum ExecutionError {
 }
 
 export enum DataType {
-  String = "string",
-  RelativeNumber = "relnum",
-  AbsoluteNumber = "absnum",
-  Other = "other",
+  String = "String",
+  RelativeNumber = "RelativeNumber",
+  AbsoluteNumber = "AbsoluteNumber",
+  Other = "Other",
 }
