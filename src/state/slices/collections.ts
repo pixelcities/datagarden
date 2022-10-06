@@ -87,3 +87,10 @@ export const selectCollectionIds = createSelector(
   collections => collections.map(collection => collection.id)
 )
 
+export const selectCollectionConceptIdMap = createSelector(
+  selectCollections,
+  collections => collections
+    .flatMap(collection => collection.schema.columns)
+    .reduce((acc: {[key: string]: string}, data) => ({...acc, [data.id]: data.concept_id}), {})
+)
+

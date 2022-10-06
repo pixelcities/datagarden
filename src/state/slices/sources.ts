@@ -51,3 +51,10 @@ export const selectUsableSources = createSelector(
   sources => sources.filter(source => source.is_published)
 )
 
+export const selectSourceConceptIdMap = createSelector(
+  selectSources,
+  sources => sources
+    .flatMap(source => source.schema.columns)
+    .reduce((acc: {[key: string]: string}, data) => ({...acc, [data.id]: data.concept_id}), {})
+)
+

@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCheck } from '@fortawesome/free-solid-svg-icons'
 
 import { useAppDispatch, useAppSelector } from 'hooks'
-import { selectMetadataMap, selectTransformerById, selectCollectionsByIds, selectActiveDataSpace } from 'state/selectors'
+import { selectMetadataMap, selectConceptMap, selectTransformerById, selectCollectionsByIds, selectActiveDataSpace } from 'state/selectors'
 import { updateMetadata } from 'state/actions'
 
 import { Schema, WAL } from 'types'
@@ -16,6 +16,7 @@ import { useDataFusionContext } from 'contexts'
 import { useKeyStoreContext } from 'contexts'
 import { useAuthContext } from 'contexts'
 import { loadRemoteTable } from 'utils/loadRemoteTable'
+import { emptyTaxonomy } from 'utils/taxonomy'
 
 import './Transformer.sass'
 
@@ -51,6 +52,7 @@ const Transformer: FC<TransformerProps> = ({id, collections, transformers, wal, 
   const transformer = useAppSelector(state => selectTransformerById(state, id))
   const inputCollections = useAppSelector(state => selectCollectionsByIds(state, collections))
   const metadata = useAppSelector(selectMetadataMap)
+  const concepts = useAppSelector(selectConceptMap)
   const dataSpace = useAppSelector(selectActiveDataSpace)
 
   useEffect(() => loadDataFusion(), [ loadDataFusion ])
@@ -123,15 +125,15 @@ const Transformer: FC<TransformerProps> = ({id, collections, transformers, wal, 
 
     inputCollections.forEach(collection => {
       collection.schema.columns.forEach(column => {
-        const maybe_name = metadata[column.id]
-        const name = maybe_name ? keyStore?.decrypt_metadata(dataSpace?.key_id, maybe_name) : column.id;
+        const maybe_concept = emptyTaxonomy(dataSpace?.key_id).deserialize(concepts[column.concept_id])
+        const name = maybe_concept ? maybe_concept.name : column.id
 
         attributes[column.id] = name
       })
     })
 
     return attributes
-  }, [ keyStore, dataSpace, inputCollections, metadata ])
+  }, [ dataSpace, inputCollections, concepts ])
 
   const handleClose = () => {
     // Cleanup intermediate table

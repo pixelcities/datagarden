@@ -5,7 +5,7 @@ import { faPlus } from '@fortawesome/free-solid-svg-icons'
 import Onboarding from './Onboarding'
 
 import { useAppDispatch, useAppSelector } from 'hooks'
-import { selectMetadataMap, selectActiveDataSpace } from 'state/selectors'
+import { selectColumnConceptMap, selectMetadataMap, selectActiveDataSpace } from 'state/selectors'
 import { createMetadata, updateTransformerWAL } from 'state/actions'
 
 import { Schema, WAL } from 'types'
@@ -13,6 +13,7 @@ import { Schema, WAL } from 'types'
 import { useDataFusionContext } from 'contexts'
 import { useKeyStoreContext } from 'contexts'
 import { buildQuery } from 'utils/buildQuery'
+import { emptyTaxonomy } from 'utils/taxonomy'
 
 
 interface CustomTransformerProps {
@@ -55,6 +56,7 @@ const CustomTransformer: FC<CustomTransformerProps> = ({ id, wal, tableId, colum
   const { keyStore } = useKeyStoreContext();
 
   const metadata = useAppSelector(selectMetadataMap)
+  const columnConcepts = useAppSelector(selectColumnConceptMap)
   const dataSpace = useAppSelector(selectActiveDataSpace)
 
   useEffect(() => {
@@ -152,8 +154,8 @@ const CustomTransformer: FC<CustomTransformerProps> = ({ id, wal, tableId, colum
 
   const renderIdentifiers = React.useMemo(() => {
     return Object.entries(log.identifiers).map(([i, identifier]) => {
-      const maybe_name = metadata[identifier]
-      const name = maybe_name ? keyStore?.decrypt_metadata(dataSpace?.key_id, maybe_name) : identifier
+      const maybe_concept = emptyTaxonomy(dataSpace?.key_id).deserialize(columnConcepts[identifier])
+      const name = maybe_concept ? maybe_concept.name : identifier
 
       return (
         <tr key={i}>
@@ -162,7 +164,7 @@ const CustomTransformer: FC<CustomTransformerProps> = ({ id, wal, tableId, colum
         </tr>
       )
     })
-  }, [log.identifiers, dimensions.width, metadata, dataSpace, keyStore])
+  }, [log.identifiers, dimensions.width, columnConcepts, dataSpace])
 
   const renderValues = React.useMemo(() => {
     return Object.entries(log.values).map(([i, value]) => {

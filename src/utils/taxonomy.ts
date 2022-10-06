@@ -5,8 +5,8 @@ import { Concept, ConceptA } from 'types'
 interface TaxonomyI {
   get(id: string): ConceptA | undefined,
   list(): ConceptA[],
-  serialize(c: ConceptA): Concept | undefined,
-  deserialize(c: Concept): ConceptA | undefined
+  serialize(c: ConceptA | undefined): Concept | undefined,
+  deserialize(c: Concept | undefined): ConceptA | undefined
 }
 
 class Taxonomy implements TaxonomyI {
@@ -36,8 +36,8 @@ class Taxonomy implements TaxonomyI {
     return Object.values(this.concepts)
   }
 
-  serialize(c: ConceptA) {
-    if (keyStoreRef) {
+  serialize(c: ConceptA | undefined) {
+    if (c && keyStoreRef) {
       const concept = keyStoreRef.encrypt_metadata(this.keyId, JSON.stringify(c))
 
       return {
@@ -48,8 +48,8 @@ class Taxonomy implements TaxonomyI {
     }
   }
 
-  deserialize(c: Concept) {
-    if (keyStoreRef) {
+  deserialize(c: Concept | undefined) {
+    if (c && keyStoreRef) {
       const concept = JSON.parse(keyStoreRef.decrypt_metadata(this.keyId, c.concept))
 
       return concept as ConceptA

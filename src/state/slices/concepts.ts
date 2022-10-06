@@ -33,6 +33,6 @@ export const {
 
 export const selectConceptMap = createSelector(
   selectConcepts,
-  concept => concept.reduce((acc: {[key: string]: string}, data) => ({...acc, [data.id]: data.concept}), {})
+  concept => concept.reduce((acc: {[key: string]: Concept}, data) => ({...acc, [data.id]: data}), {})
 )
 

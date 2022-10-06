@@ -64,8 +64,6 @@ const FilterTransformer: FC<FilterTransformerProps> = ({ id, wal, tableId, leftI
         .filter((field: any) => field.name === columnId)
         .map((field: any) => field.type.name !== "int" && field.type.name !== "floatingpoint" && field.type.name !== "bool")
 
-      console.log(isQuoted)
-
       const quoteChar = isQuoted[0] ? "'" : ""
 
       // Build a proper transaction to be saved, and a query for the preview

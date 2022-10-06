@@ -4,16 +4,14 @@ import { FixedSizeList } from 'react-window'
 import { TweenLite } from 'gsap'
 
 import { useAppSelector } from 'hooks'
-import { selectMetadataMap, selectActiveDataSpace } from 'state/selectors'
-
+import { selectConceptMap, selectActiveDataSpace } from 'state/selectors'
 import { Schema } from 'types'
 
-import HeaderDropdown from './components/HeaderDropdown';
-
-import { useDataFusionContext } from 'contexts';
-import { useKeyStoreContext } from 'contexts'
+import { useDataFusionContext } from 'contexts'
+import { emptyTaxonomy } from 'utils/taxonomy'
 
 import './DataTable.sass'
+import HeaderDropdown from './components/HeaderDropdown'
 import { columnPadding, scrollbarWidth } from './utils'
 
 interface DataTableProps {
@@ -34,10 +32,9 @@ const DataTable: FC<DataTableProps> = ({ id, schema, interactiveHeader, style, v
   const [lastClick, setLastClick] = useState("")
   const [columnId, setColumnId] = useState("")
 
-  const { keyStore } = useKeyStoreContext();
   const { dataFusion } = useDataFusionContext();
 
-  const metadata = useAppSelector(selectMetadataMap)
+  const concepts = useAppSelector(selectConceptMap)
   const dataSpace = useAppSelector(selectActiveDataSpace)
 
   const nrRows = React.useMemo(() => {
@@ -73,8 +70,8 @@ const DataTable: FC<DataTableProps> = ({ id, schema, interactiveHeader, style, v
       const column = schema.columns.find(column => column.id === cid)
 
       if (column) {
-        const maybe_name = metadata[column.id]
-        const name = maybe_name ? keyStore?.decrypt_metadata(dataSpace?.key_id, maybe_name) : column.id;
+        const maybe_concept = emptyTaxonomy(dataSpace?.key_id).deserialize(concepts[column.concept_id])
+        const name = maybe_concept ? maybe_concept.name : column.id
 
         attributes.push({
           accessor: column.id,
@@ -84,7 +81,7 @@ const DataTable: FC<DataTableProps> = ({ id, schema, interactiveHeader, style, v
     })
 
     return columnPadding(attributes)
-  }, [ keyStore, dataSpace, schema, metadata ])
+  }, [ dataSpace, schema, concepts ])
 
   const scrollBarSize = React.useMemo(() => scrollbarWidth(), [])
 

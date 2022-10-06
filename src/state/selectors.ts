@@ -1,6 +1,6 @@
 import { createSelector } from '@reduxjs/toolkit'
 import { createCachedSelector } from 're-reselect';
-import { Component } from 'types'
+import { Component, Concept } from 'types'
 import { RootState } from 'state/store'
 
 // import isolated selectors
@@ -8,7 +8,8 @@ import {
   selectCollections,
   selectCollectionById,
   selectCollectionsByIds,
-  selectCollectionIds
+  selectCollectionIds,
+  selectCollectionConceptIdMap
 } from './slices/collections'
 
 import {
@@ -27,7 +28,8 @@ import {
   selectSources,
   selectSourceById,
   selectVisibleSources,
-  selectUsableSources
+  selectUsableSources,
+  selectSourceConceptIdMap
 } from './slices/sources'
 
 import {
@@ -123,6 +125,17 @@ export const selectSourcesWithOwner = createSelector(
     })
   }
 )
+
+export const selectColumnConceptMap = createSelector(
+  selectCollectionConceptIdMap,
+  selectSourceConceptIdMap,
+  selectConceptMap,
+  (collections, sources, concepts): {[key: string]: Concept} => {
+    return Object.entries({...sources, ...collections})
+      .reduce((acc: {[key: string]: Concept}, [columnId, conceptId]) => ({...acc, [columnId]: concepts[conceptId]}), {})
+  }
+)
+
 
 // re-export
 export {
