@@ -4,6 +4,7 @@ import { Schema, WAL } from 'types'
 import CustomTransformer from './components/CustomTransformer'
 import MergeTransformer from './components/MergeTransformer'
 import FilterTransformer from './components/FilterTransformer'
+import AggregateTransformer from './components/AggregateTransformer'
 
 
 interface TransformerSettingsProps {
@@ -44,6 +45,14 @@ const TransformerSettings: FC<TransformerSettingsProps> = (props) => {
   } else if (transformerType === "filter") {
     return (
       <FilterTransformer
+        schema={props.schemas[0]}
+        {...props}
+      />
+    )
+
+  } else if (transformerType === "aggregate") {
+    return (
+      <AggregateTransformer
         schema={props.schemas[0]}
         {...props}
       />

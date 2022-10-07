@@ -93,16 +93,16 @@ const WorkspaceTab: FC = (props) => {
           <TransformerCard title="Merge" type="merge" />
         </div>
         <div className="column is-4 mt-4">
-          <TransformerCard title="Function" type="function" isDisabled={true} />
-        </div>
-        <div className="column is-4 mt-4">
-          <TransformerCard title="Aggregate" type="aggregate" isDisabled={true} />
+          <TransformerCard title="Aggregate" type="aggregate" />
         </div>
         <div className="column is-4 mt-4">
           <TransformerCard title="Filter" type="filter" />
         </div>
         <div className="column is-4 mt-4">
           <TransformerCard title="Custom" type="custom" />
+        </div>
+        <div className="column is-4 mt-4">
+          <TransformerCard title="Function" type="function" isDisabled={true} />
         </div>
       </div>
 
