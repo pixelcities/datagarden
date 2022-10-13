@@ -1,4 +1,6 @@
 import React, { FC, useState } from 'react'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faPlus } from '@fortawesome/free-solid-svg-icons'
 
 import { useAppDispatch, useAppSelector } from 'hooks'
 import { selectConceptMap, selectActiveDataSpace } from 'state/selectors'
@@ -30,8 +32,9 @@ const AggregateTransformer: FC<AggregateTransformerProps> = ({ id, wal, tableId,
   const concepts = useAppSelector(selectConceptMap)
   const dataSpace = useAppSelector(selectActiveDataSpace)
 
-  const [column, setColumn] = useState<string | null>(null)
-  const [aggregateFn, setAggregateFn] = useState("SUM")
+  const [columns, addColumn] = useState<(string | null)[]>([null])
+  const [aggregateFns, addAggregateFn] = useState<string[]>(["SUM"])
+  const [groupClauses, addGroupClause] = useState<(string | null)[]>([])
   const [log, setLog] = useState<WAL>(wal ?? {identifiers: {}, values: {}, transactions: [], artifacts: []})
 
   const { dataFusion } = useDataFusionContext()
@@ -39,11 +42,12 @@ const AggregateTransformer: FC<AggregateTransformerProps> = ({ id, wal, tableId,
   const handleAggregate = React.useCallback((e: any) => {
     e.preventDefault()
 
-    const columnId = Object.keys(columnNames).find(id => schema.column_order.indexOf(id) !== -1 && columnNames[id] === column)
+    const columnIds = columns.map(column => Object.entries(columnNames).find(([a, b]) => b === column)).filter((x): x is [string, string] => !!x).map(x => x[0])
+    const groupIds = groupClauses.map(group => Object.entries(columnNames).find(([a, b]) => b === group)).filter((x): x is [string, string] => !!x).map(x => x[0])
 
-    if (tableId && columnId) {
+    if (tableId) {
       // Check if the identifiers need to be added to the log
-      const missingIdentifiers = [tableId, columnId].filter(i => Object.values(log.identifiers).indexOf(i) === -1)
+      const missingIdentifiers = [tableId, ...columnIds, ...groupIds].filter(i => Object.values(log.identifiers).indexOf(i) === -1)
       const nextId = Object.keys(log.identifiers).length ? Math.max(...Object.keys(log.identifiers).map(Number)) + 1 : 1
 
       // Add the missing identifiers
@@ -57,23 +61,31 @@ const AggregateTransformer: FC<AggregateTransformerProps> = ({ id, wal, tableId,
       Object.entries(identifiers).forEach(([i, id]) => ids[id] = i)
 
       // Build a proper transaction to be saved, and a query for the preview
-      const transaction = `SELECT ${aggregateFn}(%${ids[columnId]}$I) FROM %${ids[tableId]}$I`
-      const query = `SELECT ${aggregateFn}("${columnId}") FROM "${tableId}"`
+      const selectIdClauses = columnIds.map((columnId, i) => `${aggregateFns[i]}(%${ids[columnId]}$I)`).join(",")
+      const selectNameClauses = columnIds.map((columnId, i) => `${aggregateFns[i]}("${columnId}")`).join(",")
+
+      const groupIdClauses = groupIds.map((groupId, i) => `%${ids[groupId]}$I`).join(",")
+      const groupNameClauses = groupIds.map((groupId, i) => `"${groupId}"`).join(",")
+      const groupBy = (groupIds.length > 0) ? "GROUP BY" : ""
+
+      const transaction = `SELECT ${selectIdClauses} FROM %${ids[tableId]}$I ${groupBy} ${groupIdClauses}`
+      const query = `SELECT ${selectNameClauses} FROM "${tableId}" ${groupBy} ${groupNameClauses}`
 
       // Update schema to include aggregate function metadata
       const arrow_schema = dataFusion?.get_schema(tableId)
       const fields = arrow_schema.fields.map((field: any) => {
-        // The active field should receive the selected aggregateFn
-        if (field.name === columnId) {
+        // The active fields should receive the selected aggregateFn
+        const index = columnIds.indexOf(field.name)
+        if (index !== -1) {
           return {...field, ...{
             metadata: {
-              aggregate_fn: aggregateFn.toLowerCase()
+              aggregate_fn: aggregateFns[index].toLowerCase()
             }
           }}
 
         // The others will inherit the aggregateFn from their concept
         } else {
-          const fullColumn = schema.columns.find(column => field.name === columnId)
+          const fullColumn = schema.columns.find(column => field.name === column.id)
           const maybe_concept = emptyTaxonomy(dataSpace?.key_id).deserialize(concepts[fullColumn?.concept_id ?? ""])
           const defaultAggregateFn = maybe_concept ? maybe_concept.aggregateFn : "array_agg"
 
@@ -123,7 +135,7 @@ const AggregateTransformer: FC<AggregateTransformerProps> = ({ id, wal, tableId,
       console.log("Cannot build query: missing identifier")
     }
 
-  }, [ tableId, schema, column, columnNames, log, dataFusion, dataSpace, concepts, aggregateFn, onComplete ])
+  }, [ tableId, schema, columns, columnNames, log, dataFusion, dataSpace, concepts, aggregateFns, groupClauses, onComplete ])
 
   const handleCommit = () => {
     dispatch(updateTransformerWAL({
@@ -133,26 +145,84 @@ const AggregateTransformer: FC<AggregateTransformerProps> = ({ id, wal, tableId,
     }))
   }
 
+  const columnSelection = React.useMemo(() => {
+    return columns.map((column, i) => {
+      return (
+        <div key={"column" + i} className="field has-addons is-horizontal pb-0">
+          <Dropdown
+            items={["SUM", "AVG", "MIN", "MAX"]}
+            onClick={(item: string) => addAggregateFn(aggregateFns.map((x, j) => i === j ? item : x))}
+          />
+
+          <span className="is-size-4 has-text-weight-bold px-2"> ( </span>
+          <Dropdown
+            items={Object.values(columnNames).filter((x) => columns.indexOf(x) === -1)}
+            onClick={(item: string) => addColumn(columns.map((x, j) => i === j ? item : x))}
+          />
+          <span className="is-size-4 has-text-weight-bold px-2"> ) </span>
+        </div>
+      )
+    })
+  }, [ columns, columnNames, aggregateFns, addAggregateFn, addColumn ])
+
+  const handleAddColumn = (e: any) => {
+    e.preventDefault()
+
+    addColumn([...columns, null])
+    addAggregateFn([...aggregateFns, "SUM"])
+  }
+
+  const groupSelection = React.useMemo(() => {
+    return groupClauses.map((group, i) => {
+      return (
+        <div key={"column" + i} className="field has-addons is-horizontal pb-0">
+          <Dropdown
+            items={Object.values(columnNames)}
+            onClick={(item: string) => addGroupClause(groupClauses.map((x, j) => i === j ? item : x))}
+          />
+
+          { (i !== groupClauses.length -1) ?
+            <span className="is-size-4 has-text-weight-bold px-2 pt-2"> , </span>
+            : null
+          }
+
+        </div>
+      )
+    })
+  }, [ columnNames, groupClauses, addGroupClause ])
+
+  const handleAddGroupClause = (e: any) => {
+    e.preventDefault()
+
+    addGroupClause([...groupClauses, null])
+  }
+
+
   return (
     <div className="is-relative px-4 py-4" style={{height: "100%"}}>
 
       <form onSubmit={handleAggregate}>
         <div className="field pb-0">
-          <label className="label">Aggregate Column</label>
+          <button className="plus-button" onClick={handleAddColumn}>
+            <span className="icon is-small">
+              <FontAwesomeIcon icon={faPlus} size="sm"/>
+            </span>
+          </button>
+          <label className="label">Aggregate Columns</label>
         </div>
-        <div className="field has-addons is-horizontal pb-0">
-          <Dropdown
-            items={["SUM", "AVG", "MIN", "MAX"]}
-            onClick={(item: string) => setAggregateFn(item)}
-          />
 
-          <span className="is-size-4 has-text-weight-bold px-2"> ( </span>
-          <Dropdown
-            items={Object.values(columnNames)}
-            onClick={(item: string) => setColumn(item)}
-          />
-          <span className="is-size-4 has-text-weight-bold px-2"> ) </span>
+        { columnSelection }
+
+        <div className="field pb-0">
+          <button className="plus-button" onClick={handleAddGroupClause}>
+            <span className="icon is-small">
+              <FontAwesomeIcon icon={faPlus} size="sm"/>
+            </span>
+          </button>
+          <label className="label">Group By</label>
         </div>
+
+        { groupSelection }
 
         <div className="field is-grouped is-grouped-right pt-0">
           <div className="control">
