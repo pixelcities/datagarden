@@ -45,6 +45,12 @@ const AggregateTransformer: FC<AggregateTransformerProps> = ({ id, wal, tableId,
     const columnIds = columns.map(column => Object.entries(columnNames).find(([a, b]) => b === column)).filter((x): x is [string, string] => !!x).map(x => x[0])
     const groupIds = groupClauses.map(group => Object.entries(columnNames).find(([a, b]) => b === group)).filter((x): x is [string, string] => !!x).map(x => x[0])
 
+    // Datafusion does not like having the group clause as an aggregate
+    if (groupIds.filter(group => columnIds.indexOf(group) !== -1).length > 0) {
+      console.log("Error: group clauses should not be part of the aggregate expressions")
+      return
+    }
+
     if (tableId) {
       // Check if the identifiers need to be added to the log
       const missingIdentifiers = [tableId, ...columnIds, ...groupIds].filter(i => Object.values(log.identifiers).indexOf(i) === -1)
@@ -61,15 +67,15 @@ const AggregateTransformer: FC<AggregateTransformerProps> = ({ id, wal, tableId,
       Object.entries(identifiers).forEach(([i, id]) => ids[id] = i)
 
       // Build a proper transaction to be saved, and a query for the preview
-      const selectIdClauses = columnIds.map((columnId, i) => `${aggregateFns[i]}(%${ids[columnId]}$I)`).join(",")
-      const selectNameClauses = columnIds.map((columnId, i) => `${aggregateFns[i]}("${columnId}")`).join(",")
-
-      const groupIdClauses = groupIds.map((groupId, i) => `%${ids[groupId]}$I`).join(",")
-      const groupNameClauses = groupIds.map((groupId, i) => `"${groupId}"`).join(",")
+      const groupIdClauses = groupIds.map((groupId, i) => `%${ids[groupId]}$I`)
+      const groupNameClauses = groupIds.map((groupId, i) => `"${groupId}"`)
       const groupBy = (groupIds.length > 0) ? "GROUP BY" : ""
 
-      const transaction = `SELECT ${selectIdClauses} FROM %${ids[tableId]}$I ${groupBy} ${groupIdClauses}`
-      const query = `SELECT ${selectNameClauses} FROM "${tableId}" ${groupBy} ${groupNameClauses}`
+      const selectIdClauses = [...groupIdClauses, ...columnIds.map((columnId, i) => `${aggregateFns[i]}(%${ids[columnId]}$I) AS %${ids[columnId]}$I`)]
+      const selectNameClauses = [...groupNameClauses, ...columnIds.map((columnId, i) => `${aggregateFns[i]}("${columnId}") AS "${columnId}"`)]
+
+      const transaction = `SELECT ${selectIdClauses.join(",")} FROM %${ids[tableId]}$I ${groupBy} ${groupIdClauses.join(",")}`
+      const query = `SELECT ${selectNameClauses.join(",")} FROM "${tableId}" ${groupBy} ${groupNameClauses.join(",")}`
 
       // Update schema to include aggregate function metadata
       const arrow_schema = dataFusion?.get_schema(tableId)
@@ -124,8 +130,8 @@ const AggregateTransformer: FC<AggregateTransformerProps> = ({ id, wal, tableId,
         done.then(() => {
           setLog({...log, ...{
             identifiers: identifiers,
-            transactions: [...log.transactions, transaction],
-            artifacts: [...log.artifacts, artifact]
+            transactions: [transaction],
+            artifacts: [artifact]
           }})
 
           onComplete()

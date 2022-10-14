@@ -1,12 +1,13 @@
 import { EnhancedStore } from '@reduxjs/toolkit'
 
-import { ExecutionError, User, DataSpace, Task, Collection, Schema, Share, WAL } from 'types'
+import { ExecutionError, User, DataSpace, Task, Collection, Schema, Concept, Share, WAL } from 'types'
 import { RootState } from 'state/store'
 import { shareSecret, createMetadata, updateCollectionSchema } from 'state/actions'
 
 import { writeRemoteTable } from 'utils/writeRemoteTable'
 import { loadRemoteTable } from 'utils/loadRemoteTable'
 import { buildQuery } from 'utils/buildQuery'
+import { emptyTaxonomy } from 'utils/taxonomy'
 
 export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: EnhancedStore<RootState>, keyStore: any, protocol: any, arrow: any, dataFusion: any) => {
   return new Promise<{actions: any[], metadata: {[key: string]: any}}>((resolve, reject) => {
@@ -22,6 +23,7 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
       const transformer = store.getState().transformers.entities[transformer_id]
       const collections = transformer?.collections.map(id => store.getState().collections.entities[id]) ?? []
       const metadata = Object.values(store.getState().metadata.entities).reduce((a, b) => ({...a, [b?.id ?? ""]: b?.metadata}), {})
+      const concepts = Object.values(store.getState().concepts.entities).filter((x): x is Concept => !!x).reduce((a: {[key: string]: Concept}, b) => ({...a, [b.id]: b}), {})
       const users = Object.values(store.getState().users.entities).reduce((a, b) => ({...a, [b?.email ?? ""]: b?.id}), {})
 
       if (!transformer) {
@@ -53,6 +55,25 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
             // Build a new schema, including new keys
             rebuildSchema(id, target, collection.id, collection.schema, [], fragments, task_meta, user, users, metadata, dataSpace, keyStore, protocol).then(({actions, schema, renames, meta}) => {
 
+              // If this is an aggregate transformer, we need to include the appropiate aggregate function
+              // in the schema metadata, so that datafusion can use it for non active columns.
+              if (transformer.type === "aggregate") {
+                const arrow_schema = dataFusion?.get_schema(id)
+                const fields = arrow_schema.fields.map((field: any) => {
+                  const fullColumn = collection.schema.columns.find(column => field.name === column.id)
+                  const maybe_concept = emptyTaxonomy(dataSpace?.key_id).deserialize(concepts[fullColumn?.concept_id ?? ""])
+                  const defaultAggregateFn = maybe_concept ? maybe_concept.aggregateFn : "array_agg"
+
+                  return {...field, ...{
+                    metadata: {
+                      aggregate_fn: defaultAggregateFn
+                    }
+                  }}
+                })
+
+                dataFusion?.update_schema(id, {...arrow_schema, ...{fields: fields}})
+              }
+
               // Look at the requested fragments, and determine if this requires executing the
               // real query or if we can simply use the artifact.
               const identifiers = Object.values(wal.identifiers)
@@ -66,11 +87,14 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
                 updateSchema(id, fragments, renames, dataFusion)
 
                 // And finally, save the table to s3
-                writeRemoteTable(id, uri, schema, user, arrow, dataFusion, keyStore)
-
-                resolve({
-                  actions: actions,
-                  metadata: meta
+                writeRemoteTable(id, uri, schema, user, arrow, dataFusion, keyStore).then(() => {
+                  resolve({
+                    actions: actions,
+                    metadata: meta
+                  })
+                }).catch(() => {
+                  reject(ExecutionError.Failure)
+                  return
                 })
               })
             })
