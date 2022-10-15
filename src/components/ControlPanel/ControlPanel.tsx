@@ -59,7 +59,7 @@ const SourcesTab: FC = (props) => {
 
       <div className="panel-block-nb">
         <p className="header-label">
-          Public Sources
+          Workspace Sources
         </p>
       </div>
 
@@ -99,10 +99,10 @@ const WorkspaceTab: FC = (props) => {
           <TransformerCard title="Filter" type="filter" />
         </div>
         <div className="column is-4 mt-4">
-          <TransformerCard title="Custom" type="custom" />
+          <TransformerCard title="Function" type="function" />
         </div>
         <div className="column is-4 mt-4">
-          <TransformerCard title="Function" type="function" isDisabled={true} />
+          <TransformerCard title="Custom" type="custom" />
         </div>
       </div>
 
@@ -150,9 +150,6 @@ const WorkspaceTab: FC = (props) => {
       <div className="columns ml-3 is-gapless is-multiline">
         <div className="column is-4 mt-4">
           <TransformerCard title="API" type="api" isDisabled={true} />
-        </div>
-        <div className="column is-4 mt-4">
-          <TransformerCard title="CSV" type="csv" isDisabled={true} />
         </div>
       </div>
 

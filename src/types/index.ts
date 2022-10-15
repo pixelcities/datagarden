@@ -27,5 +27,6 @@ export type {
 
 export {
   ExecutionError,
-  DataType
+  DataType,
+  Function1
 } from './enums'

@@ -9,3 +9,15 @@ export enum DataType {
   AbsoluteNumber = "AbsoluteNumber",
   Other = "Other",
 }
+
+export enum Function1 {
+  abs = "abs",
+  length = "length",
+  lower = "lower",
+  ltrim = "ltrim",
+  round = "round",
+  rtrim = "rtrim",
+  sqrt = "sqrt",
+  trim = "trim",
+  upper = "upper"
+}
