@@ -3,16 +3,17 @@ import { Link } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from 'hooks'
 import { useDrop } from 'react-dnd'
 
-import { selectComponents, selectConnectedComponents, selectCollectionById, selectTransformerById, selectCoords } from 'state/selectors'
+import { selectComponents, selectConnectedComponents, selectCollectionById, selectTransformerById, selectWidgetById, selectCoords } from 'state/selectors'
 import { setCoords, setWindowDimensions } from 'state/actions'
 import usePan from 'hooks/usePan'
 import useZoom from 'hooks/useZoom'
 
 import grid from 'assets/grid.svg';
 
-import { DCollection, DTransformer } from './components/DComponent'
+import { DCollection, DTransformer, DWidget } from './components/DComponent'
 import Collection from 'components/Collection'
 import Transformer from 'components/Transformer'
+import Widget from 'components/Widget'
 import CanvasPreview from 'components/CanvasPreview'
 import { ConnectedConnector } from './components/Connector'
 
@@ -27,6 +28,7 @@ const InfinityBoard: FC = (props) => {
   const [workspace, setWorkspace] = useState("default")
   const [activeCollectionId, setActiveCollectionId] = useState("")
   const [activeTransformerId, setActiveTransformerId] = useState("")
+  const [activeWidgetId, setActiveWidgetId] = useState("")
 
   const ref = useRef<HTMLDivElement | null>(null)
   const zoom = useZoom(ref)
@@ -40,6 +42,7 @@ const InfinityBoard: FC = (props) => {
   const connectedComponents = useAppSelector(state => selectConnectedComponents(state, workspace))
   const activeCollection = useAppSelector(state => selectCollectionById(state, activeCollectionId))
   const activeTransformer = useAppSelector(state => selectTransformerById(state, activeTransformerId))
+  const activeWidget = useAppSelector(state => selectWidgetById(state, activeWidgetId))
 
   const [, dropRef] = useDrop(() => ({
     accept: "ControlPanel",
@@ -123,6 +126,20 @@ const InfinityBoard: FC = (props) => {
           />
         )
 
+      } else if (component.type === "graph") {
+        return (
+          <DWidget
+            key={component.id}
+            ref={dragRefs.current?.[component.id]}
+            widget={component}
+            offset={offset}
+            zoom={zoom}
+            parentCoords={coords}
+            dimensions={dimensions}
+            onClick={() => setActiveWidgetId(component.id)}
+          />
+        )
+
       } else {
         return (
           <DTransformer
@@ -138,7 +155,7 @@ const InfinityBoard: FC = (props) => {
         )
       }
     })
-  }, [ components, dragRefs, coords, dimensions, offset, zoom, setActiveCollectionId, setActiveTransformerId ])
+  }, [ components, dragRefs, coords, dimensions, offset, zoom, setActiveCollectionId, setActiveTransformerId, setActiveWidgetId ])
 
   const renderConnectors = useMemo(() => {
     return connectedComponents.map(component => {
@@ -176,8 +193,16 @@ const InfinityBoard: FC = (props) => {
           onClose={() => setActiveTransformerId("")}
         />
       )
+    } else if (activeWidget) {
+      return (
+        <Widget
+          id={activeWidget.id}
+          collection={activeWidget.collection}
+          onClose={() => setActiveWidgetId("")}
+        />
+      )
     }
-  }, [ activeCollection, activeTransformer ])
+  }, [ activeCollection, activeTransformer, activeWidget ])
 
   return (
     <>

@@ -4,6 +4,7 @@ import { websocketMiddleware } from 'middleware/websockets'
 
 import collectionsReducer from './slices/collections'
 import transformersReducer from './slices/transformers'
+import widgetsReducer from './slices/widgets'
 import workspacesReducer from './slices/workspaces'
 import sourceReducer from './slices/sources'
 import organisationReducer from './slices/organisations'
@@ -20,6 +21,7 @@ import taskReducer from './slices/tasks'
 const rootReducer = combineReducers({
   collections: collectionsReducer,
   transformers: transformersReducer,
+  widgets: widgetsReducer,
   workspaces: workspacesReducer,
   sources: sourceReducer,
   organisations: organisationReducer,

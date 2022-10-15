@@ -22,6 +22,14 @@ import {
 } from './slices/transformers'
 
 import {
+  widgetCreated,
+  widgetUpdated,
+  widgetPositionSet,
+  widgetInputAdded,
+  widgetDeleted
+} from './slices/widgets'
+
+import {
   addWorkspace,
   setWorkspacePosition,
   addWorkspaceTarget
@@ -111,6 +119,11 @@ const addTransformerTarget = recreateAction<typeof transformerTargetAdded>("AddT
 const addTransformerInput = recreateAction<typeof transformerInputAdded>("AddTransformerInput")
 const updateTransformerWAL = recreateAction<typeof transformerWALUpdated>("UpdateTransformerWAL")
 const deleteTransformer = recreateAction<typeof transformerDeleted>("DeleteTransformer")
+const createWidget = recreateAction<typeof widgetCreated>("CreateWidget")
+const updateWidget = recreateAction<typeof widgetUpdated>("UpdateWidget")
+const setWidgetPosition = recreateAction<typeof widgetPositionSet>("SetWidgetPosition")
+const addWidgetInput = recreateAction<typeof widgetInputAdded>("AddWidgetInput")
+const deleteWidget = recreateAction<typeof widgetDeleted>("DeleteWidget")
 const createSource = recreateAction<typeof sourceCreated>("CreateSource")
 const updateSource = recreateAction<typeof sourceUpdated>("UpdateSource")
 const deleteSource = recreateAction<typeof sourceDeleted>("DeleteSource")
@@ -140,6 +153,11 @@ const events: {[key: string]: ActionCreatorWithPayload<any, string>} = {
   "TransformerInputAdded": transformerInputAdded,
   "TransformerWALUpdated": transformerWALUpdated,
   "TransformerDeleted": transformerDeleted,
+  "WidgetCreated": widgetCreated,
+  "WidgetUpdated": widgetUpdated,
+  "WidgetPositionSet": widgetPositionSet,
+  "WidgetInputAdded": widgetInputAdded,
+  "WidgetDeleted": widgetDeleted,
   "SourceCreated": sourceCreated,
   "SourceUpdated": sourceUpdated,
   "SourceDeleted": sourceDeleted,
@@ -187,6 +205,11 @@ export {
   addTransformerInput,
   updateTransformerWAL,
   deleteTransformer,
+  createWidget,
+  updateWidget,
+  setWidgetPosition,
+  addWidgetInput,
+  deleteWidget,
   completeTask,
 
   addWorkspace,

@@ -6,6 +6,7 @@ export type {
   Component,
   Collection,
   Transformer,
+  Widget,
   Workspace,
   Organisation,
   Source,

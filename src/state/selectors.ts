@@ -19,6 +19,12 @@ import {
 } from './slices/transformers'
 
 import {
+  selectWidgets,
+  selectWidgetById,
+  selectWidgetIds
+} from './slices/widgets'
+
+import {
   selectWorkspaces,
   selectWorkspaceById,
   selectWorkspaceIds
@@ -84,9 +90,10 @@ import {
 export const selectComponents = createCachedSelector(
   selectCollections,
   selectTransformers,
+  selectWidgets,
   (_: RootState, workspace: string) => workspace,
-  (collections, transformers, workspaceId): Component[] => {
-    return [...collections, ...transformers].filter(component => component.workspace === workspaceId)
+  (collections, transformers, widgets, workspaceId): Component[] => {
+    return [...collections, ...transformers, ...widgets].filter(component => component.workspace === workspaceId)
   }
 )(
   (_state_, workspaceId) => workspaceId
@@ -108,9 +115,10 @@ export const selectConnectedComponents = createCachedSelector(
 export const selectComponentById = createCachedSelector(
   selectCollections,
   selectTransformers,
+  selectWidgets,
   (_: RootState, id: string) => id,
-  (collections, transformers, componentId): Component | undefined => {
-    return ([...collections, ...transformers] as Component[]).find(component => component.id === componentId)
+  (collections, transformers, widgets, componentId): Component | undefined => {
+    return ([...collections, ...transformers, ...widgets] as Component[]).find(component => component.id === componentId)
   }
 )(
   (_state_, componentId) => componentId
@@ -146,6 +154,9 @@ export {
   selectTransformers,
   selectTransformerById,
   selectTransformerIds,
+  selectWidgets,
+  selectWidgetById,
+  selectWidgetIds,
   selectWorkspaces,
   selectWorkspaceById,
   selectWorkspaceIds,

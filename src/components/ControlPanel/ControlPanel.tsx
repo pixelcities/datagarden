@@ -7,6 +7,7 @@ import { faSearch } from '@fortawesome/free-solid-svg-icons'
 import { selectUsableSources, selectMetadataMap, selectActiveDataSpace } from 'state/selectors'
 import DataSource from './DataSource'
 import TransformerCard from './TransformerCard'
+import WidgetCard from './WidgetCard'
 
 import { useAuthContext } from 'contexts';
 import { useKeyStoreContext } from 'contexts'
@@ -138,7 +139,7 @@ const WorkspaceTab: FC = (props) => {
       </div>
       <div className="columns ml-3 is-gapless is-multiline">
         <div className="column is-4 mt-4">
-          <TransformerCard title="Graph" type="graph" isDisabled={true} />
+          <WidgetCard title="Graph" type="graph" />
         </div>
       </div>
 
@@ -149,7 +150,7 @@ const WorkspaceTab: FC = (props) => {
       </div>
       <div className="columns ml-3 is-gapless is-multiline">
         <div className="column is-4 mt-4">
-          <TransformerCard title="API" type="api" isDisabled={true} />
+          <WidgetCard title="API" type="api" isDisabled={true} />
         </div>
       </div>
 
