@@ -5,9 +5,10 @@ import { faAngleDown } from '@fortawesome/free-solid-svg-icons'
 interface DropdownProps {
   items: string[],
   onClick: (item: string) => void
+  isDropUp?: boolean
 }
 
-const Dropdown: FC<DropdownProps> = ({items, onClick}) => {
+const Dropdown: FC<DropdownProps> = ({items, onClick, isDropUp = false}) => {
   const [isActive, setIsActive] = useState(false)
   const [selectedItem, setSelectedItem] = useState(items[0])
 
@@ -35,7 +36,7 @@ const Dropdown: FC<DropdownProps> = ({items, onClick}) => {
   }, [ items, selectedItem, onClick ])
 
   return (
-    <div className={"dropdown" + (isActive ? " is-active" : "")}>
+    <div className={"dropdown" + (isActive ? " is-active" : "") + (isDropUp ? " is-up" : "")}>
       <div className="dropdown-trigger">
         <div className="button" onClick={() => setIsActive(!isActive)} aria-haspopup="true" aria-controls="dropdown-menu">
           <span> { selectedItem } </span>
