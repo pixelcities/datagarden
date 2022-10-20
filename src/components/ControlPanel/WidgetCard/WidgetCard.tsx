@@ -48,7 +48,8 @@ const WidgetCard: FC<WidgetCardProps> = ({ title, type, isDisabled }) => {
           targets: [],
           position: [result.x, result.y],
           collection: undefined,
-          is_ready: false
+          is_ready: false,
+          settings: {}
         }))
       },
       collect: (monitor) => ({

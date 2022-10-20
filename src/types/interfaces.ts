@@ -65,8 +65,13 @@ export interface Transformer extends Component {
   wal?: WAL
 }
 
+export interface WidgetSettings {
+  [key: string]: string
+}
+
 export interface Widget extends Component {
-  collection?: string
+  collection?: string,
+  settings: WidgetSettings
 }
 
 export interface Workspace extends Component {

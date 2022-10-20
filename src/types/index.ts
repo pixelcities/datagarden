@@ -7,6 +7,7 @@ export type {
   Collection,
   Transformer,
   Widget,
+  WidgetSettings,
   Workspace,
   Organisation,
   Source,

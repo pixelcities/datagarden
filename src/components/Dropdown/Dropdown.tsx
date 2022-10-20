@@ -4,13 +4,14 @@ import { faAngleDown } from '@fortawesome/free-solid-svg-icons'
 
 interface DropdownProps {
   items: string[],
-  onClick: (item: string) => void
+  onClick: (item: string) => void,
+  selected?: string,
   isDropUp?: boolean
 }
 
-const Dropdown: FC<DropdownProps> = ({items, onClick, isDropUp = false}) => {
+const Dropdown: FC<DropdownProps> = ({items, onClick, selected, isDropUp = false}) => {
   const [isActive, setIsActive] = useState(false)
-  const [selectedItem, setSelectedItem] = useState(items[0])
+  const [selectedItem, setSelectedItem] = useState<string | undefined>(selected)
 
   const renderItems = React.useMemo(() => {
     const handleSelect = (e: React.MouseEvent<HTMLDivElement>, item: string) => {

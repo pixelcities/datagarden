@@ -26,6 +26,7 @@ import {
   widgetUpdated,
   widgetPositionSet,
   widgetInputAdded,
+  widgetSettingPut,
   widgetDeleted
 } from './slices/widgets'
 
@@ -123,6 +124,7 @@ const createWidget = recreateAction<typeof widgetCreated>("CreateWidget")
 const updateWidget = recreateAction<typeof widgetUpdated>("UpdateWidget")
 const setWidgetPosition = recreateAction<typeof widgetPositionSet>("SetWidgetPosition")
 const addWidgetInput = recreateAction<typeof widgetInputAdded>("AddWidgetInput")
+const putWidgetSetting = recreateAction<typeof widgetSettingPut>("PutWidgetSetting")
 const deleteWidget = recreateAction<typeof widgetDeleted>("DeleteWidget")
 const createSource = recreateAction<typeof sourceCreated>("CreateSource")
 const updateSource = recreateAction<typeof sourceUpdated>("UpdateSource")
@@ -157,6 +159,7 @@ const events: {[key: string]: ActionCreatorWithPayload<any, string>} = {
   "WidgetUpdated": widgetUpdated,
   "WidgetPositionSet": widgetPositionSet,
   "WidgetInputAdded": widgetInputAdded,
+  "WidgetSettingPut": widgetSettingPut,
   "WidgetDeleted": widgetDeleted,
   "SourceCreated": sourceCreated,
   "SourceUpdated": sourceUpdated,
@@ -209,6 +212,7 @@ export {
   updateWidget,
   setWidgetPosition,
   addWidgetInput,
+  putWidgetSetting,
   deleteWidget,
   completeTask,
 

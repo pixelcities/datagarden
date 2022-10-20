@@ -3,10 +3,9 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCheck } from '@fortawesome/free-solid-svg-icons'
 
 import Graph from './Graph'
-import Dropdown from 'components/Dropdown'
 
 import { useAppDispatch, useAppSelector } from 'hooks'
-import { selectMetadataMap, selectConceptMap, selectActiveDataSpace, selectCollectionById } from 'state/selectors'
+import { selectMetadataMap, selectConceptMap, selectActiveDataSpace, selectCollectionById, selectWidgetById } from 'state/selectors'
 import { updateMetadata } from 'state/actions'
 
 import { useKeyStoreContext } from 'contexts'
@@ -16,7 +15,6 @@ import { useAuthContext } from 'contexts'
 import { loadRemoteTable } from 'utils/loadRemoteTable'
 import { emptyTaxonomy } from 'utils/taxonomy'
 
-import './Widget.sass'
 
 interface WidgetProps {
   id: string,
@@ -36,6 +34,7 @@ const Widget: FC<WidgetProps> = ({ id, collection, onClose }) => {
   const { arrow, dataFusion, loadDataFusion } = useDataFusionContext();
   const { keyStore } = useKeyStoreContext();
 
+  const widget = useAppSelector(state => selectWidgetById(state, id))
   const inputCollection = useAppSelector(state => selectCollectionById(state, collection || ""))
   const metadata = useAppSelector(selectMetadataMap)
   const concepts = useAppSelector(selectConceptMap)
@@ -118,6 +117,22 @@ const Widget: FC<WidgetProps> = ({ id, collection, onClose }) => {
     }
   }, [ title, isEditingTitle, newTitle, setNewTitle, onTitleChange ])
 
+  const renderWidget = React.useMemo(() => {
+    if (inputId && inputCollection) {
+      if (widget?.type === "graph") {
+        return (
+          <Graph
+            id={id}
+            collectionId={inputId}
+            columnNames={columnNames}
+            schema={inputCollection.schema}
+            settings={widget.settings}
+          />
+        )
+      }
+    }
+  }, [ id, widget, inputId, columnNames, inputCollection ])
+
 
   return (
     <div className={"p-modal " + (isActive ? "is-active" : "")}>
@@ -129,29 +144,7 @@ const Widget: FC<WidgetProps> = ({ id, collection, onClose }) => {
         </header>
 
         <section className="modal-card-body is-relative px-0 py-0">
-          <div className="graph-container">
-            { inputId && inputCollection ?
-              <Graph
-                id={id}
-                collectionId={inputId}
-                columnNames={columnNames}
-                schema={inputCollection.schema}
-              />
-            : null
-            }
-          </div>
-          <div className="widget-control-container">
-            <div className="is-relative px-4 py-4">
-              <div className="field pb-0">
-                <label className="label">Type</label>
-              </div>
-
-              <Dropdown
-                items={["Histogram"]}
-                onClick={(item: string) => {}}
-              />
-            </div>
-          </div>
+          { renderWidget }
         </section>
       </div>
     </div>

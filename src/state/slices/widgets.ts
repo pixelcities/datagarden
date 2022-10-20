@@ -25,6 +25,13 @@ const widgetsSlice = createSlice({
         widget.collection = action.payload.collection
       }
     },
+    widgetSettingPut(state, action: PayloadAction<{id: string, workspace: string, key: string, value: string}>) {
+      const widget = state.entities[action.payload.id]
+
+      if (widget) {
+        widget.settings[action.payload.key] = action.payload.value
+      }
+    },
     widgetDeleted(state, action: PayloadAction<{id: string, workspace: string}>) {
       const ids = state.ids.filter(id => id !== action.payload.id)
 
@@ -43,6 +50,7 @@ export const {
   widgetUpdated,
   widgetPositionSet,
   widgetInputAdded,
+  widgetSettingPut,
   widgetDeleted
 } = widgetsSlice.actions
 
