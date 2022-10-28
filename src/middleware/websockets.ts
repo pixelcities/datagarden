@@ -2,7 +2,8 @@ import { Middleware, MiddlewareAPI, Dispatch, AnyAction } from "redux"
 import { events, loadDataSpace } from 'state/actions'
 import { getState, saveState, resetState } from 'utils/localStorage'
 
-import { Socket, Channel } from 'phoenix';
+import { Socket, Channel } from 'phoenix'
+import { getCSRFToken } from 'utils/getCSRFToken'
 
 
 class WebSocket {
@@ -69,8 +70,11 @@ class WebSocket {
 
   async init() {
     fetch(process.env.REACT_APP_API_BASE_PATH + "/users/token", {
-      method: "GET",
-      credentials: "include"
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "X-CSRF-Token": getCSRFToken()
+      }
     }).then((response) => {
       response.json()
         .then((resp) => {

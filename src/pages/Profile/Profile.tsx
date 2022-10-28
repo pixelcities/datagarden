@@ -1,13 +1,13 @@
-import React, { FC, useState } from 'react';
-import { useHistory } from "react-router-dom";
+import React, { FC, useState } from 'react'
+import { useHistory } from "react-router-dom"
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faUpload, faEnvelope, faLock } from '@fortawesome/free-solid-svg-icons'
 
-import Section from 'components/Section';
+import Section from 'components/Section'
 
-import { useAuthContext } from 'contexts';
-import { useKeyStoreContext } from 'contexts';
-
+import { useAuthContext } from 'contexts'
+import { useKeyStoreContext } from 'contexts'
+import { getCSRFToken } from 'utils/getCSRFToken'
 
 const Profile: FC = () => {
   const history = useHistory();
@@ -35,17 +35,17 @@ const Profile: FC = () => {
     const name = f.name
     setFileName(name)
 
-    if ( /\.(jpe?g|png|svg)$/i.test(name) ) {
+    if ( /\.(jpe?g|png)$/i.test(name) ) {
       const reader = new FileReader()
       reader.onloadend = (ev) => {
         const result = ev?.target?.result
 
         if ( typeof(result) === "string") {
           // Verify length (and don't bother with padding)
-          const base = "data:image/svg+xml;base64,".length
+          const base = "data:image/jpeg;base64,".length
           const fileSize = (result.length - base) / 4 * 3
 
-          if (fileSize > 256000) {
+          if (fileSize > 1024 * 256) {
             setError("Image size cannot be larger than 256kb")
             return
           }
@@ -67,7 +67,8 @@ const Profile: FC = () => {
         method: "PUT",
         credentials: "include",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          "X-CSRF-Token": getCSRFToken()
         },
         body: JSON.stringify({
           "action": "update_email",
@@ -100,7 +101,8 @@ const Profile: FC = () => {
         method: "PUT",
         credentials: "include",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          "X-CSRF-Token": getCSRFToken()
         },
         body: JSON.stringify({
           "action": "update_password",
@@ -127,7 +129,8 @@ const Profile: FC = () => {
       method: "PUT",
       credentials: "include",
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "X-CSRF-Token": getCSRFToken()
       },
       body: JSON.stringify({
         "action": "update_profile",

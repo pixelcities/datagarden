@@ -1,8 +1,9 @@
-import React, { FC, useEffect } from 'react';
-import { RouteComponentProps } from 'react-router';
-import { useHistory } from "react-router-dom";
+import React, { FC, useEffect } from 'react'
+import { RouteComponentProps } from 'react-router'
+import { useHistory } from "react-router-dom"
 
-import { useAuthContext } from 'contexts';
+import { useAuthContext } from 'contexts'
+import { getCSRFToken } from 'utils/getCSRFToken'
 
 // TODO: add rotation token
 interface ConfirmProps {
@@ -23,7 +24,8 @@ const Confirm: FC <RouteComponentProps<ConfirmProps>> = (props) => {
         method: "PUT",
         credentials: "include",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          "X-CSRF-Token": getCSRFToken()
         }
       }).then((response) => {
         // Ensure that everything is in sync

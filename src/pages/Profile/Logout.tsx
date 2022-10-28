@@ -1,7 +1,8 @@
-import React, { FC, useEffect } from 'react';
-import { Redirect, useHistory } from "react-router-dom";
+import React, { FC, useEffect } from 'react'
+import { Redirect, useHistory } from "react-router-dom"
 
-import { useAuthContext } from 'contexts';
+import { useAuthContext } from 'contexts'
+import { getCSRFToken } from 'utils/getCSRFToken'
 
 
 const Logout: FC = () => {
@@ -14,7 +15,8 @@ const Logout: FC = () => {
         method: "DELETE",
         credentials: "include",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          "X-CSRF-Token": getCSRFToken()
         }
       }).then((response) => {
         handleLogout()

@@ -1,12 +1,13 @@
-import React, { FC, useState } from 'react';
-import { useHistory, Link } from "react-router-dom";
+import React, { FC, useState } from 'react'
+import { useHistory, Link } from "react-router-dom"
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faEnvelope, faLock } from '@fortawesome/free-solid-svg-icons'
 
-import Section from 'components/Section';
+import Section from 'components/Section'
 
-import { useAuthContext } from 'contexts';
-import { useKeyStoreContext } from 'contexts';
+import { useAuthContext } from 'contexts'
+import { useKeyStoreContext } from 'contexts'
+import { genCSRFToken } from 'utils/getCSRFToken'
 
 const Login: FC = () => {
   const [email, setEmail] = useState("")
@@ -27,7 +28,8 @@ const Login: FC = () => {
       method: "POST",
       credentials: "include",
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "X-CSRF-Token": genCSRFToken()
       },
       body: JSON.stringify({
         "user": {

@@ -6,7 +6,7 @@ import Section from 'components/Section'
 
 import { useAuthContext } from 'contexts'
 import { useKeyStoreContext } from 'contexts'
-
+import { genCSRFToken } from 'utils/getCSRFToken'
 
 const Register: FC = () => {
   const [email, setEmail] = useState("")
@@ -26,7 +26,8 @@ const Register: FC = () => {
       method: "POST",
       credentials: "include",
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "X-CSRF-Token": genCSRFToken()
       },
       body: JSON.stringify({
         "user": {
