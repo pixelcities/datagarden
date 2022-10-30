@@ -127,12 +127,13 @@ const Widget: FC<WidgetProps> = ({ id, collection, onClose }) => {
             columnNames={columnNames}
             schema={inputCollection.schema}
             settings={widget.settings}
+            access={widget.access}
+            isPublished={widget.is_published}
           />
         )
       }
     }
   }, [ id, widget, inputId, columnNames, inputCollection ])
-
 
   return (
     <div className={"p-modal " + (isActive ? "is-active" : "")}>

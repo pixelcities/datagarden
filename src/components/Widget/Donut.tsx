@@ -65,10 +65,11 @@ interface DonutProps {
   id: string,
   collectionId: string,
   nameColumnId: string,
-  valueColumnId: string
+  valueColumnId: string,
+  getContentCallback?: (cb: () => string | undefined) => void
 }
 
-const Donut: FC<DonutProps> = ({ id, collectionId, nameColumnId, valueColumnId }) => {
+const Donut: FC<DonutProps> = ({ id, collectionId, nameColumnId, valueColumnId, getContentCallback }) => {
   const ref = useRef<HTMLDivElement | null>(null)
   const [dimensions, setDimensions] = useState({height: 0, width: 0})
 
@@ -165,11 +166,18 @@ const Donut: FC<DonutProps> = ({ id, collectionId, nameColumnId, valueColumnId }
           .attr("font-weight", (_, i) => i ? null : "bold")
           .text(d => d)
 
+        // Callback
+        if (getContentCallback) {
+          getContentCallback(() => {
+            return document.getElementById("canvas")?.outerHTML
+          })
+        }
+
       return () => {
         svg.remove()
       }
     }
-  }, [ dimensions, data, nameColumnId, valueColumnId ])
+  }, [ dimensions, data, nameColumnId, valueColumnId, getContentCallback ])
 
 
   return (

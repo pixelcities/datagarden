@@ -88,10 +88,11 @@ interface HistogramProps {
   columnId: string,
   xLabel: string,
   yLabel: string,
-  nrBins: number
+  nrBins: number,
+  getContentCallback?: (cb: () => string | undefined) => void
 }
 
-const Histogram: FC<HistogramProps> = ({ id, collectionId, columnId, xLabel, yLabel, nrBins }) => {
+const Histogram: FC<HistogramProps> = ({ id, collectionId, columnId, xLabel, yLabel, nrBins, getContentCallback }) => {
   const ref = useRef<HTMLDivElement | null>(null)
   const [dimensions, setDimensions] = useState({height: 0, width: 0})
 
@@ -198,11 +199,19 @@ const Histogram: FC<HistogramProps> = ({ id, collectionId, columnId, xLabel, yLa
           .attr("text-anchor", "end")
           .text(xLabel));
 
+        // Callback
+        if (getContentCallback) {
+          getContentCallback(() => {
+            return document.getElementById("canvas")?.outerHTML
+          })
+        }
+
+
       return () => {
         svg.remove()
       }
     }
-  }, [ dimensions, data, columnId, xLabel, yLabel, nrBins ])
+  }, [ dimensions, data, columnId, xLabel, yLabel, nrBins, getContentCallback ])
 
 
   return (
