@@ -1,5 +1,9 @@
 const COOKIE_NAME="_mycelium_csrf_token"
 
+const toHex = (byteArray: Uint8Array): string => {
+  return Array.from(byteArray, (byte) => (byte < 16 ? '0' : '') + (byte).toString(16)).join('')
+}
+
 export const getCSRFToken = (): string => {
   const cookieValue = document.cookie
     .split('; ')
@@ -10,7 +14,7 @@ export const getCSRFToken = (): string => {
 }
 
 export const genCSRFToken = (): string => {
-  const token = crypto.randomUUID()
+  const token = toHex(crypto.getRandomValues(new Uint8Array(32)))
 
   document.cookie = `${COOKIE_NAME}=${token}`
 
