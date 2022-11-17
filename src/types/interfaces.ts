@@ -72,7 +72,7 @@ export interface WidgetSettings {
 export interface Widget extends Component {
   collection?: string,
   settings: WidgetSettings,
-  access?: string,
+  access?: Share[],
   content?: string,
   is_published: boolean
 }

@@ -1,6 +1,6 @@
 import { createSelector, createSlice, createEntityAdapter, PayloadAction } from '@reduxjs/toolkit'
 import { RootState } from 'state/store'
-import { Widget } from 'types'
+import { Widget, Share } from 'types'
 
 const widgetsAdapter = createEntityAdapter<Widget>()
 
@@ -32,7 +32,7 @@ const widgetsSlice = createSlice({
         widget.settings[action.payload.key] = action.payload.value
       }
     },
-    widgetPublished(state, action: PayloadAction<{id: string, workspace: string, access: string, content: string, is_published: boolean}>) {
+    widgetPublished(state, action: PayloadAction<{id: string, workspace: string, access: Share[], content: string, is_published: boolean}>) {
       const widget = state.entities[action.payload.id]
 
       if (widget) {

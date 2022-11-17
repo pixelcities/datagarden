@@ -8,7 +8,7 @@ import Donut, { DonutSettings } from './Donut'
 import { useAppDispatch, useAppSelector } from 'hooks'
 import { selectActiveDataSpace } from 'state/selectors'
 import { putWidgetSetting, publishWidget } from 'state/actions'
-import { Schema, WidgetSettings } from 'types'
+import { Schema, Share, WidgetSettings } from 'types'
 import { useKeyStoreContext } from 'contexts'
 
 import './Widget.sass'
@@ -20,14 +20,14 @@ interface GraphProps {
   columnNames: {[key: string]: string},
   schema: Schema,
   settings: WidgetSettings,
-  access?: string,
+  access?: Share[],
   isPublished: boolean
 }
 
 const Graph: FC<GraphProps> = ({ id, collectionId, columnNames, schema, settings, access, isPublished }) => {
   const dispatch = useAppDispatch()
   const [content, setContent] = useState<string | undefined>()
-  const [newAccess, setNewAccess] = useState<string | undefined>(access)
+  const [newAccess, setNewAccess] = useState<Share[] | undefined>(access)
 
   const { keyStore } = useKeyStoreContext()
   const dataSpace = useAppSelector(selectActiveDataSpace)
@@ -104,12 +104,15 @@ const Graph: FC<GraphProps> = ({ id, collectionId, columnNames, schema, settings
         is_published: !isPublished
       }
 
-      if (newAccess === "internal") {
+      const isInternal = newAccess.filter(access => access.type === "internal").length > 0
+      const isPublic = newAccess.filter(access => access.type === "public").length > 0
+
+      if (isInternal) {
         dispatch(publishWidget({...payload, ...{
           content: keyStore?.encrypt_metadata(dataSpace?.key_id, content)
         }}))
 
-      } else if (newAccess === "public") {
+      } else if (isPublic) {
         dispatch(publishWidget({...payload, ...{
           content: content,
         }}))
@@ -142,7 +145,7 @@ const Graph: FC<GraphProps> = ({ id, collectionId, columnNames, schema, settings
 
             <div className="control has-icons-left pb-4">
               <div className="select is-fullwidth">
-                <select onChange={(e: any) => setNewAccess(e.target.value)} value={newAccess || ""}>
+                <select onChange={(e: any) => setNewAccess([{"type": e.target.value}])} value={(newAccess && newAccess.length > 0) ? newAccess[0].type : ""}>
                   <option value="internal">Internal</option>
                   <option value="public">Public</option>
                 </select>
