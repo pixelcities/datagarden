@@ -83,7 +83,7 @@ const Sidebar: FC<SidebarProps> = (props) => {
                   <li><Link className="button-label" style={{cursor: "default", color: "#a2a2a2"}} to={basepath}>Team Management</Link></li>
                 </ul>
                 <ul className="menu-list">
-                  <li><Link className="button-label is-active" to="/">Data Ecosystem</Link></li>
+                  <li><Link className={"button-label" + (["sources", "taxonomy", "builder"].includes(props.page) ? " is-active" : "")} to="/">Data Ecosystem</Link></li>
                   <li>
                     <ul>
                       <li><Link className={"button-label" + (props.page === "sources" ? " is-active" : "")} to={basepath + "/sources"}>Data Sources</Link></li>
@@ -95,7 +95,7 @@ const Sidebar: FC<SidebarProps> = (props) => {
                 </ul>
                 <ul className="menu-list">
                   <li><Link className="button-label" style={{cursor: "default", color: "#a2a2a2"}} to={basepath}>Integrations</Link></li>
-                  <li><Link className="button-label" style={{cursor: "default", color: "#a2a2a2"}} to={basepath}>Reports</Link></li>
+                  <li><Link className={"button-label" + (props.page === "reports" ? " is-active": "")} to={basepath + "/reports"}>Reports</Link></li>
                 </ul>
               </aside>
             </div>

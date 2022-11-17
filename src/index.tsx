@@ -15,6 +15,7 @@ import Taxonomy from 'pages/Taxonomy'
 import Builder from 'pages/Builder'
 import Profile from 'pages/Profile'
 import KeyStore from 'pages/KeyStore'
+import Reports from 'pages/Reports'
 
 import PrivateRoute from 'utils/PrivateRoute'
 import { AuthProvider } from 'contexts'
@@ -53,6 +54,7 @@ function App() {
                         <PrivateRoute path="/:handle/keys" component={KeyStore} />
                         <PrivateRoute path="/:handle/sources" component={Sources} />
                         <PrivateRoute path="/:handle/taxonomy" component={Taxonomy} />
+                        <PrivateRoute path="/:handle/reports" component={Reports} />
                         <PrivateRoute path="/:handle/" component={Builder} />
                       </DataSpaces>
 

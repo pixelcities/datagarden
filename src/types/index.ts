@@ -32,3 +32,8 @@ export {
   DataType,
   Function1
 } from './enums'
+
+export type {
+  CustomEditor,
+  CustomText
+} from './editor'
