@@ -183,3 +183,23 @@ export interface DataSpace {
   name?: string
 }
 
+export interface Page {
+  id: string,
+  workspace: string,
+  access: Share[],
+  key_id?: string,
+  date?: string
+}
+
+export interface Content {
+  id: string,
+  page_id: string,
+  workspace: string,
+  type: string,
+  access: Share[],
+  content?: string,
+  draft?: string,
+  widget_id?: string,
+  date?: string
+}
+

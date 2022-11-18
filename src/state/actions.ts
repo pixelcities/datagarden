@@ -89,6 +89,19 @@ import {
   taskCompleted
 } from './slices/tasks'
 
+import {
+  pageCreated,
+  pageUpdated,
+  pageDeleted
+} from './slices/pages'
+
+import {
+  contentCreated,
+  contentUpdated,
+  contentDraftUpdated,
+  contentDeleted
+} from './slices/content'
+
 
 const recreateAction = <T extends ActionCreatorWithPayload<any,string>>(type: string): T => {
   return createAction(type, (action) => {
@@ -140,6 +153,13 @@ const createUser = recreateAction<typeof userCreated>("CreateUser")
 const updateUser = recreateAction<typeof userUpdated>("UpdateUser")
 const shareSecret = recreateAction<typeof secretShared>("ShareSecret")
 const completeTask = recreateAction<typeof taskCompleted>("CompleteTask")
+const createPage = recreateAction<typeof pageCreated>("CreatePage")
+const updatePage = recreateAction<typeof pageUpdated>("UpdatePage")
+const deletePage = recreateAction<typeof pageDeleted>("DeletePage")
+const createContent = recreateAction<typeof contentCreated>("CreateContent")
+const updateContent = recreateAction<typeof contentUpdated>("UpdateContent")
+const updateContentDraft = recreateAction<typeof contentDraftUpdated>("UpdateContentDraft")
+const deleteContent = recreateAction<typeof contentDeleted>("DeleteContent")
 
 const events: {[key: string]: ActionCreatorWithPayload<any, string>} = {
   "CollectionCreated": collectionCreated,
@@ -176,7 +196,14 @@ const events: {[key: string]: ActionCreatorWithPayload<any, string>} = {
   "UserUpdated": userUpdated,
   "SecretShared": secretShared,
   "TaskAssigned": taskAssigned,
-  "TaskCompleted": taskCompleted
+  "TaskCompleted": taskCompleted,
+  "PageCreated": pageCreated,
+  "PageUpdated": pageUpdated,
+  "PageDeleted": pageDeleted,
+  "ContentCreated": contentCreated,
+  "ContentUpdated": contentUpdated,
+  "ContentDraftUpdated": contentDraftUpdated,
+  "ContentDeleted": contentDeleted
 }
 
 export {
@@ -219,6 +246,13 @@ export {
   publishWidget,
   deleteWidget,
   completeTask,
+  createPage,
+  updatePage,
+  deletePage,
+  createContent,
+  updateContent,
+  updateContentDraft,
+  deleteContent,
 
   addWorkspace,
   setWorkspacePosition,

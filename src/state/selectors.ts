@@ -85,6 +85,19 @@ import {
   selectTasks
 } from './slices/tasks'
 
+import {
+  selectPages,
+  selectPageById,
+  selectPageIds
+} from './slices/pages'
+
+import {
+  selectContent,
+  selectContentById,
+  selectContentIds,
+  selectContentByPageId,
+} from './slices/content'
+
 
 // union views
 export const selectComponents = createCachedSelector(
@@ -183,5 +196,12 @@ export {
   selectConceptMap,
   selectDataURIById,
   selectSecrets,
-  selectTasks
+  selectTasks,
+  selectPages,
+  selectPageById,
+  selectPageIds,
+  selectContent,
+  selectContentById,
+  selectContentIds,
+  selectContentByPageId
 }

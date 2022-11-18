@@ -24,7 +24,9 @@ export type {
   DataURI,
   Secret,
   Task,
-  DataSpace
+  DataSpace,
+  Page,
+  Content
 } from './interfaces'
 
 export {
