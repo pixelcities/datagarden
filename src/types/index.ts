@@ -35,5 +35,12 @@ export {
 
 export type {
   CustomEditor,
-  CustomText
+  CustomText,
+  CustomElement
+} from './editor'
+
+export {
+  Align,
+  Block,
+  Mark
 } from './editor'

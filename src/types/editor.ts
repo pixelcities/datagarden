@@ -1,34 +1,93 @@
-import { BaseEditor, BaseElement, Descendant } from 'slate'
+import { BaseEditor, Descendant } from 'slate'
 import { ReactEditor } from 'slate-react'
 
-export type HeadingElement = {
-  type: 'heading'
-  align?: string
+export enum Align {
+  Left = "left",
+  Center = "center",
+  Right = "right",
+  Justify = "justify"
+}
+
+export enum Mark {
+  Bold = "bold",
+  Italic = "italic",
+  Underline = "underline",
+}
+
+export enum Block {
+  Code = "code",
+  HeadingOne = "heading-one",
+  HeadingTwo = "heading-two",
+  Paragraph = "paragraph",
+  BlockQuote = "block-quote",
+  NumberedList = "numbered-list",
+  BulletedList = "bulleted-list",
+  ListItem = "list-item",
+}
+
+
+export type HeadingOneElement = {
+  type: Block.HeadingOne
+  align?: Align
+  children: Descendant[]
+}
+
+export type HeadingTwoElement = {
+  type: Block.HeadingTwo
+  align?: Align
   children: Descendant[]
 }
 
 export type ParagraphElement = {
-  type: 'paragraph'
-  align?: string
+  type: Block.Paragraph
+  align?: Align
   children: Descendant[]
 }
 
 export type CodeElement = {
-  type: 'code'
-  align?: string
+  type: Block.Code
+  align?: Align
   children: Descendant[]
 }
 
-type CustomElement =
-  | HeadingElement
+export type BlockQuoteElement = {
+  type: Block.BlockQuote
+  align?: Align
+  children: Descendant[]
+}
+
+export type NumberedListElement = {
+  type: Block.NumberedList
+  align?: Align
+  children: Descendant[]
+}
+
+export type BulletedListElement = {
+  type: Block.BulletedList
+  align?: Align
+  children: Descendant[]
+}
+
+export type ListItemElement = {
+  type: Block.ListItem
+  align?: Align
+  children: Descendant[]
+}
+
+export type CustomElement =
+  | HeadingOneElement
+  | HeadingTwoElement
   | ParagraphElement
   | CodeElement
-
+  | BlockQuoteElement
+  | NumberedListElement
+  | BulletedListElement
+  | ListItemElement
 
 export type CustomText = {
   bold?: boolean
   italic?: boolean
-  code?: boolean
+  underline?: boolean
   text: string
 }
 
@@ -36,7 +95,7 @@ export type CustomEditor = BaseEditor & ReactEditor
 
 declare module 'slate' {
   interface BaseElement {
-    type: string;
+    type: Block;
   }
 
   interface CustomTypes {
