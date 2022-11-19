@@ -209,7 +209,7 @@ const AggregateTransformer: FC<AggregateTransformerProps> = ({ id, wal, tableId,
 
       <form onSubmit={handleAggregate}>
         <div className="field pb-0">
-          <button className="plus-button" onClick={handleAddColumn}>
+          <button className="plus-button is-right is-small" onClick={handleAddColumn}>
             <span className="icon is-small">
               <FontAwesomeIcon icon={faPlus} size="sm"/>
             </span>
@@ -220,7 +220,7 @@ const AggregateTransformer: FC<AggregateTransformerProps> = ({ id, wal, tableId,
         { columnSelection }
 
         <div className="field pb-0">
-          <button className="plus-button" onClick={handleAddGroupClause}>
+          <button className="plus-button is-right is-small" onClick={handleAddGroupClause}>
             <span className="icon is-small">
               <FontAwesomeIcon icon={faPlus} size="sm"/>
             </span>

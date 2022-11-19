@@ -56,4 +56,9 @@ export const selectContentByPageId = createSelector(
   (content, pageId) => content.filter(x => x.page_id === pageId)
 )
 
+export const selectContentIdsByPageId = createSelector(
+  selectContent,
+  (_: RootState, pageId: string) => pageId,
+  (content, pageId) => content.filter(x => x.page_id === pageId).map(c => c.id)
+)
 

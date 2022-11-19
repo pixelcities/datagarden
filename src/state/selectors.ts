@@ -96,6 +96,7 @@ import {
   selectContentById,
   selectContentIds,
   selectContentByPageId,
+  selectContentIdsByPageId
 } from './slices/content'
 
 
@@ -203,5 +204,6 @@ export {
   selectContent,
   selectContentById,
   selectContentIds,
-  selectContentByPageId
+  selectContentByPageId,
+  selectContentIdsByPageId
 }
