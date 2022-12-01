@@ -1,14 +1,14 @@
-import React, { FC, useMemo, useState, useCallback } from 'react'
+import React, { FC, useRef, useMemo, useState, useEffect, useCallback } from 'react'
 import { createEditor, Descendant } from 'slate'
 import { Slate, Editable, withReact } from 'slate-react'
 
 import Toolbar, { handleHotKeys } from './Toolbar'
-import { renderLeaf, renderElement } from './Render'
+import { renderLeaf, renderElement, serialize } from './Render'
 
 import { Block } from 'types'
 import { useAppSelector, useAppDispatch } from 'hooks'
 import { selectContentById } from 'state/selectors'
-import { updateContentDraft } from 'state/actions'
+import { updateContent, updateContentDraft } from 'state/actions'
 
 
 const DEFAULT_VALUE: Descendant[] = [
@@ -20,21 +20,25 @@ const DEFAULT_VALUE: Descendant[] = [
 
 interface EditorProps {
   id: string,
-  isEditing: boolean
+  publishCallback: (c: () => void) => void
 }
 
-const Editor: FC<EditorProps> = ({ id, isEditing } ) => {
+const Editor: FC<EditorProps> = ({ id, publishCallback } ) => {
   const dispatch = useAppDispatch()
   const content = useAppSelector(state => selectContentById(state, id))
 
   const [editor] = useState(() => withReact(createEditor()))
+  const [handle, setHandle] = useState<number>(0)
+  const stateRef = useRef<Descendant[]>([])
 
   const access = useMemo(() => content ? content.access : [], [ content ])
 
   const initialValue = useMemo(() => {
     if (content && content.access.filter(x => x.type === "public").length > 0) {
       if (content?.draft) {
-        return JSON.parse(content.draft)
+        const data = JSON.parse(content.draft)
+        stateRef.current = data
+        return data
       }
     }
 
@@ -48,27 +52,43 @@ const Editor: FC<EditorProps> = ({ id, isEditing } ) => {
     handleHotKeys(editor, event)
   }, [ editor ])
 
+  const publish = useCallback(() => {
+    const html = stateRef.current.map(n => serialize(n)).join("\n")
+
+    if (content) {
+      dispatch(updateContent({...content, ...{
+        content: btoa(html)
+      }}))
+    }
+  }, [ content, dispatch ])
+  useEffect(() => publishCallback(publish), [ publishCallback, publish ])
+
   const onChange = useCallback((value: Descendant[]) => {
     const isAstChange = editor.operations.some(
       op => 'set_selection' !== op.type
     )
 
     if (isAstChange) {
-      // setState(value)
+      stateRef.current = value
 
-      // TODO: debounce
-      if (access.filter(x => x.type === "public").length > 0) {
-        const draft = JSON.stringify(value)
+      if (!handle) {
+        setHandle(window.setTimeout(() => {
+          if (access.filter(x => x.type === "public").length > 0) {
+            const draft = JSON.stringify(stateRef.current)
 
-        dispatch(updateContentDraft({
-          id: id,
-          workspace: "default",
-          draft: draft
-        }))
+            dispatch(updateContentDraft({
+              id: id,
+              workspace: "default",
+              draft: draft
+            }))
+          }
+          // TODO: handle internal access
+
+          setHandle(0)
+        }, 3000))
       }
-      // TODO: handle internal access
     }
-  }, [ id, editor, access, dispatch ])
+  }, [ id, editor, access, handle, dispatch ])
 
   return (
     <div className="box content">

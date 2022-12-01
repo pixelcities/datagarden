@@ -135,7 +135,7 @@ const Report: FC = (props) => {
         <div className="content-block">
           <div className="columns is-centered pt-3">
             <div className="column is-narrow">
-              <button className="plus-button is-large" onClick={() => setAddContentIsActive(true)}>
+              <button className="hover-button is-large" onClick={() => setAddContentIsActive(true)}>
                 <span className="icon is-large">
                   <FontAwesomeIcon icon={faPlus} size="lg"/>
                 </span>

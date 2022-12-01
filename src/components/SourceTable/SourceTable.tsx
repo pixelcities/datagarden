@@ -109,7 +109,7 @@ const SourceTable: FC<SourceTableProps> = (props) => {
         }))
 
         setHandle(0)
-      }, 5000))
+      }, 3000))
     }
   }
 

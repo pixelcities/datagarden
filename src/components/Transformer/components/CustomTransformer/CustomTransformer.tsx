@@ -286,7 +286,7 @@ const CustomTransformer: FC<CustomTransformerProps> = ({ id, wal, tableId, colum
       { renderValueModal }
 
       <div className="field">
-        <button className="plus-button is-right is-small" onClick={() => handleIdModal()}>
+        <button className="hover-button is-right is-small" onClick={() => handleIdModal()}>
           <span className="icon is-small">
             <FontAwesomeIcon icon={faPlus} size="sm"/>
           </span>
@@ -307,7 +307,7 @@ const CustomTransformer: FC<CustomTransformerProps> = ({ id, wal, tableId, colum
       </div>
 
       <div className="field">
-        <button className="plus-button is-right is-small" onClick={() => setValueModalIsActive(true)}>
+        <button className="hover-button is-right is-small" onClick={() => setValueModalIsActive(true)}>
           <span className="icon is-small">
             <FontAwesomeIcon icon={faPlus} size="sm"/>
           </span>

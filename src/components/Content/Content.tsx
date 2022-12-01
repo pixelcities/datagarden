@@ -1,6 +1,7 @@
-import React, { FC } from 'react'
+import React, { FC, useCallback, useState, useRef } from 'react'
 
 import Editor from 'components/Editor'
+import HoverButton from 'components/HoverButton'
 
 
 interface ContentProps {
@@ -8,16 +9,51 @@ interface ContentProps {
 }
 
 const Content: FC<ContentProps> = ({ id }) => {
-  // return (
-  //   <iframe src={"http://localhost:5001/pages/content/ds1/" + id} sandbox="allow-scripts allow-same-origin" width="100%" height="100%" frameBorder="0" />
-  // )
+  const [isEditing, setIsEditing] = useState(false)
+  const [showButton, setShowButton] = useState(false)
+  const publishRef = useRef<() => void>(() => {})
+
+  const publishCallback = useCallback((cb: () => void) => {
+    publishRef.current = cb
+  }, [])
+
+  const handlePublish = () => {
+    publishRef.current()
+    setIsEditing(false)
+  }
 
   return (
-    <div>
-      <Editor
-        id={id}
-        isEditing={true}
-      />
+    <div className="is-relative">
+      <div onMouseEnter={() => setShowButton(true)} onMouseLeave={() => setShowButton(false)}>
+        <div style={{position: "absolute", top: "-1rem", width: "100%"}}>
+          <div className="is-flex is-justify-content-flex-end pr-3">
+            { isEditing ?
+              <>
+                <div className="px-1">
+                  <HoverButton isActive={true} type="save" onClick={handlePublish} />
+                </div>
+
+                <div className="px-1">
+                  <HoverButton isActive={true} type="close" onClick={() => setIsEditing(false)} />
+                </div>
+              </>
+            :
+              <div className="px-1">
+                <HoverButton isActive={showButton} type="edit" onClick={() => setIsEditing(true)} />
+              </div>
+            }
+          </div>
+        </div>
+
+        { isEditing ?
+          <Editor
+            id={id}
+            publishCallback={publishCallback}
+          />
+        :
+          <iframe title={id} src={"http://localhost:5001/pages/content/ds1/" + id} sandbox="allow-scripts allow-same-origin" width="100%" height="100%" frameBorder="0" />
+        }
+      </div>
     </div>
   )
 }
