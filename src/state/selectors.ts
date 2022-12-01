@@ -94,6 +94,7 @@ import {
 import {
   selectContent,
   selectContentById,
+  selectContentHeightById,
   selectContentIds,
   selectContentByPageId,
   selectContentIdsByPageId
@@ -204,6 +205,7 @@ export {
   selectContent,
   selectContentById,
   selectContentIds,
+  selectContentHeightById,
   selectContentByPageId,
   selectContentIdsByPageId
 }

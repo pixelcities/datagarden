@@ -50,6 +50,11 @@ export const selectContentIds = createSelector(
   content => content.map(c => c.id)
 )
 
+export const selectContentHeightById = createSelector(
+  selectContentById,
+  content => content?.height
+)
+
 export const selectContentByPageId = createSelector(
   selectContent,
   (_: RootState, pageId: string) => pageId,

@@ -200,6 +200,7 @@ export interface Content {
   content?: string,
   draft?: string,
   widget_id?: string,
+  height?: number,
   date?: string
 }
 

@@ -3,12 +3,17 @@ import React, { FC, useCallback, useState, useRef } from 'react'
 import Editor from 'components/Editor'
 import HoverButton from 'components/HoverButton'
 
+import { useAppSelector } from 'hooks'
+import { selectContentHeightById } from 'state/selectors'
+
 
 interface ContentProps {
   id: string
 }
 
 const Content: FC<ContentProps> = ({ id }) => {
+  const height = useAppSelector(state => selectContentHeightById(state, id))
+
   const [isEditing, setIsEditing] = useState(false)
   const [showButton, setShowButton] = useState(false)
   const publishRef = useRef<() => void>(() => {})
@@ -45,14 +50,15 @@ const Content: FC<ContentProps> = ({ id }) => {
           </div>
         </div>
 
-        { isEditing ?
+        { isEditing &&
           <Editor
             id={id}
             publishCallback={publishCallback}
           />
-        :
-          <iframe title={id} src={"http://localhost:5001/pages/content/ds1/" + id} sandbox="allow-scripts allow-same-origin" width="100%" height="100%" frameBorder="0" />
         }
+
+        <iframe title={id} style={isEditing ? {display: "none"} : {}} src={"http://localhost:5001/pages/content/ds1/" + id} sandbox="allow-scripts allow-same-origin" width="100%" height={height ? height : "100%"} scrolling="no" frameBorder="0" />
+
       </div>
     </div>
   )

@@ -1,6 +1,6 @@
 import React, { FC, useRef, useMemo, useState, useEffect, useCallback } from 'react'
 import { createEditor, Descendant } from 'slate'
-import { Slate, Editable, withReact } from 'slate-react'
+import { Slate, ReactEditor, Editable, withReact } from 'slate-react'
 
 import Toolbar, { handleHotKeys } from './Toolbar'
 import { renderLeaf, renderElement, serialize } from './Render'
@@ -29,6 +29,7 @@ const Editor: FC<EditorProps> = ({ id, publishCallback } ) => {
 
   const [editor] = useState(() => withReact(createEditor()))
   const [handle, setHandle] = useState<number>(0)
+
   const stateRef = useRef<Descendant[]>([])
 
   const access = useMemo(() => content ? content.access : [], [ content ])
@@ -54,13 +55,17 @@ const Editor: FC<EditorProps> = ({ id, publishCallback } ) => {
 
   const publish = useCallback(() => {
     const html = stateRef.current.map(n => serialize(n)).join("\n")
+    const draft = JSON.stringify(stateRef.current)
+    const node = ReactEditor.toDOMNode(editor, editor)
 
     if (content) {
       dispatch(updateContent({...content, ...{
-        content: btoa(html)
+        content: btoa(html),
+        draft: draft,
+        height: node.offsetHeight
       }}))
     }
-  }, [ content, dispatch ])
+  }, [ content, editor, dispatch ])
   useEffect(() => publishCallback(publish), [ publishCallback, publish ])
 
   const onChange = useCallback((value: Descendant[]) => {
