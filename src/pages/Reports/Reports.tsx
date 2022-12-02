@@ -23,6 +23,15 @@ class ReportsRoute extends Component<RouteComponentProps> {
   render() {
     const parentPath = this.props.match.path
 
+    // Anything on /pages may be visited without login. All it does is embed an
+    // iframe, making sure it still appears as if it is our main origin. Naturally,
+    // this requires access to be set to public.
+    if (parentPath === "/pages/:handle/:id") {
+      return (
+        <Route path="/pages/:handle/:id" component={Public} />
+      )
+    }
+
     return (
       <div>
         <Navbar />
@@ -38,6 +47,35 @@ class ReportsRoute extends Component<RouteComponentProps> {
   }
 }
 
+const Public: FC = (props) => {
+  const { handle, id } = useParams<{ handle: string, id: string }>()
+
+  const [height, setHeight] = useState(0)
+
+  useEffect(() => {
+    fetch(`${process.env.REACT_APP_CONTENT_HOST}/info/${handle}/${id}`, {
+      method: "GET",
+    }).then((response) => {
+      if (!response.ok) {
+        return Promise.reject(response)
+      } else {
+        return response.json()
+      }
+    }).then((data) => {
+      setHeight(data.height)
+    }).catch((e) => {
+      console.log(e);
+    });
+  }, [ handle, id ])
+
+  return (
+    <main className="container pt-6">
+      { height > 0 &&
+        <iframe title={id} src={process.env.REACT_APP_CONTENT_HOST + "/pages/" + handle + "/" + id} sandbox="allow-scripts allow-same-origin" width="100%" height={height} scrolling="no" frameBorder="0" />
+      }
+    </main>
+  )
+}
 
 const Report: FC = (props) => {
   const dispatch = useAppDispatch()
@@ -78,10 +116,10 @@ const Report: FC = (props) => {
 
   const handleAddStaticContent = useCallback(() => {
     if (page) {
-      let initialContent = ""
+      let initialContent = btoa("<p></p>")
 
       if (page.access.filter(x => x.type === "internal").length > 0 && page.key_id) {
-        initialContent = keyStore?.encrypt_metadata(page.key_id, "")
+        initialContent = keyStore?.encrypt_metadata(page.key_id, "<p></p>")
       }
 
       dispatch(createContent({

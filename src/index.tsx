@@ -50,6 +50,9 @@ function App() {
                       <PrivateRoute path="/auth/local/confirm/:token" component={Profile} />
                       <PrivateRoute path="/users/profile/confirm_email/:token" component={Profile} />
 
+                      { /* Public pages */ }
+                      <Route path="/pages/:handle/:id" component={Reports} />
+
                       { /* Main */ }
                       <DataSpaces>
                         <PrivateRoute path="/:handle/keys" component={KeyStore} />
