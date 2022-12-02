@@ -89,7 +89,7 @@ interface HistogramProps {
   xLabel: string,
   yLabel: string,
   nrBins: number,
-  getContentCallback?: (cb: () => string | undefined) => void
+  getContentCallback?: (cb: () => {content: string | undefined, height: number | undefined}) => void
 }
 
 const Histogram: FC<HistogramProps> = ({ id, collectionId, columnId, xLabel, yLabel, nrBins, getContentCallback }) => {
@@ -202,7 +202,11 @@ const Histogram: FC<HistogramProps> = ({ id, collectionId, columnId, xLabel, yLa
         // Callback
         if (getContentCallback) {
           getContentCallback(() => {
-            return document.getElementById("canvas")?.outerHTML
+            const node = document.getElementById("canvas")
+            return {
+              content: node?.outerHTML,
+              height: node?.clientHeight
+            }
           })
         }
 

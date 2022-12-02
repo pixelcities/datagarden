@@ -66,7 +66,7 @@ interface DonutProps {
   collectionId: string,
   nameColumnId: string,
   valueColumnId: string,
-  getContentCallback?: (cb: () => string | undefined) => void
+  getContentCallback?: (cb: () => {content: string | undefined, height: number | undefined}) => void
 }
 
 const Donut: FC<DonutProps> = ({ id, collectionId, nameColumnId, valueColumnId, getContentCallback }) => {
@@ -169,7 +169,11 @@ const Donut: FC<DonutProps> = ({ id, collectionId, nameColumnId, valueColumnId, 
         // Callback
         if (getContentCallback) {
           getContentCallback(() => {
-            return document.getElementById("canvas")?.outerHTML
+            const node = document.getElementById("canvas")
+            return {
+              content: node?.outerHTML,
+              height: node?.clientHeight
+            }
           })
         }
 

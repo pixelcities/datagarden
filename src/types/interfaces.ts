@@ -74,6 +74,7 @@ export interface Widget extends Component {
   settings: WidgetSettings,
   access?: Share[],
   content?: string,
+  height?: number,
   is_published: boolean
 }
 

@@ -27,6 +27,7 @@ interface GraphProps {
 const Graph: FC<GraphProps> = ({ id, collectionId, columnNames, schema, settings, access, isPublished }) => {
   const dispatch = useAppDispatch()
   const [content, setContent] = useState<string | undefined>()
+  const [height, setHeight] = useState<number | undefined>()
   const [newAccess, setNewAccess] = useState<Share[] | undefined>(access)
 
   const { keyStore } = useKeyStoreContext()
@@ -44,8 +45,11 @@ const Graph: FC<GraphProps> = ({ id, collectionId, columnNames, schema, settings
   }
 
   const renderGraph = useMemo(() => {
-    const getContentCallback = (cb: () => string | undefined) => {
-      setContent(cb())
+    const getContentCallback = (cb: () => {content: string | undefined, height: number | undefined}) => {
+      const result = cb()
+
+      setContent(result.content)
+      setHeight(result.height)
     }
 
     if (settings.type === "Histogram") {
@@ -109,16 +113,18 @@ const Graph: FC<GraphProps> = ({ id, collectionId, columnNames, schema, settings
 
       if (isInternal) {
         dispatch(publishWidget({...payload, ...{
-          content: keyStore?.encrypt_metadata(dataSpace?.key_id, content)
+          content: keyStore?.encrypt_metadata(dataSpace?.key_id, content),
+          height: height
         }}))
 
       } else if (isPublic) {
         dispatch(publishWidget({...payload, ...{
           content: content,
+          height: height
         }}))
       }
     }
-  }, [ id, content, newAccess, isPublished, dispatch, dataSpace?.key_id, keyStore ])
+  }, [ id, content, height, newAccess, isPublished, dispatch, dataSpace?.key_id, keyStore ])
 
   return (
     <>

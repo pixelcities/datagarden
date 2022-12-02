@@ -21,7 +21,8 @@ import {
 import {
   selectWidgets,
   selectWidgetById,
-  selectWidgetIds
+  selectWidgetIds,
+  selectPublishedWidgets
 } from './slices/widgets'
 
 import {
@@ -172,6 +173,7 @@ export {
   selectWidgets,
   selectWidgetById,
   selectWidgetIds,
+  selectPublishedWidgets,
   selectWorkspaces,
   selectWorkspaceById,
   selectWorkspaceIds,

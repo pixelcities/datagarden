@@ -4,8 +4,9 @@ import Editor from 'components/Editor'
 import HoverButton from 'components/HoverButton'
 
 import { useKeyStoreContext } from 'contexts'
-import { useAppSelector } from 'hooks'
-import { selectContentHeightById } from 'state/selectors'
+import { useAppSelector, useAppDispatch } from 'hooks'
+import { selectContentById } from 'state/selectors'
+import { deleteContent } from 'state/actions'
 
 
 interface ContentProps {
@@ -14,7 +15,8 @@ interface ContentProps {
 }
 
 const Content: FC<ContentProps> = ({ id, keyId }) => {
-  const height = useAppSelector(state => selectContentHeightById(state, id))
+  const dispatch = useAppDispatch()
+  const content = useAppSelector(state => selectContentById(state, id))
   const { keyStore } = useKeyStoreContext()
 
   const iframeRef = useRef<HTMLIFrameElement | null>(null)
@@ -30,6 +32,13 @@ const Content: FC<ContentProps> = ({ id, keyId }) => {
   const handlePublish = () => {
     publishRef.current()
     setIsEditing(false)
+  }
+
+  const handleDelete = () => {
+    dispatch(deleteContent({
+      id: id,
+      workspace: content!.workspace
+    }))
   }
 
   const onLoad = () => {
@@ -57,9 +66,15 @@ const Content: FC<ContentProps> = ({ id, keyId }) => {
                   </div>
                 </>
               :
-                <div className="px-1">
-                  <HoverButton isActive={showButton} type="edit" onClick={() => setIsEditing(true)} />
-                </div>
+                <>
+                  <div className="px-1">
+                    <HoverButton isActive={showButton && content?.type !== "widget"} type="edit" onClick={() => setIsEditing(true)} />
+                  </div>
+
+                  <div className="px-1">
+                    <HoverButton isActive={showButton} type="delete" onClick={handleDelete} />
+                  </div>
+                </>
               }
             </div>
           </div>
@@ -67,12 +82,13 @@ const Content: FC<ContentProps> = ({ id, keyId }) => {
           { isEditing &&
             <Editor
               id={id}
+              content={content}
               publishCallback={publishCallback}
               keyId={keyId}
             />
           }
 
-          <iframe ref={iframeRef} title={id} style={isEditing ? {display: "none"} : {}} src={"http://localhost:5001/pages/content/ds1/" + id} sandbox="allow-scripts allow-same-origin" width="100%" height={height ? height : "100%"} scrolling="no" frameBorder="0" onLoad={onLoad} />
+          <iframe ref={iframeRef} title={id} style={isEditing ? {display: "none"} : {}} src={"http://localhost:5001/pages/content/ds1/" + id} sandbox="allow-scripts allow-same-origin" width="100%" height={content?.height ? content?.height : "100%"} scrolling="no" frameBorder="0" onLoad={onLoad} />
 
         </div>
       </div>

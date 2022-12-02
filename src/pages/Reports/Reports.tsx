@@ -7,13 +7,14 @@ import { faKey, faPlus, faAlignJustify, faChartBar } from '@fortawesome/free-sol
 import { useKeyStoreContext } from 'contexts'
 import { useAuthContext } from 'contexts'
 import { useAppSelector, useAppDispatch } from 'hooks'
-import { selectPages, selectPageById, selectContentIdsByPageId, selectMetadataMap, selectMetadataById, selectActiveDataSpace, selectUsers } from 'state/selectors'
+import { selectPages, selectPageById, selectContentIdsByPageId, selectMetadataMap, selectMetadataById, selectActiveDataSpace, selectUsers, selectPublishedWidgets } from 'state/selectors'
 import { createPage, createContent, createMetadata, shareSecret } from 'state/actions'
 
 import Navbar from 'components/Navbar'
 import Sidebar from 'components/Sidebar'
 import ReportCard from 'components/ReportCard'
 import Content from 'components/Content'
+import Dropdown from 'components/Dropdown'
 
 import './Reports.sass'
 
@@ -45,18 +46,35 @@ const Report: FC = (props) => {
   const { keyStore } = useKeyStoreContext()
 
   const [addContentIsActive, setAddContentIsActive] = useState(false)
+  const [addWidgetIsActive, setAddWidgetIsActive] = useState(false)
   const [title, setTitle] = useState(id)
+  const [selectedWidget, setSelectedWidget] = useState<string | undefined>()
 
   const titleMetadata = useAppSelector(state => selectMetadataById(state, id))
+  const metadata = useAppSelector(selectMetadataMap)
   const dataSpace = useAppSelector(selectActiveDataSpace)
   const contentIds = useAppSelector(state => selectContentIdsByPageId(state, id))
   const page = useAppSelector(state => selectPageById(state, id))
+  const widgets = useAppSelector(selectPublishedWidgets)
 
   useEffect(() => {
     if (titleMetadata) {
       setTitle(keyStore?.decrypt_metadata(dataSpace?.key_id, titleMetadata.metadata))
     }
   }, [ dataSpace, titleMetadata, keyStore ])
+
+  const widgetTitleMap = useMemo(() => {
+    let titleMap: {[key: string]: string} = {}
+
+    widgets.forEach(widget => {
+      const maybe_name = metadata[widget.id]
+      const name = maybe_name ? keyStore?.decrypt_metadata(dataSpace?.key_id, maybe_name) : widget.id;
+
+      titleMap[name] = widget.id
+    })
+
+    return titleMap
+  }, [ widgets, keyStore, metadata, dataSpace?.key_id ])
 
   const handleAddStaticContent = useCallback(() => {
     if (page) {
@@ -79,6 +97,56 @@ const Report: FC = (props) => {
 
     setAddContentIsActive(false)
   }, [ id, page, keyStore, dispatch ])
+
+  const handleAddWidgetContent = useCallback((e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+
+    if (page) {
+      const widgetTitle = selectedWidget ? selectedWidget : Object.keys(widgetTitleMap)[0]
+      const widgetId = widgetTitleMap[widgetTitle]
+      const widget = widgets.find(widget => widget.id === widgetTitleMap[widgetTitle])
+
+      // Adding a widget consists of passing forward the widget content to the content block.
+      //
+      // This is done so that the widget itself can take care of rendering the correct output.
+      // In case of internal content, the widget is unencrypted and immediatly re-encrypted with
+      // the page key. The page key is also shared internally but is only used for displaying
+      // the report. Because this key needs to be passed around a bit for proper rendering, it is
+      // unwise to use the actualy dataspace key for this.
+      if (widget && widget.access) {
+        let widgetContent = ""
+
+        // Grab the widget content, which may be encrypted with the internal dataspace key
+        if (widget.access.filter(x => x.type === "internal").length > 0) {
+          widgetContent =  keyStore?.decrypt_metadata(dataSpace?.key_id, widget.content)
+
+        } else if (widget.access.filter(x => x.type === "public").length > 0) {
+          widgetContent = widget.content || ""
+        }
+
+        let content = widgetContent
+
+        if (page.access.filter(x => x.type === "internal").length > 0 && page.key_id) {
+          content = keyStore?.encrypt_metadata(page.key_id, widgetContent)
+        }
+
+        dispatch(createContent({
+          id: crypto.randomUUID(),
+          page_id: id,
+          workspace: "default",
+          type: "widget",
+          widget_id: widgetId,
+          access: page.access,
+          content: content,
+          height: widget.height,
+          draft: undefined
+        }))
+      }
+    }
+
+    setAddContentIsActive(false)
+    setAddWidgetIsActive(false)
+  }, [ id, page, widgets, selectedWidget, widgetTitleMap, keyStore, dataSpace?.key_id, dispatch ])
 
   const renderContent = useMemo(() => {
     return contentIds.map((contentId) => {
@@ -103,7 +171,7 @@ const Report: FC = (props) => {
                 </span>
               </button>
 
-              <button className="button is-large" disabled onClick={() => {}}>
+              <button className="button is-large" onClick={() => setAddWidgetIsActive(true)}>
                 <span className="icon is-medium">
                   <FontAwesomeIcon icon={faChartBar} color="#4f4f4f" size="lg"/>
                 </span>
@@ -118,10 +186,45 @@ const Report: FC = (props) => {
 
   }, [ addContentIsActive, handleAddStaticContent ])
 
+  const renderAddWidget = useMemo(() => {
+    const widgetTitles = Object.keys(widgetTitleMap)
+
+    return (
+      <div className={"modal " + (addWidgetIsActive ? "is-active" : "")}>
+        <div className="modal-background"/>
+        <div className="modal-content">
+          <div className="box">
+            <form onSubmit={handleAddWidgetContent}>
+              <div className="field pb-0 pt-5">
+                <label id="publish" className="label pb-2"> Select widget </label>
+
+                <Dropdown
+                  items={widgetTitles}
+                  selected={selectedWidget ? selectedWidget : widgetTitles[0]}
+                  onClick={(item: string) => setSelectedWidget(item)}
+                />
+              </div>
+
+              <div className="field is-grouped is-grouped-right pt-0">
+                <div className="control">
+                  <input type="submit" className="button is-primary" value="Add widget" />
+                </div>
+              </div>
+            </form>
+
+          </div>
+        </div>
+
+         <button className="modal-close is-large" aria-label="close" onClick={() => setAddWidgetIsActive(false)}></button>
+      </div>
+    )
+  }, [ addWidgetIsActive, handleAddWidgetContent, selectedWidget,widgetTitleMap ])
+
   return (
     <div className="page px-0 pt-0">
 
       { renderAddContent }
+      { renderAddWidget }
 
       <div className="title">
         { title }

@@ -32,12 +32,13 @@ const widgetsSlice = createSlice({
         widget.settings[action.payload.key] = action.payload.value
       }
     },
-    widgetPublished(state, action: PayloadAction<{id: string, workspace: string, access: Share[], content: string, is_published: boolean}>) {
+    widgetPublished(state, action: PayloadAction<{id: string, workspace: string, access: Share[], content: string, height?: number, is_published: boolean}>) {
       const widget = state.entities[action.payload.id]
 
       if (widget) {
         widget.access = action.payload.access
         widget.content = action.payload.content
+        widget.height = action.payload.height
         widget.is_published = action.payload.is_published
       }
     },
@@ -74,5 +75,10 @@ export const {
 export const selectWidgetIds = createSelector(
   selectWidgets,
   widgets => widgets.map(widget => widget.id)
+)
+
+export const selectPublishedWidgets = createSelector(
+  selectWidgets,
+  widgets => widgets.filter(widget => widget.is_published)
 )
 

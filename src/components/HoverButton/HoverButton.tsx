@@ -1,6 +1,6 @@
 import React, { FC } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faPlus, faEdit, faTimes, faCheck } from '@fortawesome/free-solid-svg-icons'
+import { faPlus, faEdit, faTimes, faCheck, faTrash } from '@fortawesome/free-solid-svg-icons'
 
 
 interface HoverButtonProps {
@@ -31,6 +31,10 @@ const HoverButton: FC<HoverButtonProps> = ({ type, isActive, onClick }) => {
 
     case "save":
       icon = faCheck
+      break
+
+    case "delete":
+      icon = faTrash
       break
 
     default:

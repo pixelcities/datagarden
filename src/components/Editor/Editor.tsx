@@ -6,9 +6,8 @@ import Toolbar, { handleHotKeys } from './Toolbar'
 import { renderLeaf, renderElement, serialize } from './Render'
 
 import { useKeyStoreContext } from 'contexts'
-import { Block } from 'types'
-import { useAppSelector, useAppDispatch } from 'hooks'
-import { selectContentById } from 'state/selectors'
+import { Block, Content } from 'types'
+import { useAppDispatch } from 'hooks'
 import { updateContent, updateContentDraft } from 'state/actions'
 
 
@@ -21,13 +20,13 @@ const DEFAULT_VALUE: Descendant[] = [
 
 interface EditorProps {
   id: string,
+  content?: Content,
   publishCallback: (c: () => void) => void,
   keyId?: string
 }
 
-const Editor: FC<EditorProps> = ({ id, publishCallback, keyId } ) => {
+const Editor: FC<EditorProps> = ({ id, content, publishCallback, keyId } ) => {
   const dispatch = useAppDispatch()
-  const content = useAppSelector(state => selectContentById(state, id))
   const { keyStore } = useKeyStoreContext()
 
   const [editor] = useState(() => withReact(createEditor()))
