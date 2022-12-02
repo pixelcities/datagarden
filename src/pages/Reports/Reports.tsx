@@ -84,11 +84,11 @@ const Report: FC = (props) => {
     return contentIds.map((contentId) => {
       return (
         <div key={contentId} className="content-block">
-          <Content id={contentId} />
+          <Content id={contentId} keyId={page?.key_id} />
         </div>
       )
     })
-  }, [ contentIds ])
+  }, [ contentIds, page?.key_id ])
 
   const renderAddContent = useMemo(() => {
     return (

@@ -5,6 +5,7 @@ import { Slate, ReactEditor, Editable, withReact } from 'slate-react'
 import Toolbar, { handleHotKeys } from './Toolbar'
 import { renderLeaf, renderElement, serialize } from './Render'
 
+import { useKeyStoreContext } from 'contexts'
 import { Block } from 'types'
 import { useAppSelector, useAppDispatch } from 'hooks'
 import { selectContentById } from 'state/selectors'
@@ -20,12 +21,14 @@ const DEFAULT_VALUE: Descendant[] = [
 
 interface EditorProps {
   id: string,
-  publishCallback: (c: () => void) => void
+  publishCallback: (c: () => void) => void,
+  keyId?: string
 }
 
-const Editor: FC<EditorProps> = ({ id, publishCallback } ) => {
+const Editor: FC<EditorProps> = ({ id, publishCallback, keyId } ) => {
   const dispatch = useAppDispatch()
   const content = useAppSelector(state => selectContentById(state, id))
+  const { keyStore } = useKeyStoreContext()
 
   const [editor] = useState(() => withReact(createEditor()))
   const [handle, setHandle] = useState<number>(0)
@@ -35,15 +38,19 @@ const Editor: FC<EditorProps> = ({ id, publishCallback } ) => {
   const access = useMemo(() => content ? content.access : [], [ content ])
 
   const initialValue = useMemo(() => {
-    if (content && content.access.filter(x => x.type === "public").length > 0) {
-      if (content?.draft) {
+    if (content && content.draft) {
+      if (content.access.filter(x => x.type === "public").length > 0) {
         const data = JSON.parse(content.draft)
+        stateRef.current = data
+        return data
+
+      } else if (content.access.filter(x => x.type === "internal").length > 0) {
+        const data = JSON.parse(keyStore?.decrypt_metadata(keyId, content.draft))
         stateRef.current = data
         return data
       }
     }
 
-    // TODO: handle internal access
     return DEFAULT_VALUE
 
   // eslint-disable-next-line
@@ -59,13 +66,22 @@ const Editor: FC<EditorProps> = ({ id, publishCallback } ) => {
     const node = ReactEditor.toDOMNode(editor, editor)
 
     if (content) {
-      dispatch(updateContent({...content, ...{
-        content: btoa(html),
-        draft: draft,
-        height: node.offsetHeight
-      }}))
+      if (access.filter(x => x.type === "public").length > 0) {
+        dispatch(updateContent({...content, ...{
+          content: btoa(html),
+          draft: draft,
+          height: node.offsetHeight
+        }}))
+
+      } else if (access.filter(x => x.type === "internal").length > 0 && keyId) {
+        dispatch(updateContent({...content, ...{
+          content: keyStore?.encrypt_metadata(keyId, html),
+          draft: keyStore?.encrypt_metadata(keyId, draft),
+          height: node.offsetHeight
+        }}))
+      }
     }
-  }, [ content, editor, dispatch ])
+  }, [ keyId, content, access, editor, dispatch, keyStore ])
   useEffect(() => publishCallback(publish), [ publishCallback, publish ])
 
   const onChange = useCallback((value: Descendant[]) => {
@@ -86,14 +102,22 @@ const Editor: FC<EditorProps> = ({ id, publishCallback } ) => {
               workspace: "default",
               draft: draft
             }))
+
+          } else if (access.filter(x => x.type === "internal").length > 0 && keyId) {
+            const draft = keyStore?.encrypt_metadata(keyId, JSON.stringify(stateRef.current))
+
+            dispatch(updateContentDraft({
+              id: id,
+              workspace: "default",
+              draft: draft
+            }))
           }
-          // TODO: handle internal access
 
           setHandle(0)
         }, 3000))
       }
     }
-  }, [ id, editor, access, handle, dispatch ])
+  }, [ id, keyId, editor, access, handle, dispatch, keyStore ])
 
   return (
     <div className="box content">
