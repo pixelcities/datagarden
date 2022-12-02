@@ -67,7 +67,7 @@ const Sidebar: FC<SidebarProps> = (props) => {
                   <li><Link className="menu-label has-text-centered my-3 px-0 py-0" to={basepath}>
                     <img src={builderIcon} alt="" />
                   </Link></li>
-                  <li><Link className="menu-label has-text-centered my-3 px-0 py-0" style={{cursor: "default"}} to={basepath}>
+                  <li><Link className="menu-label has-text-centered my-3 px-0 py-0" to={basepath + "/widgets"}>
                     <img src={widgetsIcon} alt="" />
                   </Link></li>
                 </ul>
@@ -83,13 +83,13 @@ const Sidebar: FC<SidebarProps> = (props) => {
                   <li><Link className="button-label" style={{cursor: "default", color: "#a2a2a2"}} to={basepath}>Team Management</Link></li>
                 </ul>
                 <ul className="menu-list">
-                  <li><Link className={"button-label" + (["sources", "taxonomy", "builder"].includes(props.page) ? " is-active" : "")} to="/">Data Ecosystem</Link></li>
+                  <li><Link className={"button-label" + (["sources", "taxonomy", "builder", "widgets"].includes(props.page) ? " is-active" : "")} to="/">Data Ecosystem</Link></li>
                   <li>
                     <ul>
                       <li><Link className={"button-label" + (props.page === "sources" ? " is-active" : "")} to={basepath + "/sources"}>Data Sources</Link></li>
                       <li><Link className={"button-label"  + (props.page === "taxonomy" ? " is-active" : "")} to={basepath + "/taxonomy"}>Taxonomy</Link></li>
                       <li><Link className={"button-label" + (props.page === "builder" ? " is-active" : "")} to={basepath}>Pipeline Builder</Link></li>
-                      <li><Link className="button-label" style={{cursor: "default", color: "#a2a2a2"}} to={basepath}>Widgets</Link></li>
+                      <li><Link className={"button-label"  + (props.page === "widgets" ? " is-active" : "")} to={basepath + "/widgets"}>Widgets</Link></li>
                     </ul>
                   </li>
                 </ul>
