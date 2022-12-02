@@ -1,4 +1,10 @@
-import React, { FC } from 'react'
+import React, { FC, useState } from 'react'
+
+import { useAppDispatch } from 'hooks'
+import { deletePage } from 'state/actions'
+
+import HoverButton from 'components/HoverButton'
+
 
 interface ReportCardProps {
   id: string,
@@ -70,15 +76,37 @@ const cardWithPreview = (type: string) => {
 
 
 const ReportCard: FC<ReportCardProps> = (props) => {
+  const dispatch = useAppDispatch()
+
+  const [ showButton, setShowButton ] = useState(false)
   const title = props.title
 
-  return (
-    <div id={props.id ?? title} onClick={props.onClick} style={{width: 216}}>
-      <div style={{cursor: "pointer", position: "relative", width: "220", height: "204"}}>
-        { cardWithPreview(props.type) }
-      </div>
+  const handleDelete = () => {
+    dispatch(deletePage({
+      id: props.id,
+      workspace: "default"
+    }))
+  }
 
-      <p className="header-label pl-2 pt-1" style={{textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap", wordWrap: "break-word"}} > { title } </p>
+  return (
+    <div className="is-relative">
+      <div onMouseEnter={() => setShowButton(true)} onMouseLeave={() => setShowButton(false)}>
+
+        <div style={{position: "absolute", top: "-1rem", width: "100%", zIndex: 999}}>
+          <div className="is-flex is-justify-content-flex-end pr-2">
+            <HoverButton isActive={showButton && props.type !== "add"} type="delete" onClick={handleDelete} />
+          </div>
+        </div>
+
+        <div id={props.id ?? title} onClick={props.onClick} style={{width: 216}}>
+          <div style={{cursor: "pointer", position: "relative", width: "220", height: "204"}}>
+            { cardWithPreview(props.type) }
+          </div>
+
+          <p className="header-label pl-2 pt-1" style={{textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap", wordWrap: "break-word"}} > { title } </p>
+        </div>
+
+      </div>
     </div>
   )
 }

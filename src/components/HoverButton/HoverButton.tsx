@@ -19,6 +19,15 @@ const HoverButton: FC<HoverButtonProps> = ({ type, isActive, onClick }) => {
     )
   }
 
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation()
+    e.preventDefault()
+
+    if (onClick) {
+      onClick()
+    }
+  }
+
   switch(type) {
     case "edit":
       icon = faEdit
@@ -42,7 +51,7 @@ const HoverButton: FC<HoverButtonProps> = ({ type, isActive, onClick }) => {
   }
 
   return (
-    <button className="hover-button is-small" onClick={onClick}>
+    <button className="hover-button is-small" onClick={handleClick}>
       <span className="icon is-small" style={{paddingLeft: padding}}>
         <FontAwesomeIcon icon={icon} size="sm"/>
       </span>
