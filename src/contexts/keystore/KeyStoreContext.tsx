@@ -7,7 +7,7 @@ import { selectSecrets } from 'state/selectors'
 
 import { useAuthContext } from 'contexts';
 
-import type { KeyStore, Protocol } from 'key-x-wasm';
+import type { KeyStore, Protocol } from '@pixelcities/key-x-wasm';
 
 interface KeyStoreContextI {
   keyStore?: any
@@ -52,7 +52,7 @@ export const KeyStoreProvider: FC = ({ children }) => {
     setLoading(true)
     setIsReady(false)
 
-    const { KeyStore, Protocol } = await import("key-x-wasm")
+    const { KeyStore, Protocol } = await import("@pixelcities/key-x-wasm")
 
     keyStoreRef = new KeyStore()
     setKeyStore(keyStoreRef)

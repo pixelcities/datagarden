@@ -9,6 +9,7 @@ import { useAuthContext } from 'contexts'
 import { useAppSelector, useAppDispatch } from 'hooks'
 import { selectPages, selectPageById, selectContentIdsByPageId, selectMetadataMap, selectMetadataById, selectActiveDataSpace, selectUsers, selectPublishedWidgets } from 'state/selectors'
 import { createPage, createContent, createMetadata, shareSecret } from 'state/actions'
+import { toASCII } from 'utils/helpers'
 
 import Navbar from 'components/Navbar'
 import Sidebar from 'components/Sidebar'
@@ -162,7 +163,10 @@ const Report: FC = (props) => {
           widgetContent = widget.content || ""
         }
 
-        let content = widgetContent
+        // Crudely convert to ASCII by just replacing bad characters, as btoa does not like unicode very much.
+        //
+        // TODO: Properly encode / decode unicode text
+        let content = btoa(toASCII(widgetContent))
 
         if (page.access.filter(x => x.type === "internal").length > 0 && page.key_id) {
           content = keyStore?.encrypt_metadata(page.key_id, widgetContent)

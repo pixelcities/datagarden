@@ -17,8 +17,8 @@ export const DataFusionProvider: FC = ({ children }) => {
 
   const init = async () => {
     // Load all the heavy wasm stuff
-    const { DataFusion } = await import("datafusion-wasm")
-    const { Arrow } = await import("arrow-wasm")
+    const { DataFusion } = await import("@pixelcities/datafusion-wasm")
+    const { Arrow } = await import("@pixelcities/arrow-wasm")
 
     const _arrow = await Arrow()
     const _datafusion = new DataFusion()

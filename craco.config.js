@@ -18,7 +18,7 @@ module.exports = {
         new webpack.ContextReplacementPlugin(
           /^\.$/,
           (context) => {
-            if (/datafusion-wasm\/pkg.*/.test(context.context)) {
+            if (/.*datafusion-wasm.*/.test(context.context)) {
               context.regExp = /(?!x)x/
               for (const d of context.dependencies) {
                 if (d.critical) d.critical = false;
@@ -31,7 +31,7 @@ module.exports = {
       addPlugins(webpackConfig, [
         new CopyPlugin({
           patterns: [
-            { from: "node_modules/arrow-wasm/arrow_wasm.wasm", to: "static/js/" }
+            { from: "node_modules/@pixelcities/arrow-wasm/arrow_wasm.wasm", to: "static/js/" }
           ]
         })
       ]);

@@ -88,7 +88,7 @@ const Content: FC<ContentProps> = ({ id, keyId }) => {
             />
           }
 
-          <iframe ref={iframeRef} title={id} style={isEditing ? {display: "none"} : {}} src={"http://localhost:5001/pages/content/ds1/" + id} sandbox="allow-scripts allow-same-origin" width="100%" height={content?.height ? content?.height : "100%"} scrolling="no" frameBorder="0" onLoad={onLoad} />
+          <iframe ref={iframeRef} title={id} style={isEditing ? {display: "none"} : {}} src={process.env.REACT_APP_CONTENT_HOST + "/pages/content/ds1/" + id} sandbox="allow-scripts allow-same-origin" width="100%" height={content?.height ? content?.height : "100%"} scrolling="no" frameBorder="0" onLoad={onLoad} />
 
         </div>
       </div>
