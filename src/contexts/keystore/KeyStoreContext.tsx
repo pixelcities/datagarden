@@ -1,6 +1,7 @@
-import React, { useRef, useState, useEffect, useContext, useMemo, FC } from "react";
+import React, { useRef, useCallback, useState, useEffect, useContext, useMemo, FC } from "react";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faLock } from '@fortawesome/free-solid-svg-icons'
+import { useLocation } from "react-router-dom"
 
 import { useAppSelector } from 'hooks'
 import { selectSecrets } from 'state/selectors'
@@ -21,6 +22,8 @@ let keyStoreRef: KeyStore | undefined
 const KeyStoreContext = React.createContext<KeyStoreContextI>({});
 
 export const KeyStoreProvider: FC = ({ children }) => {
+  const location = useLocation()
+
   const [loading, setLoading] = useState<boolean>(false);
   const [keyStore, setKeyStore] = useState<KeyStore | undefined>();
   const [protocol, setProtocol] = useState<Protocol | undefined>();
@@ -67,52 +70,56 @@ export const KeyStoreProvider: FC = ({ children }) => {
   },[])
 
 
-  const handleSubmit = (e: any) => {
+  const handleSubmit = useCallback((e: any) => {
     e.preventDefault();
 
     if (user) {
-      keyStore?.open_sesame(user.email, password)
+      if (password.length >= 8) {
+        keyStore?.open_sesame(user.email, password)
 
-      keyStore?.init().then(() => {
-        const secret_key = keyStore?.get_named_key("protocol")
-        protocol?.init(secret_key).then(() => {
-          setIsReady(true)
+        keyStore?.init().then(() => {
+          const secret_key = keyStore?.get_named_key("protocol")
+          protocol?.init(secret_key).then(() => {
+            setIsReady(true)
+          })
         })
-      })
 
-      setIsLocked(false)
+        setIsLocked(false)
+      }
     }
-  }
+  }, [ user, password, keyStore, protocol ])
 
   const isActive = useMemo(() => isAuthenticated && (keyStore?.is_locked() ?? true) && isLocked, [ isAuthenticated, keyStore, isLocked ])
-  const unlockModal = (children: any) => {
+
+  const renderModal = useMemo(() => {
+    const path = location.pathname
+    const skipModal = path === "/logout" ||
+      path.startsWith("/auth/local/confirm/") ||
+      path.startsWith("/users/profile/confirm_email/")
+
     return (
-      <>
-       <div className={"modal " + (isActive ? "is-active" : "")}>
-          <div className="modal-background"></div>
-          <div className="modal-content">
-            <div className="box">
-              <form onSubmit={handleSubmit}>
-                <div className="field has-addons">
-                  <p className="control has-icons-left is-expanded">
-                    <input className="input" style={{height: "40px"}} type="password" placeholder="Password" value={password} onChange={(e: any) => setPassword(e.target.value)} />
-                    <span className="icon is-small is-left">
-                      <FontAwesomeIcon icon={faLock} size="xs"/>
-                    </span>
-                  </p>
-                  <p className="control">
-                    <input type="submit" className="button is-info" value="Unlock" />
-                  </p>
-                </div>
-              </form>
-            </div>
+      <div className={"modal " + (isActive && !skipModal ? "is-active" : "")}>
+        <div className="modal-background"></div>
+        <div className="modal-content">
+          <div className="box">
+            <form onSubmit={handleSubmit}>
+              <div className="field has-addons">
+                <p className="control has-icons-left is-expanded">
+                  <input className="input" style={{height: "40px"}} type="password" placeholder="Password" value={password} onChange={(e: any) => setPassword(e.target.value)} />
+                  <span className="icon is-small is-left">
+                    <FontAwesomeIcon icon={faLock} size="xs"/>
+                  </span>
+                </p>
+                <p className="control">
+                  <input type="submit" className="button is-info" value="Unlock" />
+                </p>
+              </div>
+            </form>
           </div>
         </div>
-
-        { children }
-      </>
+      </div>
     )
-  }
+  }, [ isActive, location.pathname, handleSubmit, password ])
 
   return (
     <KeyStoreContext.Provider value={{keyStore, keyStoreIsReady: isReady, protocol, __setIsReady__: setIsReady}} >
@@ -122,7 +129,9 @@ export const KeyStoreProvider: FC = ({ children }) => {
         </span>
       </div>
 
-      { unlockModal(children) }
+      { renderModal }
+
+      { children }
 
     </KeyStoreContext.Provider>
   )

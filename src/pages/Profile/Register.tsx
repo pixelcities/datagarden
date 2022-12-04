@@ -13,12 +13,18 @@ const Register: FC = () => {
   const [password, setPassword] = useState("")
   const [invite, setInvite] = useState("")
   const [confirmPrompt, setConfirmPrompt] = useState(false)
+  const [error, setError] = useState("")
 
   const { isAuthenticated, handleLogin } = useAuthContext();
   const { keyStore, protocol } = useKeyStoreContext();
 
   const handleSubmit = (e: any) => {
     e.preventDefault();
+
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters")
+      return
+    }
 
     const hashedPassword = keyStore.open_sesame(email, password)
 
@@ -66,6 +72,15 @@ const Register: FC = () => {
   return (
     <Section>
       <div className="container">
+
+        { error !== "" &&
+          <article className="message is-danger">
+            <div className="message-header">
+              <p>{ error }</p>
+              <button className="delete" aria-label="delete" onClick={() => setError("")} />
+            </div>
+          </article>
+        }
 
         { !isAuthenticated ?
           <>
