@@ -17,7 +17,7 @@ export const genCSRFToken = (): string => {
   const token = toHex(crypto.getRandomValues(new Uint8Array(32)))
   const domain = new URL(window.origin).hostname
 
-  document.cookie = `${COOKIE_NAME}=${token}; Domain=.${domain}; Path=/; Secure`
+  document.cookie = `${COOKIE_NAME}=${token}; Domain=.${domain}; Path=/; SameSite=Strict; Secure`
 
   return token
 }

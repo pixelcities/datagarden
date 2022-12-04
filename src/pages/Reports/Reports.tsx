@@ -88,6 +88,7 @@ const Report: FC = (props) => {
   const [addWidgetIsActive, setAddWidgetIsActive] = useState(false)
   const [title, setTitle] = useState(id)
   const [selectedWidget, setSelectedWidget] = useState<string | undefined>()
+  const [sortedContent, setSortedContent] = useState<string[]>([])
 
   const titleMetadata = useAppSelector(state => selectMetadataById(state, id))
   const metadata = useAppSelector(selectMetadataMap)
@@ -190,15 +191,32 @@ const Report: FC = (props) => {
     setAddWidgetIsActive(false)
   }, [ id, page, widgets, selectedWidget, widgetTitleMap, keyStore, dataSpace?.key_id, dispatch ])
 
+  useEffect(() => {
+    setSortedContent(contentIds)
+  }, [ contentIds ])
+
+  const moveContent = useCallback((dragIndex: number, hoverIndex: number) => {
+    const left = sortedContent.slice(0, dragIndex)
+    const right = sortedContent.slice(dragIndex+1)
+
+    if (dragIndex > hoverIndex) {
+      left.splice(hoverIndex, 0, sortedContent[dragIndex])
+    } else {
+      right.splice(hoverIndex - dragIndex, 0, sortedContent[dragIndex])
+    }
+
+    setSortedContent([...left, ...right])
+  }, [ sortedContent ])
+
   const renderContent = useMemo(() => {
-    return contentIds.map((contentId) => {
+    return sortedContent.map((contentId, i) => {
       return (
         <div key={contentId} className="content-block">
-          <Content id={contentId} keyId={page?.key_id} />
+          <Content id={contentId} keyId={page?.key_id} index={i} moveContent={moveContent} />
         </div>
       )
     })
-  }, [ contentIds, page?.key_id ])
+  }, [ sortedContent, page?.key_id, moveContent ])
 
   const renderAddContent = useMemo(() => {
     return (

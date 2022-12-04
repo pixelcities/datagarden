@@ -1,4 +1,7 @@
+import type { Identifier, XYCoord } from 'dnd-core'
+
 import React, { FC, useCallback, useState, useRef } from 'react'
+import { useDrop, useDrag } from 'react-dnd'
 
 import Editor from 'components/Editor'
 import HoverButton from 'components/HoverButton'
@@ -8,13 +11,103 @@ import { useAppSelector, useAppDispatch } from 'hooks'
 import { selectContentById } from 'state/selectors'
 import { deleteContent } from 'state/actions'
 
+import './Content.sass'
+
 
 interface ContentProps {
   id: string,
-  keyId?: string
+  keyId?: string,
+  index: number,
+  moveContent: (dragIndex: number, hoverIndex: number) => void
 }
 
-const Content: FC<ContentProps> = ({ id, keyId }) => {
+interface DragItem {
+  index: number
+  id: string
+}
+
+interface DragProps {
+  id: string,
+  index: number,
+  moveContent: (dragIndex: number, hoverIndex: number) => void,
+  isActive: boolean
+}
+
+const Draggable: FC<DragProps> = ({ id, index, moveContent, isActive, children }) => {
+  const ref = useRef<HTMLDivElement>(null)
+  const [{ handlerId }, drop] = useDrop<DragItem, void, { handlerId: Identifier | null }>({
+    accept: "ContentBlock",
+    collect(monitor) {
+      return {
+        handlerId: monitor.getHandlerId(),
+      }
+    },
+    canDrop(item, monitor) {
+      return isActive
+    },
+    hover(item: DragItem, monitor) {
+      if (!ref.current) {
+        return
+      }
+      const dragIndex = item.index
+      const hoverIndex = index
+
+      // Self
+      if (dragIndex === hoverIndex) {
+        return
+      }
+
+      const hoverBoundingRect = ref.current?.getBoundingClientRect()
+      const hoverMiddleY = (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2
+      const clientOffset = monitor.getClientOffset()
+      const hoverClientY = (clientOffset as XYCoord).y - hoverBoundingRect.top
+
+      // Only perform the move when the mouse has crossed half of the items height
+      if (dragIndex < hoverIndex && hoverClientY < hoverMiddleY) {
+        return
+      } else if (dragIndex > hoverIndex && hoverClientY > hoverMiddleY) {
+        return
+      }
+
+      // Move callback
+      moveContent(dragIndex, hoverIndex)
+
+      item.index = hoverIndex
+    },
+  })
+
+  const [{ opacity }, drag] = useDrag({
+    type: "ContentBlock",
+    item: () => {
+      return { id, index }
+    },
+    collect: (monitor: any) => ({
+      opacity: monitor.isDragging() ? 0.5 : 1
+    }),
+    canDrag(monitor) {
+      return isActive
+    },
+  })
+
+  drag(drop(ref))
+
+  if (isActive) {
+    return (
+      <div ref={ref} style={{ opacity }} data-handler-id={handlerId} className={"draggable" + (isActive ? " is-active" : "")}>
+        { children }
+      </div>
+    )
+
+  } else {
+    return (
+      <>
+       { children }
+      </>
+    )
+  }
+}
+
+const Content: FC<ContentProps> = ({ id, keyId, index, moveContent }) => {
   const dispatch = useAppDispatch()
   const content = useAppSelector(state => selectContentById(state, id))
   const { keyStore } = useKeyStoreContext()
@@ -50,10 +143,10 @@ const Content: FC<ContentProps> = ({ id, keyId }) => {
   }
 
   return (
-    <div className="container">
-      <div className="is-relative">
+    <Draggable id={id} index={index} moveContent={moveContent} isActive={!isEditing}>
+      <div className="container is-relative">
         <div onMouseEnter={() => setShowButton(true)} onMouseLeave={() => setShowButton(false)}>
-          <div style={{position: "absolute", top: "-1rem", width: "100%"}}>
+          <div style={{position: "absolute", top: "-1rem", width: "100%", zIndex: 999}}>
             <div className="is-flex is-justify-content-flex-end pr-3">
               { isEditing ?
                 <>
@@ -88,11 +181,13 @@ const Content: FC<ContentProps> = ({ id, keyId }) => {
             />
           }
 
-          <iframe ref={iframeRef} title={id} style={isEditing ? {display: "none"} : {}} src={process.env.REACT_APP_CONTENT_HOST + "/pages/content/ds1/" + id} sandbox="allow-scripts allow-same-origin" width="100%" height={content?.height ? content?.height : "100%"} scrolling="no" frameBorder="0" onLoad={onLoad} />
+          <div className={"drag-content" + (!isEditing ? " is-active" : "")} style={isEditing ? {display: "none"} : {}}>
+            <iframe ref={iframeRef} title={id} src={process.env.REACT_APP_CONTENT_HOST + "/pages/content/ds1/" + id} sandbox="allow-scripts allow-same-origin" width="100%" height={content?.height ? content?.height : "100%"} scrolling="no" frameBorder="0" onLoad={onLoad} />
+          </div>
 
         </div>
       </div>
-    </div>
+    </Draggable>
   )
 }
 
