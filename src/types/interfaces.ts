@@ -189,6 +189,7 @@ export interface Page {
   workspace: string,
   access: Share[],
   key_id?: string,
+  content_order?: string[],
   date?: string
 }
 

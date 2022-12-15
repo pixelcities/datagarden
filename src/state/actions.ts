@@ -92,6 +92,7 @@ import {
 import {
   pageCreated,
   pageUpdated,
+  pageOrderSet,
   pageDeleted
 } from './slices/pages'
 
@@ -155,6 +156,7 @@ const shareSecret = recreateAction<typeof secretShared>("ShareSecret")
 const completeTask = recreateAction<typeof taskCompleted>("CompleteTask")
 const createPage = recreateAction<typeof pageCreated>("CreatePage")
 const updatePage = recreateAction<typeof pageUpdated>("UpdatePage")
+const setPageOrder = recreateAction<typeof pageOrderSet>("SetPageOrder")
 const deletePage = recreateAction<typeof pageDeleted>("DeletePage")
 const createContent = recreateAction<typeof contentCreated>("CreateContent")
 const updateContent = recreateAction<typeof contentUpdated>("UpdateContent")
@@ -199,6 +201,7 @@ const events: {[key: string]: ActionCreatorWithPayload<any, string>} = {
   "TaskCompleted": taskCompleted,
   "PageCreated": pageCreated,
   "PageUpdated": pageUpdated,
+  "PageOrderSet": pageOrderSet,
   "PageDeleted": pageDeleted,
   "ContentCreated": contentCreated,
   "ContentUpdated": contentUpdated,
@@ -248,6 +251,7 @@ export {
   completeTask,
   createPage,
   updatePage,
+  setPageOrder,
   deletePage,
   createContent,
   updateContent,

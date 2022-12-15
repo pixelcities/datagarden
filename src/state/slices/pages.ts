@@ -12,6 +12,12 @@ const pagesSlice = createSlice({
   reducers: {
     pageCreated: pagesAdapter.addOne,
     pageUpdated: pagesAdapter.upsertOne,
+    pageOrderSet(state, action: PayloadAction<{id: string, workspace: string, content_order: string[]}>) {
+      const page = state.entities[action.payload.id]
+      if (page) {
+        page.content_order = action.payload.content_order
+      }
+    },
     pageDeleted(state, action: PayloadAction<{id: string, workspace: string}>) {
       const ids = state.ids.filter(id => id !== action.payload.id)
 
@@ -28,6 +34,7 @@ export default pagesSlice.reducer
 export const {
   pageCreated,
   pageUpdated,
+  pageOrderSet,
   pageDeleted
 } = pagesSlice.actions
 

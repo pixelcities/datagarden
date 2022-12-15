@@ -8,7 +8,7 @@ import { useKeyStoreContext } from 'contexts'
 import { useAuthContext } from 'contexts'
 import { useAppSelector, useAppDispatch } from 'hooks'
 import { selectPages, selectPageById, selectContentIdsByPageId, selectMetadataMap, selectMetadataById, selectActiveDataSpace, selectUsers, selectPublishedWidgets } from 'state/selectors'
-import { createPage, createContent, createMetadata, shareSecret } from 'state/actions'
+import { createPage, setPageOrder, createContent, createMetadata, shareSecret } from 'state/actions'
 import { toASCII } from 'utils/helpers'
 
 import Navbar from 'components/Navbar'
@@ -192,8 +192,11 @@ const Report: FC = (props) => {
   }, [ id, page, widgets, selectedWidget, widgetTitleMap, keyStore, dataSpace?.key_id, dispatch ])
 
   useEffect(() => {
-    setSortedContent(contentIds)
-  }, [ contentIds ])
+    const contentOrder = page?.content_order ?? []
+    const leftOverIds = contentIds.filter(x => contentOrder.indexOf(x) === -1)
+
+    setSortedContent([...contentOrder, ...leftOverIds])
+  }, [ page?.content_order, contentIds ])
 
   const moveContent = useCallback((dragIndex: number, hoverIndex: number) => {
     const left = sortedContent.slice(0, dragIndex)
@@ -205,8 +208,16 @@ const Report: FC = (props) => {
       right.splice(hoverIndex - dragIndex, 0, sortedContent[dragIndex])
     }
 
-    setSortedContent([...left, ...right])
-  }, [ sortedContent ])
+    const result = [...left, ...right]
+
+    dispatch(setPageOrder({
+      id: id,
+      workspace: "default",
+      content_order: result
+    }))
+
+    setSortedContent(result)
+  }, [ id, sortedContent, dispatch ])
 
   const renderContent = useMemo(() => {
     return sortedContent.map((contentId, i) => {
