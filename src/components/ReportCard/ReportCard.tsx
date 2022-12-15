@@ -92,7 +92,7 @@ const ReportCard: FC<ReportCardProps> = (props) => {
     <div className="is-relative">
       <div onMouseEnter={() => setShowButton(true)} onMouseLeave={() => setShowButton(false)}>
 
-        <div style={{position: "absolute", top: "-1rem", width: "100%", zIndex: 999}}>
+        <div style={{position: "absolute", top: "-1rem", width: "100%", zIndex: 20}}>
           <div className="is-flex is-justify-content-flex-end pr-2">
             <HoverButton isActive={showButton && props.type !== "add"} type="delete" onClick={handleDelete} />
           </div>

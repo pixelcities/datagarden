@@ -289,6 +289,10 @@ const Report: FC = (props) => {
       <div className="title">
         { title }
 
+        <a className="button is-success is-outlined is-pulled-right" href={"/pages/ds1/" + id} target="_blank" rel="noreferrer">
+          Preview
+        </a>
+
         <div className="border" />
       </div>
 

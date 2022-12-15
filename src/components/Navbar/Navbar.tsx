@@ -10,7 +10,7 @@ import AvatarMenu from 'components/AvatarMenu'
 class Navbar extends Component {
   render() {
     return (
-      <nav className="navbar is-primary" role="navigation" aria-label="main navigation">
+      <nav className="navbar is-primary is-fixed-top" role="navigation" aria-label="main navigation">
         <div className="navbar-brand">
           <Link className="navbar-item" to="/">
             <img src={logo} alt="logo" width="40" height="35"/>

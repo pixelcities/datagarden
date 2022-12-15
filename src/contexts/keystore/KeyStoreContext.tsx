@@ -95,7 +95,8 @@ export const KeyStoreProvider: FC = ({ children }) => {
     const path = location.pathname
     const skipModal = path === "/logout" ||
       path.startsWith("/auth/local/confirm/") ||
-      path.startsWith("/users/profile/confirm_email/")
+      path.startsWith("/users/profile/confirm_email/") ||
+      path.startsWith("/pages/")
 
     return (
       <div className={"modal " + (isActive && !skipModal ? "is-active" : "")}>

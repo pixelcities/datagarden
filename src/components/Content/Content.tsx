@@ -146,7 +146,7 @@ const Content: FC<ContentProps> = ({ id, keyId, index, moveContent }) => {
     <Draggable id={id} index={index} moveContent={moveContent} isActive={!isEditing}>
       <div className="container is-relative">
         <div onMouseEnter={() => setShowButton(true)} onMouseLeave={() => setShowButton(false)}>
-          <div style={{position: "absolute", top: "-1rem", width: "100%", zIndex: 999}}>
+          <div style={{position: "absolute", top: "-1rem", width: "100%", zIndex: 20}}>
             <div className="is-flex is-justify-content-flex-end pr-3">
               { isEditing ?
                 <>
