@@ -1,5 +1,7 @@
 @use "sass:math"
 
+$colors: indigo, darkviolet, magenta, mediumvioletred, deeppink, crimson, red, orangered, darkorange, orange, darkgoldenrod, olive, olivedrab, limegreen, mediumseagreen, teal, lightseagreen, deepskyblue, dodgerblue, blue
+
 .div
   display: inherit
   &.is-vcentered
@@ -136,4 +138,25 @@
     max-width: 60px
     min-height: 60px
     min-width: 60px
+
+.default-icon
+  color: #fff
+  padding: 2px
+  display: flex
+  justify-content: center
+  align-items: center
+  border-radius:100%
+  width:50px
+  height: 50px
+  font-weight: 600
+  font-size: larger
+
+  &.is-medium
+    width: 32px
+    height: 32px
+    font-size: medium
+
+  @for $i from 1 through length($colors)
+    &.bg-#{$i}
+      background: lighten(nth($colors, $i), 20%)
 

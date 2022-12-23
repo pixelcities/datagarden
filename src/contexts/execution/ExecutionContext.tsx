@@ -71,10 +71,14 @@ export const ExecutionProvider: FC<ExecutionProviderI> = ({ store, children }) =
   }, [ user, tasks, taskCache, dataSpace, store, keyStore, keyStoreIsReady, protocol, arrow, dataFusion, dispatch, mutex ])
 
   useEffect(() => {
+    taskDispatcher()
+  }, [ tasks, taskDispatcher ])
+
+  useEffect(() => {
     const interval = setInterval(taskDispatcher, 10000)
 
     return () => clearInterval(interval)
-  }, [taskDispatcher])
+  }, [ taskDispatcher ])
 
   return (
     <>

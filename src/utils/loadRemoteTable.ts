@@ -33,7 +33,7 @@ export const loadRemoteTable = (tableId: string, uri: string, schema: Schema, us
               }
             }
 
-            if (!!column.shares.find((share: Share) => share.principal === user?.email && (share.type === "owner" || share.type === "full") )) {
+            if (!!column.shares.find((share: Share) => share.principal === user?.id && (share.type === "owner" || share.type === "full") )) {
               keymap.push(column.id)
               keymap.push(column.key_id)
               keymap.push(keyStore?.get_key(column.key_id))

@@ -68,6 +68,10 @@ const CsvSource: FC<CsvSourceProps> = ({onComplete}) => {
     reader.onload = (ev) => {
       const parsed = loadCsv(ev?.target?.result)
 
+      if (!user) {
+        return
+      }
+
       if (!parsed) {
         console.log("Error while parsing csv")
         return
@@ -138,7 +142,7 @@ const CsvSource: FC<CsvSourceProps> = ({onComplete}) => {
           }
 
           // Generate the keys
-          generateColumnsWithKeys(attributes, user?.email ?? "").then((columns) => {
+          generateColumnsWithKeys(attributes, user.id).then((columns) => {
             keyStore?.generate_key(16).then((key_id: string) => {
               const schema = {
                 id: tableId,
@@ -148,7 +152,7 @@ const CsvSource: FC<CsvSourceProps> = ({onComplete}) => {
                 shares: [
                   {
                     type: "owner",
-                    principal: user?.email
+                    principal: user?.id
                   }
                 ]
               }
@@ -189,7 +193,7 @@ const CsvSource: FC<CsvSourceProps> = ({onComplete}) => {
     reader.readAsText(f)
   }
 
-  const generateColumnsWithKeys = useCallback(async (attributes: any, email: string) => {
+  const generateColumnsWithKeys = useCallback(async (attributes: any, userId: string) => {
     let columns = []
 
     for (let attribute of attributes) {
@@ -202,7 +206,7 @@ const CsvSource: FC<CsvSourceProps> = ({onComplete}) => {
         shares: [
           {
             type: "owner",
-            principal: email
+            principal: userId
           }
         ]
       })

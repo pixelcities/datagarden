@@ -80,7 +80,7 @@ const SourceTable: FC<SourceTableProps> = (props) => {
 
       const shares = schema?.shares.filter(share => share.type !== "public" && share.principal)
       res = shares?.map(share => {
-        const user_share = users.find(u => u.email === share.principal)
+        const user_share = users.find(u => u.id === share.principal)
 
         if (share.principal && user_share) {
           return <ShareCard key={share.principal} principal={share.principal} user={user_share} isSelf={user?.id === user_share.id} />
@@ -121,7 +121,7 @@ const SourceTable: FC<SourceTableProps> = (props) => {
   const shareSchemaWithUser = React.useCallback((selectedUser: User) => {
     const share = {
       type: "full",
-      principal: selectedUser.email
+      principal: selectedUser.id
     }
 
     if (user && (source || collection)) {

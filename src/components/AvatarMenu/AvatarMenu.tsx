@@ -1,11 +1,10 @@
-import React, { FC, useRef, useEffect, useState } from 'react';
-import { Link, useParams } from "react-router-dom";
+import React, { FC, useRef, useEffect, useState } from 'react'
+import { Link, useParams } from "react-router-dom"
 
-import avatar from 'assets/avatar.png'
-import './AvatarMenu.sass';
+import './AvatarMenu.sass'
 
-import { useAuthContext } from 'contexts';
-
+import { useAuthContext } from 'contexts'
+import { toColor } from 'utils/helpers'
 
 const MARGIN = 5
 
@@ -35,7 +34,7 @@ const AvatarMenu: FC<AvatarMenuProps> = (props) => {
   return (
     <>
       { isAuthenticated ?
-        <img ref={ref} src={user?.picture || avatar} className="avatar" alt="avatar" width="40" height="35" onClick={() => setIsActive(!isActive)} />
+        <img ref={ref} src={user?.picture} className={"avatar" + (!(user?.picture) ? " default-icon bg-" + toColor(user?.id) : "")} alt={user?.email[0]?.toUpperCase()} width="40" height="35" onClick={() => setIsActive(!isActive)} />
       :
         <Link className="button is-medium is-light is-outlined" to="/login">
           Log in

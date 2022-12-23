@@ -9,7 +9,7 @@ import { faClipboard } from '@fortawesome/free-regular-svg-icons'
 import { User, Source, Collection, Share, Column } from 'types'
 
 import { useAppDispatch, useAppSelector } from 'hooks'
-import { selectUserByEmail, selectSourceById, selectCollectionById } from 'state/selectors'
+import { selectUserById, selectSourceById, selectCollectionById } from 'state/selectors'
 import { shareSecret, updateSource, updateCollection } from 'state/actions'
 
 import { useAuthContext } from 'contexts';
@@ -78,7 +78,7 @@ const FilterOptions: FC = () => {
 }
 
 const ShareInstance: FC<ShareInstanceProps> = ({ share, updateUser }) => {
-  const user = useAppSelector(state => selectUserByEmail(state, share.principal || ""))
+  const user = useAppSelector(state => selectUserById(state, share.principal || ""))
 
   const [{ opacity }, dragRef] = useDrag(
     () => ({
@@ -154,7 +154,7 @@ const ShareOptions: FC<ShareOptionsI> = ({ me, columnId, source, collection }) =
   }, [ column ])
 
   const setUsers = React.useCallback((column: Column) => (user: User, access: string) => {
-    if (access === "FullAccess" && !(user.email in shares)) {
+    if (access === "FullAccess" && !(user.id in shares)) {
       let columns: Column[] = []
       input.schema.columns.forEach((c) => {
         if (c.id !== column?.id) {
@@ -169,7 +169,7 @@ const ShareOptions: FC<ShareOptionsI> = ({ me, columnId, source, collection }) =
           key_id: column.key_id,
           shares: [...column.shares ?? [], {
             type: "full",
-            principal: user.email
+            principal: user.id
           }]
         })
 
@@ -198,7 +198,7 @@ const ShareOptions: FC<ShareOptionsI> = ({ me, columnId, source, collection }) =
         })
       }
 
-    } else if (access === "Blocked" && user.email in shares) {
+    } else if (access === "Blocked" && user.id in shares) {
       console.log("[WARNING] Removing access requires key rotation and is not yet implemented")
 
       let columns: Column[] = []
@@ -213,7 +213,7 @@ const ShareOptions: FC<ShareOptionsI> = ({ me, columnId, source, collection }) =
           id: column.id,
           concept_id: column.concept_id,
           key_id: column.key_id,
-          shares: column.shares.filter(s => s.principal !== user.email)
+          shares: column.shares.filter(s => s.principal !== user.id)
         })
 
         if (source) {

@@ -24,7 +24,6 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
       const collections = transformer?.collections.map(id => store.getState().collections.entities[id]) ?? []
       const metadata = Object.values(store.getState().metadata.entities).reduce((a, b) => ({...a, [b?.id ?? ""]: b?.metadata}), {})
       const concepts = Object.values(store.getState().concepts.entities).filter((x): x is Concept => !!x).reduce((a: {[key: string]: Concept}, b) => ({...a, [b.id]: b}), {})
-      const users = Object.values(store.getState().users.entities).reduce((a, b) => ({...a, [b?.email ?? ""]: b?.id}), {})
 
       if (!transformer) {
         reject(ExecutionError.Retry)
@@ -53,7 +52,7 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
             const id = dataFusion?.clone_table(collection.id, transformer_id)
 
             // Build a new schema, including new keys
-            rebuildSchema(id, target, collection.id, collection.schema, [], fragments, task_meta, user, users, metadata, dataSpace, keyStore, protocol).then(({actions, schema, renames, meta}) => {
+            rebuildSchema(id, target, collection.id, collection.schema, [], fragments, task_meta, user, metadata, dataSpace, keyStore, protocol).then(({actions, schema, renames, meta}) => {
 
               // If this is an aggregate transformer, we need to include the appropiate aggregate function
               // in the schema metadata, so that datafusion can use it for non active columns.
@@ -115,7 +114,7 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
             if (leftFragments.length > 0) {
               const leftId = dataFusion?.clone_table(leftCollection.id, "")
 
-              rebuildSchema(leftId, target, leftCollection.id, leftCollection.schema, rightCollection.schema.shares, leftFragments, task_meta, user, users, metadata, dataSpace, keyStore, protocol).then(({actions, schema, renames, meta}) => {
+              rebuildSchema(leftId, target, leftCollection.id, leftCollection.schema, rightCollection.schema.shares, leftFragments, task_meta, user, metadata, dataSpace, keyStore, protocol).then(({actions, schema, renames, meta}) => {
                 execute(leftId, wal, fragments, true, true, dataFusion, metadata, dataSpace, keyStore).then(() => {
                   updateSchema(leftId, leftFragments, renames, dataFusion)
 
@@ -135,7 +134,7 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
                       const leftActions = actions
                       const leftMeta = meta
 
-                      rebuildSchema(rightId, target, rightCollection.id, rightCollection.schema, leftCollection.schema.shares, rightFragments, leftMeta, user, users, metadata, dataSpace, keyStore, protocol).then(({actions, schema, renames, meta}) => {
+                      rebuildSchema(rightId, target, rightCollection.id, rightCollection.schema, leftCollection.schema.shares, rightFragments, leftMeta, user, metadata, dataSpace, keyStore, protocol).then(({actions, schema, renames, meta}) => {
                         execute(rightId, wal, fragments, true, false, dataFusion, metadata, dataSpace, keyStore).then(() => {
                           updateSchema(rightId, rightFragments, renames, dataFusion)
 
@@ -156,7 +155,7 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
             } else {
               const rightId = dataFusion?.clone_table(rightCollection.id, "")
 
-              rebuildSchema(rightId, target, rightCollection.id, rightCollection.schema, leftCollection.schema.shares, rightFragments, task_meta, user, users, metadata, dataSpace, keyStore, protocol).then(({actions, schema, renames, meta}) => {
+              rebuildSchema(rightId, target, rightCollection.id, rightCollection.schema, leftCollection.schema.shares, rightFragments, task_meta, user, metadata, dataSpace, keyStore, protocol).then(({actions, schema, renames, meta}) => {
                 execute(rightId, wal, fragments, true, false, dataFusion, metadata, dataSpace, keyStore).then(() => {
                   updateSchema(rightId, rightFragments, renames, dataFusion)
 
@@ -233,7 +232,7 @@ const execute = async (id: string, wal: WAL, fragments: string[], useArtifacts: 
 }
 
 
-const rebuildSchema = async (id: string, target: Collection, oldId: string, old: Schema, extraShares: Share[], fragments: string[], taskMeta: {[key: string]: any}, user: User, users: any, metadata: any, dataSpace: DataSpace | undefined, keyStore: any, protocol: any) => {
+const rebuildSchema = async (id: string, target: Collection, oldId: string, old: Schema, extraShares: Share[], fragments: string[], taskMeta: {[key: string]: any}, user: User, metadata: any, dataSpace: DataSpace | undefined, keyStore: any, protocol: any) => {
   let schema: Schema
   let actions: any[] = []
   let meta = JSON.parse(JSON.stringify(taskMeta))
@@ -255,8 +254,8 @@ const rebuildSchema = async (id: string, target: Collection, oldId: string, old:
 
     // Re-share the schema key with everyone
     for (const share of shares) {
-      if (share.principal && share.principal !== user.email) {
-        const receiver = users[share.principal]
+      if (share.principal && share.principal !== user.id) {
+        const receiver = share.principal
         const ciphertext = await protocol?.encrypt(receiver, keyStore?.get_key(key_id))
 
         actions.push(shareSecret({
@@ -278,7 +277,7 @@ const rebuildSchema = async (id: string, target: Collection, oldId: string, old:
 
     // Re-publish the title under the new id
     const maybe_title = metadata[oldId]
-    if (maybe_title) {
+    if (maybe_title && !(target.id in metadata)) {
       const title = keyStore?.decrypt_metadata(dataSpace?.key_id, maybe_title)
 
       actions.push(createMetadata({
@@ -310,8 +309,8 @@ const rebuildSchema = async (id: string, target: Collection, oldId: string, old:
 
     // Re-share the column key
     for (const share of column.shares) {
-      if (share.principal && share.principal !== user.email) {
-        const receiver = users[share.principal]
+      if (share.principal && share.principal !== user.id) {
+        const receiver = share.principal
         const ciphertext = await protocol?.encrypt(receiver, keyStore?.get_key(key_id))
 
         actions.push(shareSecret({
@@ -330,7 +329,7 @@ const rebuildSchema = async (id: string, target: Collection, oldId: string, old:
 
     // Re-publish the column name
     const maybe = metadata[column.id]
-    if (maybe) {
+    if (maybe && !(id in metadata)) {
       const header = keyStore?.decrypt_metadata(dataSpace?.key_id, maybe)
 
       actions.push(createMetadata({

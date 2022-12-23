@@ -17,7 +17,7 @@ export const writeRemoteTable = (tableId: string, uri: string, schema: Schema, u
       ]
 
       for (let column of schema.columns) {
-        if (!column.shares.find((share: Share) => share.principal === user?.email && (share.type === "owner" || share.type === "full") )) {
+        if (!column.shares.find((share: Share) => share.principal === user?.id && (share.type === "owner" || share.type === "full") )) {
           console.log("Writing a table (fragment) requires full access to all columns.")
 
           return

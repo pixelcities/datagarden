@@ -30,7 +30,7 @@ const SourcesTab: FC = (props) => {
       const maybe_name = metadata[source.id]
       const name = maybe_name && keyStoreIsReady ? keyStore?.decrypt_metadata(dataSpace?.key_id, maybe_name) : source.id;
 
-      const share = source.schema.shares.find(s => s.principal === user?.email)
+      const share = source.schema.shares.find(s => s.principal === user?.id)
 
       if (share) {
         return (

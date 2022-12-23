@@ -43,7 +43,7 @@ export const {
 export const selectVisibleSources = createSelector(
   selectSources,
   (_: RootState, user: User | undefined) => user,
-  (sources, user) => sources.filter(source => !!source.schema.shares.find((share: Share) => (share.principal === user?.email) || (share.type === "internal") ))
+  (sources, user) => sources.filter(source => !!source.schema.shares.find((share: Share) => (share.principal === user?.id) || (share.type === "internal") ))
 )
 
 export const selectUsableSources = createSelector(

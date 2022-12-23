@@ -42,7 +42,7 @@ const Widgets: FC = (props) => {
       const name = maybe_name && keyStoreIsReady ? keyStore?.decrypt_metadata(dataSpace?.key_id, maybe_name) : widget.id;
 
       return (
-        <div id={widget.id} className="message-box" onClick={() => setActiveWidgetId(widget.id)}>
+        <div key={widget.id} className="message-box" onClick={() => setActiveWidgetId(widget.id)}>
           <div className="message-header label-size-2">
             <p>{name}</p>
           </div>
