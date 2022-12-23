@@ -60,6 +60,13 @@ const AvatarMenu: FC<AvatarMenuProps> = (props) => {
               { handle ?
                 <li>
                   <hr className="dropdown-divider" />
+                  <Link className="button-label is-grey label-size-3" to={"/" + handle + "/contacts"}> Contacts </Link>
+                </li>
+              : null }
+
+              { handle ?
+                <li>
+                  <hr className="dropdown-divider" />
                   <Link className="button-label is-grey label-size-3" to={"/" + handle + "/keys"}> KeyStore </Link>
                 </li>
               : null }

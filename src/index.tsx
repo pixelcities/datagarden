@@ -17,6 +17,7 @@ import Widgets from 'pages/Widgets'
 import Profile from 'pages/Profile'
 import KeyStore from 'pages/KeyStore'
 import Reports from 'pages/Reports'
+import Contacts from 'pages/Contacts'
 
 import PrivateRoute from 'utils/PrivateRoute'
 import { AuthProvider } from 'contexts'
@@ -56,6 +57,7 @@ function App() {
                       { /* Main */ }
                       <DataSpaces>
                         <PrivateRoute path="/:handle/keys" component={KeyStore} />
+                        <PrivateRoute path="/:handle/contacts" component={Contacts} />
                         <PrivateRoute path="/:handle/sources" component={Sources} />
                         <PrivateRoute path="/:handle/taxonomy" component={Taxonomy} />
                         <PrivateRoute path="/:handle/widgets" component={Widgets} />
