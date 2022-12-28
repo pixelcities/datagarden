@@ -13,6 +13,7 @@ export type {
   Source,
   Share,
   Schema,
+  UnverifiedSchema,
   Column,
   Row,
   Attribute,

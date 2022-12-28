@@ -1,6 +1,5 @@
 import { DataType } from './enums'
 
-
 export interface Coords {
   x: number,
   y: number
@@ -104,11 +103,14 @@ export interface Column {
 export interface Schema {
   id: string,
   key_id: string,
+  tag: string,
   column_order: string[],
   columns: Column[],
   shares: Share[],
   metadata?: any
 }
+
+export type UnverifiedSchema = Omit<Schema, "tag">
 
 export interface Source {
   id: string,

@@ -88,7 +88,8 @@ const Transformer: FC<TransformerProps> = ({id, collections, transformers, wal, 
         key_id: "",
         column_order: [...leftSchema.column_order, ...rightSchema.column_order],
         columns: [...leftSchema.columns, ...rightSchema.columns],
-        shares: [...leftSchema.shares, ...rightSchema.shares]
+        shares: [...leftSchema.shares, ...rightSchema.shares],
+        tag: ""
       })
 
     } else {

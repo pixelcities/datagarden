@@ -1,3 +1,11 @@
+export const toHex = (byteArray: Uint8Array): string => {
+  return Array.from(byteArray, (byte) => (byte < 16 ? '0' : '') + (byte).toString(16)).join('')
+}
+
+export const fromHex = (hex: string): Uint8Array => {
+  return new Uint8Array(hex.match(/.{2}/g)!.map(x => parseInt(x, 16)))
+}
+
 export const toASCII = (str: string) => {
   let chars = str.split("")
 

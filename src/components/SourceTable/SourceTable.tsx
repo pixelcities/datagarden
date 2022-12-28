@@ -16,6 +16,7 @@ import { useDataFusionContext } from 'contexts'
 import { useKeyStoreContext } from 'contexts'
 import { useAuthContext } from 'contexts'
 import { loadRemoteTable } from 'utils/loadRemoteTable'
+import { signSchema, verifySchema } from 'utils/integrity'
 
 import './SourceTable.sass'
 
@@ -40,6 +41,7 @@ const SourceTable: FC<SourceTableProps> = (props) => {
   const [isActive, setIsActive] = useState(true)
   const [tableId, setTableId] = useState<string | null>(null)
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null)
+  const [schemaIsValid, setSchemaIsValid] = useState(false)
 
   const { user } = useAuthContext();
   const { keyStore, protocol } = useKeyStoreContext();
@@ -71,6 +73,19 @@ const SourceTable: FC<SourceTableProps> = (props) => {
       setTitle(keyStore?.decrypt_metadata(dataSpace?.key_id, titleMetadata.metadata))
     }
   }, [ dataSpace, titleMetadata, keyStore ])
+
+  useEffect(() => {
+    const maybeSchema = source?.schema || collection?.schema
+    if (maybeSchema) {
+      verifySchema(maybeSchema, keyStore?.get_key(maybeSchema.key_id)).then(isValid => {
+        setSchemaIsValid(isValid)
+
+        if (!isValid) {
+          console.error("Invalid schema signature")
+        }
+      })
+    }
+  }, [ source?.schema, collection?.schema, keyStore ])
 
   const renderShares = React.useMemo(() => {
     let res
@@ -138,29 +153,33 @@ const SourceTable: FC<SourceTableProps> = (props) => {
         })
       }
 
-      if (isCollection && collection) {
-        dispatch(updateCollection({...collection, ...{
-          schema: {...collection.schema, ...{
-            shares: [...collection.schema.shares, share]
-          }}
-        }}))
+      if (isCollection && collection && schemaIsValid) {
+        signSchema({...collection.schema, ...{
+          shares: [...collection.schema.shares, share]
+        }}, keyStore?.get_key(collection.schema.key_id)).then(signedSchema => {
+          dispatch(updateCollection({...collection, ...{
+            schema: signedSchema
+          }}))
+        })
 
-      } else if (source) {
-        dispatch(updateSource({
-          id: source.id,
-          workspace: source.workspace,
-          type: source.type,
-          uri: source.uri,
-          schema: {...source.schema, ...{
-            shares: [...source.schema.shares, share]
-          }},
-          is_published: source.is_published
-        }))
+      } else if (source && schemaIsValid) {
+        signSchema({...source.schema, ...{
+          shares: [...source.schema.shares, share]
+        }}, keyStore?.get_key(source.schema.key_id)).then(signedSchema => {
+          dispatch(updateSource({
+            id: source.id,
+            workspace: source.workspace,
+            type: source.type,
+            uri: source.uri,
+            schema: signedSchema,
+            is_published: source.is_published
+          }))
+        })
       }
     }
 
     setUserSearch("")
-  }, [ source, collection, isCollection, user, keyStore, protocol, dispatch ])
+  }, [ source, collection, isCollection, schemaIsValid, user, keyStore, protocol, dispatch ])
 
   const renderUserDropdown = React.useMemo(() => {
     const filteredUsers = userSearch !== "" ? users.filter(u => u.id !== user?.id && (u.email.indexOf(userSearch) !== -1 || (u.name?.indexOf(userSearch) ?? -1) !== -1)) : []

@@ -1,4 +1,4 @@
-import React, { FC, useState } from 'react'
+import React, { FC, useState, useEffect } from 'react'
 
 import { useDrop, useDrag } from 'react-dnd';
 
@@ -14,6 +14,7 @@ import { shareSecret, updateSource, updateCollection } from 'state/actions'
 
 import { useAuthContext } from 'contexts';
 import { useKeyStoreContext } from 'contexts'
+import { signSchema, verifySchema } from 'utils/integrity'
 
 
 interface HeaderDropdownProps {
@@ -139,6 +140,7 @@ type ShareOptionsI = ShareSourceOptionsI | ShareCollectionOptionsI
 
 const ShareOptions: FC<ShareOptionsI> = ({ me, columnId, source, collection }) => {
   const dispatch = useAppDispatch()
+  const [schemaIsValid, setSchemaIsValid] = useState(false)
 
   const { keyStore, protocol } = useKeyStoreContext();
 
@@ -152,6 +154,16 @@ const ShareOptions: FC<ShareOptionsI> = ({ me, columnId, source, collection }) =
       return {}
     }
   }, [ column ])
+
+  useEffect(() => {
+    verifySchema(schema, keyStore?.get_key(schema.key_id)).then(isValid => {
+      setSchemaIsValid(isValid)
+
+      if (!isValid) {
+        console.error("Invalid schema signature")
+      }
+    })
+  }, [ schema, keyStore ])
 
   const setUsers = React.useCallback((column: Column) => (user: User, access: string) => {
     if (access === "FullAccess" && !(user.id in shares)) {
@@ -181,19 +193,23 @@ const ShareOptions: FC<ShareOptionsI> = ({ me, columnId, source, collection }) =
             ciphertext: secret
           }))
 
-          if (source) {
-            dispatch(updateSource({...source, ...{
-              schema: {...schema, ...{
-                columns: columns
-              }}
-            }}))
+          if (source && schemaIsValid) {
+            signSchema({...schema, ...{
+              columns: columns
+            }}, keyStore?.get_key(schema.key_id)).then(signedSchema => {
+              dispatch(updateSource({...source, ...{
+                schema: signedSchema
+              }}))
+            })
 
-          } else if (collection) {
-            dispatch(updateCollection({...collection, ...{
-              schema: {...schema, ...{
-                columns: columns
-              }}
-            }}))
+          } else if (collection && schemaIsValid) {
+            signSchema({...schema, ...{
+              columns: columns
+            }}, keyStore?.get_key(schema.key_id)).then(signedSchema => {
+              dispatch(updateCollection({...collection, ...{
+                schema: signedSchema
+              }}))
+            })
           }
         })
       }
@@ -216,22 +232,27 @@ const ShareOptions: FC<ShareOptionsI> = ({ me, columnId, source, collection }) =
           shares: column.shares.filter(s => s.principal !== user.id)
         })
 
-        if (source) {
-          dispatch(updateSource({...source, ...{
-            schema: {...schema, ...{
-              columns: columns
-            }}
-          }}))
-        } else if (collection) {
-          dispatch(updateCollection({...collection, ...{
-            schema: {...schema, ...{
-              columns: columns
-            }}
-          }}))
+        if (source && schemaIsValid) {
+          signSchema({...schema, ...{
+            columns: columns
+          }}, keyStore?.get_key(schema.key_id)).then(signedSchema => {
+            dispatch(updateSource({...source, ...{
+              schema: signedSchema
+            }}))
+          })
+
+        } else if (collection && schemaIsValid) {
+          signSchema({...schema, ...{
+            columns: columns
+          }}, keyStore?.get_key(schema.key_id)).then(signedSchema => {
+            dispatch(updateCollection({...collection, ...{
+              schema: signedSchema
+            }}))
+          })
         }
       }
     }
-  }, [ me, schema, shares, input, source, collection, dispatch, keyStore, protocol ])
+  }, [ me, schema, schemaIsValid, shares, input, source, collection, dispatch, keyStore, protocol ])
 
   const [{ isOverFull }, dropRefFull] = useDrop(() => ({
     accept: "HeaderDropdown",

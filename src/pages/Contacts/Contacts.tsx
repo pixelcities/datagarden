@@ -48,7 +48,9 @@ const Contacts: FC = () => {
       for (const theirId of Object.keys(usersMap)) {
         const fingerprint = await protocol?.get_fingerprint(user.id, theirId)
 
-        fingerprints[theirId] = fingerprint
+        if (fingerprint) {
+          fingerprints[theirId] = fingerprint
+        }
       }
     }
 

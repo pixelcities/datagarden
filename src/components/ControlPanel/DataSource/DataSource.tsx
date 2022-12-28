@@ -5,6 +5,8 @@ import { useDrag, DragPreviewImage } from 'react-dnd'
 import { Source } from 'types'
 import { useAppDispatch } from 'hooks'
 import { createCollection } from 'state/actions'
+import { useKeyStoreContext } from 'contexts'
+import { signSchema, verifySchema } from 'utils/integrity'
 
 interface DataSourceProps {
   source: Source,
@@ -45,6 +47,7 @@ const genSourcePreview = (color: string) => {
 
 const DataSource: FC<DataSourceProps> = ({ source, title, color }) => {
   const dispatch = useAppDispatch()
+  const { keyStore } = useKeyStoreContext()
 
   const sourcePreview = genSourcePreview(color)
   const [{ opacity }, dragRef, preview] = useDrag(
@@ -53,22 +56,28 @@ const DataSource: FC<DataSourceProps> = ({ source, title, color }) => {
       item: { source },
       end: (e, monitor) => {
         const result: Coords = monitor.getDropResult() || {x: 0, y: 0}
-        const schema = {...JSON.parse(JSON.stringify(source.schema)), ...{id: crypto.randomUUID()}}
-        const payload = {
-          id: source.id,
-          type: "source",
-          workspace: "default",
-          uri: source.uri ?? "",
-          schema: schema,
-          targets: [],
-          position: [
-            result.x,
-            result.y
-          ],
-          color: color,
-          is_ready: true
-        }
-        dispatch(createCollection(payload))
+
+        verifySchema(source.schema, keyStore?.get_key(source.schema.key_id)).then(isValid => {
+          if (isValid) {
+            signSchema({...JSON.parse(JSON.stringify(source.schema)), ...{id: crypto.randomUUID()}}, keyStore?.get_key(source.schema.key_id)).then(signedSchema => {
+              const payload = {
+                id: source.id,
+                type: "source",
+                workspace: "default",
+                uri: source.uri ?? "",
+                schema: signedSchema,
+                targets: [],
+                position: [
+                  result.x,
+                  result.y
+                ],
+                color: color,
+                is_ready: true
+              }
+              dispatch(createCollection(payload))
+            })
+          }
+        })
       },
       collect: (monitor) => ({
         opacity: monitor.isDragging() ? 0.5 : 1

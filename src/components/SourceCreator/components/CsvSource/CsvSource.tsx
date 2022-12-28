@@ -10,6 +10,7 @@ import { createSource, createMetadata, createConcept, createDataURI } from 'stat
 import { selectDataURIById, selectActiveDataSpace } from 'state/selectors'
 import { Source, DataType } from 'types'
 import { emptyTaxonomy } from 'utils/taxonomy'
+import { signSchema } from 'utils/integrity'
 
 // https://github.com/denoland/deno/issues/12754
 declare global {
@@ -170,20 +171,22 @@ const CsvSource: FC<CsvSourceProps> = ({onComplete}) => {
 
               // Save the table
               arrow.write_remote_parquet(path, s3_path, tokens.access_key, tokens.secret_key, tokens.session_token, keymap).then(() => {
-                // Save the metadata
-                const source = {
-                  id: tableId,
-                  workspace: "default",
-                  type: "csv",
-                  uri: uri,
-                  schema: schema,
-                  is_published: false
-                }
+                signSchema(schema, keyStore?.get_key(key_id)).then(signedSchema => {
+                  // Save the metadata
+                  const source = {
+                    id: tableId,
+                    workspace: "default",
+                    type: "csv",
+                    uri: uri,
+                    schema: signedSchema,
+                    is_published: false
+                  }
 
-                dispatch(createSource(source))
-                onComplete(source)
+                  dispatch(createSource(source))
+                  onComplete(source)
 
-                setIsLoaded(true)
+                  setIsLoaded(true)
+                })
               })
             })
           })

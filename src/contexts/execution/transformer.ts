@@ -8,6 +8,7 @@ import { writeRemoteTable } from 'utils/writeRemoteTable'
 import { loadRemoteTable } from 'utils/loadRemoteTable'
 import { buildQuery } from 'utils/buildQuery'
 import { emptyTaxonomy } from 'utils/taxonomy'
+import { signSchema, verifySchema } from 'utils/integrity'
 
 export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: EnhancedStore<RootState>, keyStore: any, protocol: any, arrow: any, dataFusion: any) => {
   return new Promise<{actions: any[], metadata: {[key: string]: any}}>((resolve, reject) => {
@@ -48,52 +49,60 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
           const collection = collections[0]
 
           if (collection && target) {
-            // Create a copy, in case the user was looking at this collection
-            const id = dataFusion?.clone_table(collection.id, transformer_id)
-
-            // Build a new schema, including new keys
-            rebuildSchema(id, target, collection.id, collection.schema, [], fragments, task_meta, user, metadata, dataSpace, keyStore, protocol).then(({actions, schema, renames, meta}) => {
-
-              // If this is an aggregate transformer, we need to include the appropiate aggregate function
-              // in the schema metadata, so that datafusion can use it for non active columns.
-              if (transformer.type === "aggregate") {
-                const arrow_schema = dataFusion?.get_schema(id)
-                const fields = arrow_schema.fields.map((field: any) => {
-                  const fullColumn = collection.schema.columns.find(column => field.name === column.id)
-                  const maybe_concept = emptyTaxonomy(dataSpace?.key_id).deserialize(concepts[fullColumn?.concept_id ?? ""])
-                  const defaultAggregateFn = maybe_concept ? maybe_concept.aggregateFn : "array_agg"
-
-                  return {...field, ...{
-                    metadata: {
-                      aggregate_fn: defaultAggregateFn
-                    }
-                  }}
-                })
-
-                dataFusion?.update_schema(id, {...arrow_schema, ...{fields: fields}})
+            // Verify schema before doing anything
+            verifySchema(collection.schema, keyStore.get_key(collection.schema.key_id)).then(schemaIsValid => {
+              if (!schemaIsValid) {
+                reject(ExecutionError.Integrity)
+                return
               }
 
-              // Look at the requested fragments, and determine if this requires executing the
-              // real query or if we can simply use the artifact.
-              const identifiers = Object.values(wal.identifiers)
-              const nrFragments = fragments.filter(f => identifiers.indexOf(f) !== -1)
-              const useArtifacts = nrFragments.length === 0
+              // Create a copy, in case the user was looking at this collection
+              const id = dataFusion?.clone_table(collection.id, transformer_id)
 
-              execute(id, wal, fragments, useArtifacts, true, dataFusion, metadata, dataSpace, keyStore).then(() => {
-                const uri = task.task["uri"]
+              // Build a new schema, including new keys
+              rebuildSchema(id, target, collection.id, collection.schema, [], fragments, task_meta, user, metadata, dataSpace, keyStore, protocol).then(({actions, schema, renames, meta}) => {
 
-                // Update the schema to reflect the new columns, and drop the old
-                updateSchema(id, fragments, renames, dataFusion)
+                // If this is an aggregate transformer, we need to include the appropiate aggregate function
+                // in the schema metadata, so that datafusion can use it for non active columns.
+                if (transformer.type === "aggregate") {
+                  const arrow_schema = dataFusion?.get_schema(id)
+                  const fields = arrow_schema.fields.map((field: any) => {
+                    const fullColumn = collection.schema.columns.find(column => field.name === column.id)
+                    const maybe_concept = emptyTaxonomy(dataSpace?.key_id).deserialize(concepts[fullColumn?.concept_id ?? ""])
+                    const defaultAggregateFn = maybe_concept ? maybe_concept.aggregateFn : "array_agg"
 
-                // And finally, save the table to s3
-                writeRemoteTable(id, uri, schema, user, arrow, dataFusion, keyStore).then(() => {
-                  resolve({
-                    actions: actions,
-                    metadata: meta
+                    return {...field, ...{
+                      metadata: {
+                        aggregate_fn: defaultAggregateFn
+                      }
+                    }}
                   })
-                }).catch(() => {
-                  reject(ExecutionError.Failure)
-                  return
+
+                  dataFusion?.update_schema(id, {...arrow_schema, ...{fields: fields}})
+                }
+
+                // Look at the requested fragments, and determine if this requires executing the
+                // real query or if we can simply use the artifact.
+                const identifiers = Object.values(wal.identifiers)
+                const nrFragments = fragments.filter(f => identifiers.indexOf(f) !== -1)
+                const useArtifacts = nrFragments.length === 0
+
+                execute(id, wal, fragments, useArtifacts, true, dataFusion, metadata, dataSpace, keyStore).then(() => {
+                  const uri = task.task["uri"]
+
+                  // Update the schema to reflect the new columns, and drop the old
+                  updateSchema(id, fragments, renames, dataFusion)
+
+                  // And finally, save the table to s3
+                  writeRemoteTable(id, uri, schema, user, arrow, dataFusion, keyStore).then(() => {
+                    resolve({
+                      actions: actions,
+                      metadata: meta
+                    })
+                  }).catch(() => {
+                    reject(ExecutionError.Failure)
+                    return
+                  })
                 })
               })
             })
@@ -106,69 +115,77 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
           const rightCollection = collections[1]
 
           if (leftCollection && rightCollection && target) {
-            // Split the fragments in left and right
-            const leftFragments = fragments.filter(f => leftCollection.schema.column_order.indexOf(f) !== -1)
-            const rightFragments = fragments.filter(f => rightCollection.schema.column_order.indexOf(f) !== -1)
+            verifySchema(leftCollection.schema, keyStore.get_key(leftCollection.schema.key_id)).then(leftSchemaIsValid => {
+              verifySchema(rightCollection.schema, keyStore.get_key(rightCollection.schema.key_id)).then(rightSchemaIsValid => {
+                if (!leftSchemaIsValid || !rightSchemaIsValid) {
+                  reject(ExecutionError.Integrity)
+                  return
+                }
 
-            // Apply the left artifacts, this possibly also handles the case where both have fragments
-            if (leftFragments.length > 0) {
-              const leftId = dataFusion?.clone_table(leftCollection.id, "")
+                // Split the fragments in left and right
+                const leftFragments = fragments.filter(f => leftCollection.schema.column_order.indexOf(f) !== -1)
+                const rightFragments = fragments.filter(f => rightCollection.schema.column_order.indexOf(f) !== -1)
 
-              rebuildSchema(leftId, target, leftCollection.id, leftCollection.schema, rightCollection.schema.shares, leftFragments, task_meta, user, metadata, dataSpace, keyStore, protocol).then(({actions, schema, renames, meta}) => {
-                execute(leftId, wal, fragments, true, true, dataFusion, metadata, dataSpace, keyStore).then(() => {
-                  updateSchema(leftId, leftFragments, renames, dataFusion)
+                // Apply the left artifacts, this possibly also handles the case where both have fragments
+                if (leftFragments.length > 0) {
+                  const leftId = dataFusion?.clone_table(leftCollection.id, "")
 
-                  writeRemoteTable(leftId, uri, schema, user, arrow, dataFusion, keyStore).then(() => {
+                  rebuildSchema(leftId, target, leftCollection.id, leftCollection.schema, rightCollection.schema.shares, leftFragments, task_meta, user, metadata, dataSpace, keyStore, protocol).then(({actions, schema, renames, meta}) => {
+                    execute(leftId, wal, fragments, true, true, dataFusion, metadata, dataSpace, keyStore).then(() => {
+                      updateSchema(leftId, leftFragments, renames, dataFusion)
 
-                    // If there are no more right fragments, just return
-                    if (rightFragments.length === 0) {
+                      writeRemoteTable(leftId, uri, schema, user, arrow, dataFusion, keyStore).then(() => {
+
+                        // If there are no more right fragments, just return
+                        if (rightFragments.length === 0) {
+                          resolve({
+                            actions: actions,
+                            metadata: meta
+                          })
+
+                        // If there were both left AND right fragments, it's a special case. We need to pass on the
+                        // updated metadata and be sure to merge the resulting actions.
+                        } else {
+                          const rightId = dataFusion?.clone_table(rightCollection.id, "")
+                          const leftActions = actions
+                          const leftMeta = meta
+
+                          rebuildSchema(rightId, target, rightCollection.id, rightCollection.schema, leftCollection.schema.shares, rightFragments, leftMeta, user, metadata, dataSpace, keyStore, protocol).then(({actions, schema, renames, meta}) => {
+                            execute(rightId, wal, fragments, true, false, dataFusion, metadata, dataSpace, keyStore).then(() => {
+                              updateSchema(rightId, rightFragments, renames, dataFusion)
+
+                              writeRemoteTable(rightId, uri, schema, user, arrow, dataFusion, keyStore)
+
+                              resolve({
+                                actions: [...leftActions, ...actions],
+                                metadata: meta
+                              })
+                            })
+                          })
+                        }
+                      })
+                    })
+                  })
+
+                // Apply the right artifacts (if there were no left fragments)
+                } else {
+                  const rightId = dataFusion?.clone_table(rightCollection.id, "")
+
+                  rebuildSchema(rightId, target, rightCollection.id, rightCollection.schema, leftCollection.schema.shares, rightFragments, task_meta, user, metadata, dataSpace, keyStore, protocol).then(({actions, schema, renames, meta}) => {
+                    execute(rightId, wal, fragments, true, false, dataFusion, metadata, dataSpace, keyStore).then(() => {
+                      updateSchema(rightId, rightFragments, renames, dataFusion)
+
+                      writeRemoteTable(rightId, uri, schema, user, arrow, dataFusion, keyStore)
+
                       resolve({
                         actions: actions,
                         metadata: meta
                       })
-
-                    // If there were both left AND right fragments, it's a special case. We need to pass on the
-                    // updated metadata and be sure to merge the resulting actions.
-                    } else {
-                      const rightId = dataFusion?.clone_table(rightCollection.id, "")
-                      const leftActions = actions
-                      const leftMeta = meta
-
-                      rebuildSchema(rightId, target, rightCollection.id, rightCollection.schema, leftCollection.schema.shares, rightFragments, leftMeta, user, metadata, dataSpace, keyStore, protocol).then(({actions, schema, renames, meta}) => {
-                        execute(rightId, wal, fragments, true, false, dataFusion, metadata, dataSpace, keyStore).then(() => {
-                          updateSchema(rightId, rightFragments, renames, dataFusion)
-
-                          writeRemoteTable(rightId, uri, schema, user, arrow, dataFusion, keyStore)
-
-                          resolve({
-                            actions: [...leftActions, ...actions],
-                            metadata: meta
-                          })
-                        })
-                      })
-                    }
+                    })
                   })
-                })
+                }
               })
-
-            // Apply the right artifacts (if there were no left fragments)
-            } else {
-              const rightId = dataFusion?.clone_table(rightCollection.id, "")
-
-              rebuildSchema(rightId, target, rightCollection.id, rightCollection.schema, leftCollection.schema.shares, rightFragments, task_meta, user, metadata, dataSpace, keyStore, protocol).then(({actions, schema, renames, meta}) => {
-                execute(rightId, wal, fragments, true, false, dataFusion, metadata, dataSpace, keyStore).then(() => {
-                  updateSchema(rightId, rightFragments, renames, dataFusion)
-
-                  writeRemoteTable(rightId, uri, schema, user, arrow, dataFusion, keyStore)
-
-                  resolve({
-                    actions: actions,
-                    metadata: meta
-                  })
-                })
-              })
-            }
-
+            })
           }
         }
       })
@@ -241,6 +258,11 @@ const rebuildSchema = async (id: string, target: Collection, oldId: string, old:
   if ("schema" in taskMeta) {
     schema = meta["schema"]
 
+    const schemaIsValid = await verifySchema(schema, keyStore?.get_key(schema.key_id))
+    if (!schemaIsValid) {
+      throw new Error("Invalid schema signature")
+    }
+
   } else {
     const key_id = await keyStore?.generate_key(16)
 
@@ -272,7 +294,8 @@ const rebuildSchema = async (id: string, target: Collection, oldId: string, old:
       key_id: key_id,
       column_order: [],
       columns: [],
-      shares: shares
+      shares: shares,
+      tag: ''
     }
 
     // Re-publish the title under the new id
@@ -348,13 +371,15 @@ const rebuildSchema = async (id: string, target: Collection, oldId: string, old:
     schema.columns = [...schema.columns, ...columns]
 
     const schemaClone = JSON.parse(JSON.stringify(schema))
+    const signedSchema = await signSchema(schemaClone, keyStore?.get_key(schema.key_id))
+
     actions.push(updateCollectionSchema({
       id: target.id,
       workspace: target.workspace,
-      schema: schemaClone
+      schema: signedSchema
     }))
 
-    meta["schema"] = schemaClone
+    meta["schema"] = signedSchema
   }
 
   // After updating the real schema, return a limited one that

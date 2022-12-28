@@ -1,8 +1,6 @@
-const COOKIE_NAME="_mycelium_csrf_token"
+import { toHex } from './helpers'
 
-const toHex = (byteArray: Uint8Array): string => {
-  return Array.from(byteArray, (byte) => (byte < 16 ? '0' : '') + (byte).toString(16)).join('')
-}
+const COOKIE_NAME="_mycelium_csrf_token"
 
 export const getCSRFToken = (): string => {
   const cookieValue = document.cookie
