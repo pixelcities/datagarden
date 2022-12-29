@@ -41,6 +41,7 @@ const ConceptDetail: FC<ConceptDetailI> = ({ concept }) => {
 
   const [name, setName] = useState(concept?.name ?? "")
   const [dataType, setDataType] = useState(concept?.dataType)
+  const [aggregateFn, setAggregateFn] = useState(concept?.aggregateFn)
 
   const handleSubmit = (e: any) => {
     e.preventDefault()
@@ -50,20 +51,21 @@ const ConceptDetail: FC<ConceptDetailI> = ({ concept }) => {
         id: concept.id,
         workspace: concept.workspace,
         name: name,
-        dataType: dataType
+        dataType: dataType,
+        aggregateFn: aggregateFn
       })
 
       if (action) {
         dispatch(updateConcept(action))
       }
 
-
     } else {
       const action = emptyTaxonomy(dataSpace?.key_id).serialize({
         id: crypto.randomUUID(),
         workspace: "default",
         name: name,
-        dataType: dataType
+        dataType: dataType,
+        aggregateFn: aggregateFn
       })
 
       if (action) {
@@ -72,6 +74,7 @@ const ConceptDetail: FC<ConceptDetailI> = ({ concept }) => {
 
       setName("")
       setDataType(undefined)
+      setAggregateFn(undefined)
     }
   }
 
@@ -88,9 +91,19 @@ const ConceptDetail: FC<ConceptDetailI> = ({ concept }) => {
         </div>
 
         <div className="field pb-0">
+          <label className="label">Aggregate Function</label>
+          <Dropdown
+            items={["array_agg", "avg", "sum"]}
+            selected={aggregateFn}
+            onClick={(item: string) => setAggregateFn(item)}
+          />
+        </div>
+
+        <div className="field pb-0">
           <label className="label">Data Type</label>
           <Dropdown
-            items={Object.keys(DataType).sort((a, b) => b === dataType ? 1 : 0)}
+            items={Object.keys(DataType)}
+            selected={dataType}
             onClick={(item: string) => setDataType((DataType[item as DataTypeKey]))}
           />
         </div>
