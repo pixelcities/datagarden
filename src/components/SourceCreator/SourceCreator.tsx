@@ -45,6 +45,7 @@ const SourceCreator: FC<SourceCreatorProps> = (props) => {
 
   const handleOnComplete = (source: Source) => {
     onComplete(source)
+    setFileType("")
     onClose()
   }
 
