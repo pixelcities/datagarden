@@ -19,6 +19,12 @@ const collectionsSlice = createSlice({
         collection.schema = action.payload.schema
       }
     },
+    collectionColorSet(state, action: PayloadAction<{id: string, workspace: string, color: string}>) {
+      const collection = state.entities[action.payload.id]
+      if (collection) {
+        collection.color = action.payload.color
+      }
+    },
     collectionPositionSet(state, action: PayloadAction<{id: string, workspace: string, position: number[]}>) {
       const collection = state.entities[action.payload.id]
       if (collection) {
@@ -62,6 +68,7 @@ export const {
   collectionCreated,
   collectionUpdated,
   collectionSchemaUpdated,
+  collectionColorSet,
   collectionPositionSet,
   collectionIsReadySet,
   collectionTargetAdded,

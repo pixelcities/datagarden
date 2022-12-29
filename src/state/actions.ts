@@ -4,6 +4,7 @@ import {
   collectionCreated,
   collectionUpdated,
   collectionSchemaUpdated,
+  collectionColorSet,
   collectionPositionSet,
   collectionIsReadySet,
   collectionTargetAdded,
@@ -124,6 +125,7 @@ const recreateAction = <T extends ActionCreatorWithPayload<any,string>>(type: st
 const createCollection = recreateAction<typeof collectionCreated>("CreateCollection")
 const updateCollection = recreateAction<typeof collectionUpdated>("UpdateCollection")
 const updateCollectionSchema = recreateAction<typeof collectionSchemaUpdated>("UpdateCollectionSchema")
+const setCollectionColor = recreateAction<typeof collectionColorSet>("SetCollectionColor")
 const setCollectionPosition = recreateAction<typeof collectionPositionSet>("SetCollectionPosition")
 const setCollectionIsReady = recreateAction<typeof collectionIsReadySet>("SetCollectionIsReady")
 const addCollectionTarget = recreateAction<typeof collectionTargetAdded>("AddCollectionTarget")
@@ -167,6 +169,7 @@ const events: {[key: string]: ActionCreatorWithPayload<any, string>} = {
   "CollectionCreated": collectionCreated,
   "CollectionUpdated": collectionUpdated,
   "CollectionSchemaUpdated": collectionSchemaUpdated,
+  "CollectionColorSet": collectionColorSet,
   "CollectionPositionSet": collectionPositionSet,
   "CollectionIsReadySet": collectionIsReadySet,
   "CollectionTargetAdded": collectionTargetAdded,
@@ -230,6 +233,7 @@ export {
   createCollection,
   updateCollection,
   updateCollectionSchema,
+  setCollectionColor,
   setCollectionPosition,
   setCollectionIsReady,
   addCollectionTarget,

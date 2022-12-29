@@ -4,12 +4,13 @@ import { faKey, faFileCsv } from '@fortawesome/free-solid-svg-icons'
 
 import { useAppDispatch, useAppSelector } from 'hooks'
 import { selectUsers, selectMetadataById, selectSourceById, selectCollectionById, selectActiveDataSpace } from 'state/selectors'
-import { updateSource, deleteSource, updateCollection, updateMetadata, shareSecret } from 'state/actions'
+import { updateSource, deleteSource, updateCollection, updateMetadata, setCollectionColor, shareSecret } from 'state/actions'
 
 import { Source, Collection, Schema, User } from 'types'
 
 import DataTable from 'components/DataTable'
 import ShareCard from 'components/ShareCard'
+import ColorPicker from 'components/ColorPicker'
 import Onboarding from './Onboarding'
 
 import { useDataFusionContext } from 'contexts'
@@ -125,6 +126,16 @@ const SourceTable: FC<SourceTableProps> = (props) => {
 
         setHandle(0)
       }, 3000))
+    }
+  }
+
+  const handleColorChange = (color: string) => {
+    if (collection) {
+      dispatch(setCollectionColor({
+        id: collection.id,
+        workspace: collection.workspace,
+        color: color
+      }))
     }
   }
 
@@ -304,6 +315,18 @@ const SourceTable: FC<SourceTableProps> = (props) => {
           <input className="input" type="text" placeholder={title} value={title} onChange={handleTitleChange} />
         </div>
       </div>
+
+      { ((isCollection === true) && collection) ?
+        <div className="field">
+          <label className="label">Color</label>
+
+            <ColorPicker
+              color={collection.color}
+              onClick={handleColorChange}
+            />
+        </div>
+        : null
+      }
 
       <div className="field">
         <label className="label">Privacy Controls</label>
