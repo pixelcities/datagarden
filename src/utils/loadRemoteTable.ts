@@ -12,6 +12,8 @@ export const loadRemoteTable = (tableId: string, uri: string, schema: Schema, us
         const path = `/${tableId}`
 
         if (arrow["FS"].analyzePath(path, false).exists) {
+          arrow["FS"].unlink(path)
+
           reject()
           release()
           return

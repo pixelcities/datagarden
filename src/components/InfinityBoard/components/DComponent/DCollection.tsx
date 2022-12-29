@@ -1,12 +1,17 @@
 import React, { useEffect, useState, forwardRef } from 'react'
+
 import { useAppDispatch, useAppSelector } from 'hooks'
 import { Coords, WindowDimensions, Component } from 'types'
 import { setCollectionPosition, addCollectionTarget, deleteCollection } from 'state/actions'
 import { selectActiveDataSpace, selectMetadataMap } from 'state/selectors'
+
 import DComponent from './DComponent'
+
 import { useKeyStoreContext } from 'contexts'
+import { useDataFusionContext } from 'contexts'
 
 import './DCollection.sass'
+
 
 interface DCollectionProps {
   collection: Component,
@@ -19,9 +24,13 @@ interface DCollectionProps {
 
 const DCollection = forwardRef<{[id: string]: any}, DCollectionProps>((props, _refs) => {
   const { collection, offset, zoom, parentCoords, dimensions, onClick } = props
+
   const dispatch = useAppDispatch()
   const { keyStore } = useKeyStoreContext()
+  const { dataFusion } = useDataFusionContext()
+
   const [title, setTitle] = useState("")
+  const [isReady, setIsReady] = useState(false)
 
   const setComponentPosition = (payload: {id: string, workspace: string, position: number[]}) => {
     dispatch(setCollectionPosition(payload))
@@ -47,6 +56,19 @@ const DCollection = forwardRef<{[id: string]: any}, DCollectionProps>((props, _r
 
     setTitle(name)
   }, [ metadata, collection.id, keyStore, dataSpace ])
+
+  useEffect(() => {
+    // Monitor changes from !ready -> ready
+    if (collection.is_ready && !isReady) {
+
+      // If the table was in memory during such a change, the data is stale
+      if (dataFusion?.table_exists(collection.id)) {
+        dataFusion?.drop_table(collection.id)
+      }
+    }
+
+    setIsReady(collection.is_ready)
+  }, [ collection.id, collection.is_ready, isReady, setIsReady, dataFusion ])
 
   return (
     <DComponent

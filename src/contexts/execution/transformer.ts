@@ -324,7 +324,6 @@ const rebuildSchema = async (id: string, target: Collection, oldId: string, old:
   const old_columns = old.columns.filter(c => new_concepts.indexOf(c.concept_id) !== -1)
 
   let columns = []
-  let renames: {[key: string]: string} = {}
 
   for (const column of old_columns) {
     const id = crypto.randomUUID()
@@ -362,7 +361,6 @@ const rebuildSchema = async (id: string, target: Collection, oldId: string, old:
       }))
     }
 
-    renames[column.id] = id
     updated = true
   }
 
@@ -384,8 +382,17 @@ const rebuildSchema = async (id: string, target: Collection, oldId: string, old:
 
   // After updating the real schema, return a limited one that
   // only includes the fragment columns.
-  schema.column_order = columns.map(x => x.id)
-  schema.columns = columns
+  schema.columns = schema.columns.filter(col => concepts.indexOf(col.concept_id) !== -1)
+  schema.column_order = schema.columns.map(x => x.id)
+
+  let renames: {[key: string]: string} = {}
+  for (const column of schema.columns) {
+    const old_column = old.columns.find(c => c.concept_id === column.concept_id)
+
+    if (old_column) {
+      renames[old_column.id] = column.id
+    }
+  }
 
   return {
     actions: actions,
