@@ -23,10 +23,11 @@ interface AggregateTransformerProps {
   schema: Schema,
   dimensions: {height: number, width: number},
   setHeaderCallback: any,
-  onComplete: any
+  onComplete: any,
+  onClose: any
 }
 
-const AggregateTransformer: FC<AggregateTransformerProps> = ({ id, wal, tableId, leftId, rightId, columnNames, schema, dimensions, setHeaderCallback, onComplete }) => {
+const AggregateTransformer: FC<AggregateTransformerProps> = ({ id, wal, tableId, leftId, rightId, columnNames, schema, dimensions, setHeaderCallback, onComplete, onClose }) => {
   const dispatch = useAppDispatch()
 
   const concepts = useAppSelector(selectConceptMap)
@@ -149,6 +150,8 @@ const AggregateTransformer: FC<AggregateTransformerProps> = ({ id, wal, tableId,
       workspace: "default",
       wal: log
     }))
+
+    onClose()
   }
 
   const columnSelection = React.useMemo(() => {

@@ -19,7 +19,8 @@ interface TransformerSettingsProps {
   schemas: Schema[],
   dimensions: {height: number, width: number},
   setHeaderCallback: any,
-  onComplete: any
+  onComplete: any,
+  onClose: any
 }
 
 

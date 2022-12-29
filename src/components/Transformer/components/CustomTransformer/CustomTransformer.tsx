@@ -24,7 +24,8 @@ interface CustomTransformerProps {
   schema?: Schema,
   dimensions: {height: number, width: number},
   setHeaderCallback: any,
-  onComplete: any
+  onComplete: any,
+  onClose: any
 }
 
 const renderLongText = (text: string | null, width: number) => {
@@ -43,7 +44,7 @@ const renderLongText = (text: string | null, width: number) => {
   )
 }
 
-const CustomTransformer: FC<CustomTransformerProps> = ({ id, wal, tableId, columnNames, schema, dimensions, setHeaderCallback, onComplete }) => {
+const CustomTransformer: FC<CustomTransformerProps> = ({ id, wal, tableId, columnNames, schema, dimensions, setHeaderCallback, onComplete, onClose }) => {
   const dispatch = useAppDispatch()
 
   const [idModalIsActive, setIdModalIsActive] = useState(false)
@@ -108,6 +109,8 @@ const CustomTransformer: FC<CustomTransformerProps> = ({ id, wal, tableId, colum
         workspace: "default",
         wal: log
       }))
+
+      onClose()
     }
   }
 

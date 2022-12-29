@@ -1,5 +1,4 @@
 import React, { FC, useMemo, useRef, useState, useLayoutEffect, CSSProperties } from 'react';
-import { Link } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from 'hooks'
 import { useDrop } from 'react-dnd'
 
@@ -25,7 +24,6 @@ const ORIGIN: {x: number, y: number} = Object.freeze({x: 0, y: 0})
 const InfinityBoard: FC = (props) => {
   const [dimensions, setDimensions] = useState({height: 0, width: 0});
   const [buffer, setBuffer] = useState(ORIGIN)
-  const [workspace, setWorkspace] = useState("default")
   const [activeCollectionId, setActiveCollectionId] = useState("")
   const [activeTransformerId, setActiveTransformerId] = useState("")
   const [activeWidgetId, setActiveWidgetId] = useState("")
@@ -37,6 +35,7 @@ const InfinityBoard: FC = (props) => {
 
   const dragRefs = useRef<{[id: string]: any}>({})
 
+  const workspace = "default"
   const coords = useAppSelector(selectCoords)
   const components = useAppSelector(state => selectComponents(state, workspace))
   const connectedComponents = useAppSelector(state => selectConnectedComponents(state, workspace))

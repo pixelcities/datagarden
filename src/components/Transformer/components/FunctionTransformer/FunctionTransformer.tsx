@@ -21,10 +21,11 @@ interface FunctionTransformerProps {
   schema: Schema,
   dimensions: {height: number, width: number},
   setHeaderCallback: any,
-  onComplete: any
+  onComplete: any,
+  onClose: any
 }
 
-const FunctionTransformer: FC<FunctionTransformerProps> = ({ id, wal, tableId, leftId, rightId, columnNames, schema, dimensions, setHeaderCallback, onComplete }) => {
+const FunctionTransformer: FC<FunctionTransformerProps> = ({ id, wal, tableId, leftId, rightId, columnNames, schema, dimensions, setHeaderCallback, onComplete, onClose }) => {
   const dispatch = useAppDispatch()
 
   const [column, setColumn] = useState<string | null>(null)
@@ -101,6 +102,8 @@ const FunctionTransformer: FC<FunctionTransformerProps> = ({ id, wal, tableId, l
       workspace: "default",
       wal: log
     }))
+
+    onClose()
   }
 
 

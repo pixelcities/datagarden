@@ -243,6 +243,7 @@ const Transformer: FC<TransformerProps> = ({id, collections, transformers, wal, 
               dimensions={dimensions}
               setHeaderCallback={handleHeaderCallback}
               onComplete={() => setVersionId(versionId + 1)}
+              onClose={handleClose}
             />
           </div>
 

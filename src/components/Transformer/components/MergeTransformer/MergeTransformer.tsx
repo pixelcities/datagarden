@@ -22,10 +22,11 @@ interface MergeTransformerProps {
   rightSchema: Schema,
   dimensions: {height: number, width: number},
   setHeaderCallback: any,
-  onComplete: any
+  onComplete: any,
+  onClose: any
 }
 
-const MergeTransformer: FC<MergeTransformerProps> = ({ id, wal, tableId, leftId, rightId, columnNames, leftSchema, rightSchema, dimensions, setHeaderCallback, onComplete }) => {
+const MergeTransformer: FC<MergeTransformerProps> = ({ id, wal, tableId, leftId, rightId, columnNames, leftSchema, rightSchema, dimensions, setHeaderCallback, onComplete, onClose }) => {
   const dispatch = useAppDispatch()
 
   const [joinType, setJoinType] = useState("LEFT JOIN")
@@ -100,6 +101,8 @@ const MergeTransformer: FC<MergeTransformerProps> = ({ id, wal, tableId, leftId,
       workspace: "default",
       wal: log
     }))
+
+    onClose()
   }
 
 

@@ -21,10 +21,11 @@ interface FilterTransformerProps {
   schema: Schema,
   dimensions: {height: number, width: number},
   setHeaderCallback: any,
-  onComplete: any
+  onComplete: any,
+  onClose: any
 }
 
-const FilterTransformer: FC<FilterTransformerProps> = ({ id, wal, tableId, leftId, rightId, columnNames, schema, dimensions, setHeaderCallback, onComplete }) => {
+const FilterTransformer: FC<FilterTransformerProps> = ({ id, wal, tableId, leftId, rightId, columnNames, schema, dimensions, setHeaderCallback, onComplete, onClose }) => {
   const dispatch = useAppDispatch()
 
   const dataSpace = useAppSelector(selectActiveDataSpace)
@@ -141,6 +142,8 @@ const FilterTransformer: FC<FilterTransformerProps> = ({ id, wal, tableId, leftI
     }))
 
     setLog(logWithValues)
+
+    onClose()
   }
 
 

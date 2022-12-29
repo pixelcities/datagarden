@@ -1,4 +1,4 @@
-import React, { FC } from 'react'
+import React, { FC, useRef } from 'react'
 import { useDrag } from 'react-dnd'
 
 import { useAppDispatch, useAppSelector } from 'hooks'
@@ -25,24 +25,29 @@ const TransformerCard: FC<TransformerCardProps> = ({ title, type, isDisabled }) 
   const dispatch = useAppDispatch()
   const { keyStore } = useKeyStoreContext();
   const dataSpace = useAppSelector(selectActiveDataSpace)
+  const idRef = useRef<{ id: string }>({id: crypto.randomUUID()})
 
-  const id = crypto.randomUUID()
+  const onDrag = () => {
+    idRef.current.id = crypto.randomUUID()
+
+    return { id: idRef.current }
+  }
 
   const [{ opacity }, dragRef] = useDrag(
     () => ({
       type: "ControlPanel",
-      item: { id },
+      item: onDrag,
       end: (e, monitor) => {
         const result: Coords = monitor.getDropResult() || {x: 0, y: 0}
 
         dispatch(createMetadata({
-          id: id,
+          id: idRef.current.id,
           workspace: "default",
-          metadata: keyStore?.encrypt_metadata(dataSpace?.key_id, `${id} [${type}]`)
+          metadata: keyStore?.encrypt_metadata(dataSpace?.key_id, `${idRef.current.id} [${type}]`)
         }))
 
         dispatch(createTransformer({
-          id: id,
+          id: idRef.current.id,
           workspace: "default",
           type: type,
           targets: [],
