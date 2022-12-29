@@ -219,15 +219,6 @@ const InfinityBoard: FC = (props) => {
 
         </div>
 
-        <div className="box py-3" style={{position: "absolute", top: "30px", left: "30px"}}>
-          <nav className="breadcrumb has-arrow-separator" aria-label="breadcrumbs">
-            <ul>
-              <li><Link to="#overview" className="has-text-primary has-text-weight-bold" onClick={() => setWorkspace("default")}>Overview</Link></li>
-              <li className="is-active"><Link to="default" aria-current="page">Default workspace</Link></li>
-            </ul>
-          </nav>
-        </div>
-
         <div id="deleteComponent" className="delete" style={{position: "absolute", bottom: "30px", left: "30px", width: "20px", height: "20px"}} />
 
         <div className="preview" style={{position: "absolute", bottom: "30px", right: "30px", width: "200px", height: "200px" }}>
