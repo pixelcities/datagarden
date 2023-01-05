@@ -59,7 +59,7 @@ const HistogramSettings: FC<HistogramSettingsProps> = ({ id, columnNames, settin
           <label className="label">X Label</label>
         </div>
 
-        <input type="text" className="input" value={settings.xLabel} onChange={e => handleDispatch(e, "xLabel")} />
+        <input type="text" className="input" value={settings.xLabel || ""} onChange={e => handleDispatch(e, "xLabel")} />
       </>
 
       <>
@@ -67,7 +67,7 @@ const HistogramSettings: FC<HistogramSettingsProps> = ({ id, columnNames, settin
           <label className="label">Y Label</label>
         </div>
 
-        <input type="text" className="input" value={settings.yLabel} onChange={e => handleDispatch(e, "yLabel")} />
+        <input type="text" className="input" value={settings.yLabel || ""} onChange={e => handleDispatch(e, "yLabel")} />
       </>
 
       <>
@@ -75,7 +75,7 @@ const HistogramSettings: FC<HistogramSettingsProps> = ({ id, columnNames, settin
           <label className="label">Bins</label>
         </div>
 
-        <input type="number" className="input" value={settings.nrBins} onChange={e => handleDispatch(e, "nrBins")} />
+        <input type="number" className="input" value={settings.nrBins || 5} onChange={e => handleDispatch(e, "nrBins")} />
       </>
     </>
   )

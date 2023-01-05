@@ -2,7 +2,7 @@ import { EnhancedStore } from '@reduxjs/toolkit'
 
 import { ExecutionError, User, DataSpace, Task, Collection, Schema, Concept, Share, WAL } from 'types'
 import { RootState } from 'state/store'
-import { shareSecret, createMetadata, updateCollectionSchema } from 'state/actions'
+import { shareSecret, createMetadata, updateCollectionSchema, updateTransformerWAL } from 'state/actions'
 
 import { writeRemoteTable } from 'utils/writeRemoteTable'
 import { loadRemoteTable } from 'utils/loadRemoteTable'
@@ -14,24 +14,26 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
   return new Promise<{actions: any[], metadata: {[key: string]: any}}>((resolve, reject) => {
     const instruction = task.task["instruction"]
     const transformer_id = task.task["transformer_id"]
-    const target_id = task.task["collection_id"]
     const wal = task.task["wal"]
-    const fragments = task.fragments
-    const task_meta = task.metadata
+
+    const transformer = store.getState().transformers.entities[transformer_id]
+    const collections = transformer?.collections.map(id => store.getState().collections.entities[id]) ?? []
+    const metadata = Object.values(store.getState().metadata.entities).reduce((a, b) => ({...a, [b?.id ?? ""]: b?.metadata}), {})
+    const concepts = Object.values(store.getState().concepts.entities).filter((x): x is Concept => !!x).reduce((a: {[key: string]: Concept}, b) => ({...a, [b.id]: b}), {})
+
+    if (!transformer) {
+      reject(ExecutionError.Retry)
+      return
+    }
+
+    console.log("Received a transformer task: ", task.task)
 
     if (instruction === "compute_fragment") {
+      const target_id = task.task["collection_id"]
+      const fragments = task.fragments
+      const task_meta = task.metadata
+
       const target = store.getState().collections.entities[target_id]
-      const transformer = store.getState().transformers.entities[transformer_id]
-      const collections = transformer?.collections.map(id => store.getState().collections.entities[id]) ?? []
-      const metadata = Object.values(store.getState().metadata.entities).reduce((a, b) => ({...a, [b?.id ?? ""]: b?.metadata}), {})
-      const concepts = Object.values(store.getState().concepts.entities).filter((x): x is Concept => !!x).reduce((a: {[key: string]: Concept}, b) => ({...a, [b.id]: b}), {})
-
-      if (!transformer) {
-        reject(ExecutionError.Retry)
-        return
-      }
-
-      console.log("Received a transformer task: ", task.task)
 
       // Load all the input collections in memory
       Promise.all(collections.map((collection) => {
@@ -189,6 +191,84 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
           }
         }
       })
+
+    // When one or more input collections have been updated, the artifacts in the WAL may no longer be valid. This task will
+    // re-run the original transaction and record the new artifacts. The resulting TransformerWALUpdated event will trigger the
+    // actual updating (see: compute_fragment).
+    } else if (instruction === "update_artifacts") {
+      Promise.all(collections.map((collection) => {
+        return new Promise<void>((resolve, reject) => {
+          if (dataFusion?.table_exists(collection?.id)) {
+            resolve()
+
+          } else if (collection?.id && collection?.uri) {
+            loadRemoteTable(collection.id, collection.uri, collection.schema, user, arrow, dataFusion, keyStore).then(() => resolve())
+          }
+        })
+      })).then(() => {
+        if (transformer.type !== "merge") {
+          const collection = collections[0]
+
+          if (collection) {
+            const id = dataFusion?.clone_table(collection.id, transformer_id)
+
+            if (transformer.type === "aggregate") {
+              const arrow_schema = dataFusion?.get_schema(id)
+              const fields = arrow_schema.fields.map((field: any) => {
+                const fullColumn = collection.schema.columns.find(column => field.name === column.id)
+                const maybe_concept = emptyTaxonomy(dataSpace?.key_id).deserialize(concepts[fullColumn?.concept_id ?? ""])
+                const defaultAggregateFn = maybe_concept ? maybe_concept.aggregateFn : "array_agg"
+
+                return {...field, ...{
+                  metadata: {
+                    aggregate_fn: defaultAggregateFn
+                  }
+                }}
+              })
+
+              dataFusion?.update_schema(id, {...arrow_schema, ...{fields: fields}})
+            }
+
+            execute(id, wal, collection.schema.column_order, false, true, dataFusion, metadata, dataSpace, keyStore).then((artifacts: string[]) => {
+              resolve({
+                actions: [
+                  updateTransformerWAL({
+                    id: transformer_id,
+                    workspace: transformer.workspace,
+                    wal: {...wal, ...{artifacts: artifacts}}
+                  })
+                ],
+                metadata: {}
+              })
+            })
+          }
+
+        } else {
+          const leftCollection = collections[0]
+          const rightCollection = collections[1]
+
+          // Merge transformers only support one transaction
+          const transaction = wal.transactions[0]
+
+          if (leftCollection && rightCollection && transaction) {
+            const id = dataFusion?.clone_table(leftCollection.id, transformer_id)
+
+            dataFusion?.join(id, leftCollection.id, rightCollection.id, buildQuery(transaction, wal, metadata, dataSpace, keyStore)).then((artifacts: string[]) => {
+              resolve({
+                actions: [
+                  updateTransformerWAL({
+                    id: transformer_id,
+                    workspace: transformer.workspace,
+                    wal: {...wal, ...{artifacts: [artifacts.join("|")]}}
+                  })
+                ],
+                metadata: {}
+              })
+
+            })
+          }
+        }
+      })
     }
 
   })
@@ -218,6 +298,9 @@ const updateSchema = (id: string, fragments: string[], renames: {[key: string]: 
 
 
 const execute = async (id: string, wal: WAL, fragments: string[], useArtifacts: boolean, isLeft: boolean, dataFusion: any, metadata: any, dataSpace: DataSpace | undefined, keyStore: any) => {
+  // Collect any query artifacts. Caller may optionally use these when updating artifacts.
+  let artifacts: string[] = []
+
   if (useArtifacts) {
     for (const artifact of wal.artifacts) {
       let splitArtifact = artifact.split("|")
@@ -230,7 +313,7 @@ const execute = async (id: string, wal: WAL, fragments: string[], useArtifacts: 
       const transaction = wal.transactions[i]
       const cloneId = dataFusion?.clone_table(id, "")
 
-      await dataFusion?.query(id, buildQuery(transaction, wal, metadata, dataSpace, keyStore))
+      const artifact = await dataFusion?.query(id, buildQuery(transaction, wal, metadata, dataSpace, keyStore))
       const resultSchema = dataFusion?.get_schema(id)
       const resultColumns: string[] = resultSchema.fields.map((field: any) => field.name)
 
@@ -244,8 +327,12 @@ const execute = async (id: string, wal: WAL, fragments: string[], useArtifacts: 
         dataFusion?.merge_table(cloneId, id)
         dataFusion?.move_table(cloneId, id)
       }
+
+      artifacts.push(artifact)
     }
   }
+
+  return artifacts
 }
 
 

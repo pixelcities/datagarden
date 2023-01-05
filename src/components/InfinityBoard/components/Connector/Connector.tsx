@@ -99,14 +99,14 @@ const ConnectedConnector = forwardRef<{[id: string]: any}, ConnectedConnectorPro
   const sourceARefs = refs.current?.[sourceA]
   const sourceBRefs = refs.current?.[sourceB]
 
-  const sourceADragRef = sourceARefs.current?.dragRef
-  const sourceACallback = sourceARefs.current?.draggableCallback
+  const sourceADragRef = sourceARefs?.current?.dragRef
+  const sourceACallback = sourceARefs?.current?.draggableCallback
 
-  const sourceBDragRef = sourceBRefs.current?.dragRef
-  const sourceBCallback = sourceBRefs.current?.draggableCallback
+  const sourceBDragRef = sourceBRefs?.current?.dragRef
+  const sourceBCallback = sourceBRefs?.current?.draggableCallback
 
   const updateConnectorPath = useCallback(() => {
-    if (sourceADragRef.current && sourceBDragRef.current) {
+    if (sourceADragRef?.current && sourceBDragRef?.current) {
       const rect1 = sourceBDragRef.current.getBoundingClientRect()
       const rect2 = sourceADragRef.current.getBoundingClientRect()
 

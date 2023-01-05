@@ -182,7 +182,7 @@ const InfinityBoard: FC = (props) => {
           onClose={() => setActiveCollectionId("")}
         />
       )
-    } else if (activeTransformer && activeTransformer.collections.length > (activeTransformer.type === "merge" ? 1 : 0)) {
+    } else if (activeTransformer && activeTransformer.is_ready && activeTransformer.collections.length > (activeTransformer.type === "merge" ? 1 : 0)) {
       return (
         <Transformer
           id={activeTransformer.id}
