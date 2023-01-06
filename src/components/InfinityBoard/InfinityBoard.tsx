@@ -125,7 +125,7 @@ const InfinityBoard: FC = (props) => {
           />
         )
 
-      } else if (component.type === "graph") {
+      } else if (component.type === "chart") {
         return (
           <DWidget
             key={component.id}

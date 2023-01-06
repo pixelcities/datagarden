@@ -14,7 +14,7 @@ import { useKeyStoreContext } from 'contexts'
 import './Widget.sass'
 
 
-interface GraphProps {
+interface ChartProps {
   id: string,
   collectionId: string,
   columnNames: {[key: string]: string},
@@ -24,7 +24,7 @@ interface GraphProps {
   isPublished: boolean
 }
 
-const Graph: FC<GraphProps> = ({ id, collectionId, columnNames, schema, settings, access, isPublished }) => {
+const Chart: FC<ChartProps> = ({ id, collectionId, columnNames, schema, settings, access, isPublished }) => {
   const dispatch = useAppDispatch()
   const [content, setContent] = useState<string | undefined>()
   const [height, setHeight] = useState<number | undefined>()
@@ -33,7 +33,7 @@ const Graph: FC<GraphProps> = ({ id, collectionId, columnNames, schema, settings
   const { keyStore } = useKeyStoreContext()
   const dataSpace = useAppSelector(selectActiveDataSpace)
 
-  const handleGraphType = (item: string) => {
+  const handleChartType = (item: string) => {
     if (item !== settings.type) {
       dispatch(putWidgetSetting({
         id: id,
@@ -44,7 +44,7 @@ const Graph: FC<GraphProps> = ({ id, collectionId, columnNames, schema, settings
     }
   }
 
-  const renderGraph = useMemo(() => {
+  const renderChart = useMemo(() => {
     const getContentCallback = (cb: () => {content: string | undefined, height: number | undefined}) => {
       const result = cb()
 
@@ -78,7 +78,7 @@ const Graph: FC<GraphProps> = ({ id, collectionId, columnNames, schema, settings
 
   }, [ id, collectionId, settings, setContent ])
 
-  const renderGraphSettings = useMemo(() => {
+  const renderChartSettings = useMemo(() => {
     if (settings.type === "Histogram") {
       return (
         <HistogramSettings
@@ -128,8 +128,8 @@ const Graph: FC<GraphProps> = ({ id, collectionId, columnNames, schema, settings
 
   return (
     <>
-      <div className="graph-container">
-        { renderGraph }
+      <div className="chart-container">
+        { renderChart }
       </div>
 
       <div className="widget-control-container">
@@ -140,11 +140,11 @@ const Graph: FC<GraphProps> = ({ id, collectionId, columnNames, schema, settings
 
           <Dropdown
             items={["Histogram", "Donut"]}
-            onClick={handleGraphType}
+            onClick={handleChartType}
             selected={settings.type}
           />
 
-          { renderGraphSettings }
+          { renderChartSettings }
 
           <div className="field pb-0 pt-5">
             <label id="publish" className="label pb-2"> Release process </label>
@@ -175,4 +175,4 @@ const Graph: FC<GraphProps> = ({ id, collectionId, columnNames, schema, settings
   )
 }
 
-export default Graph
+export default Chart

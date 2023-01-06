@@ -2,7 +2,7 @@ import React, { FC, useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCheck } from '@fortawesome/free-solid-svg-icons'
 
-import Graph from './Graph'
+import Chart from './Chart'
 
 import { useAppDispatch, useAppSelector } from 'hooks'
 import { selectMetadataMap, selectConceptMap, selectActiveDataSpace, selectCollectionById, selectWidgetById } from 'state/selectors'
@@ -119,9 +119,9 @@ const Widget: FC<WidgetProps> = ({ id, collection, onClose }) => {
 
   const renderWidget = React.useMemo(() => {
     if (inputId && inputCollection) {
-      if (widget?.type === "graph") {
+      if (widget?.type === "chart") {
         return (
-          <Graph
+          <Chart
             id={id}
             collectionId={inputId}
             columnNames={columnNames}

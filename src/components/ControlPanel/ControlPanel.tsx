@@ -139,7 +139,7 @@ const WorkspaceTab: FC = (props) => {
       </div>
       <div className="columns ml-3 is-gapless is-multiline">
         <div className="column is-4 mt-4">
-          <WidgetCard title="Graph" type="graph" />
+          <WidgetCard title="Chart" type="chart" />
         </div>
       </div>
 
