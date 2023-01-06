@@ -1,5 +1,4 @@
 import React, { FC, useRef, useMemo, useLayoutEffect, useState, useEffect } from 'react';
-import * as d3 from 'd3'
 import Dropdown from 'components/Dropdown'
 
 import { useAppDispatch } from 'hooks'
@@ -7,6 +6,7 @@ import { putWidgetSetting } from 'state/actions'
 import { WidgetSettings } from 'types'
 
 import { useDataFusionContext } from 'contexts'
+import { renderDonut } from 'utils/charts'
 
 
 interface DonutSettingsProps {
@@ -97,92 +97,28 @@ const Donut: FC<DonutProps> = ({ id, collectionId, nameColumnId, valueColumnId, 
   }, [ collectionId, dataFusion ])
 
   useEffect(() => {
-    const margin = { top: 0, right: 25, bottom: 25, left: 25 }
-    const width = dimensions.width - margin.left - margin.right
-    const height = dimensions.height - margin.top - margin.bottom
+    const node = document.getElementById("canvas")
 
-    // Constants
-    const innerRadius = Math.min(width, height) / 3
-    const outerRadius = Math.min(width, height) / 2
-    const labelRadius = (innerRadius + outerRadius) / 2
-    const padAngle = 1 / outerRadius
+    if (data && node) {
+      const svg = renderDonut(data, nameColumnId, valueColumnId)
 
-    if (data) {
-      const x = (d: any) => d[nameColumnId]
-      const y = (d: any) => d[valueColumnId]
+      node.append(svg)
 
-      // Data
-      const N = d3.map(data, x)
-      const V = d3.map(data, y)
-      const I = d3.range(N.length).filter(i => !isNaN(V[i]))
-
-      const names = new d3.InternSet(N)
-      const colors = d3.quantize(t => d3.interpolateSpectral(t * 0.8 + 0.1), names.size)
-      const color = d3.scaleOrdinal(names, colors)
-
-      const formatValue = d3.format(",")
-      const title = (i: any) => `${N[i]}\n${formatValue(V[i])}`
-
-      const arcs = d3.pie().padAngle(padAngle).sort(null).value((i: any) => V[i])(I)
-      const arc = d3.arc().innerRadius(innerRadius).outerRadius(outerRadius)
-      const arcLabel = d3.arc().innerRadius(labelRadius).outerRadius(labelRadius)
-
-      // Render
-      const canvas = d3.select("#canvas")
-      const svg = canvas
-        .append("svg")
-        .attr("width", width)
-        .attr("height", height)
-        .attr("viewBox", [-width / 2, -height / 2, width, height])
-        .attr("style", "max-width: 100%; height: auto; height: intrinsic;")
-
-      svg.append("g")
-        .attr("stroke-width", 1)
-        .attr("stroke-linejoin", "round")
-        .selectAll("path")
-        .data(arcs)
-        .join("path")
-          .attr("fill", (d: any) => color(N[d.data]))
-          .attr("d", arc as any)
-        .append("title")
-          .text(d => title(d.data))
-
-      svg.append("g")
-        .attr("font-family", "sans-serif")
-        .attr("font-size", 10)
-        .attr("text-anchor", "middle")
-        .selectAll("text")
-        .data(arcs)
-        .join("text")
-          .attr("transform", (d: any) => `translate(${arcLabel.centroid(d)})`)
-        .selectAll("tspan")
-        .data((d: any) => {
-          const lines = `${title(d.data)}`.split(/\n/)
-          return (d.endAngle - d.startAngle) > 0.25 ? lines : lines.slice(0, 1)
+      // Callback
+      if (getContentCallback) {
+        getContentCallback(() => {
+          return {
+            content: node.innerHTML,
+            height: node.clientHeight
+          }
         })
-        .join("tspan")
-          .attr("x", 0)
-          .attr("y", (_, i) => `${i * 1.1}em`)
-          .attr("font-weight", (_, i) => i ? null : "bold")
-          .text(d => d)
-
-        // Callback
-        if (getContentCallback) {
-          getContentCallback(() => {
-            const node = document.getElementById("canvas")
-            return {
-              content: node?.outerHTML,
-              height: node?.clientHeight
-            }
-          })
-        }
+      }
 
       return () => {
         svg.remove()
       }
     }
-  }, [ dimensions, data, nameColumnId, valueColumnId, getContentCallback ])
-
+  }, [ data, nameColumnId, valueColumnId, getContentCallback ])
 
   return (
     <div ref={ref} className="pt-6" style={{width: "100%", height: "90%"}}>

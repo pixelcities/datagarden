@@ -88,6 +88,7 @@ const Report: FC = (props) => {
   const [addWidgetIsActive, setAddWidgetIsActive] = useState(false)
   const [title, setTitle] = useState(id)
   const [selectedWidget, setSelectedWidget] = useState<string | undefined>()
+  const [selectedSize, setSelectedSize] = useState<string>("Medium")
   const [sortedContent, setSortedContent] = useState<string[]>([])
 
   const titleMetadata = useAppSelector(state => selectMetadataById(state, id))
@@ -155,14 +156,31 @@ const Report: FC = (props) => {
       // unwise to use the actualy dataspace key for this.
       if (widget && widget.access) {
         let widgetContent = ""
+        let height = 640
+
+        // Wrap the svg widget with the selected size
+        if (selectedSize === "Small") {
+          widgetContent += '<svg width=720 height=480 style="display: block; margin: auto;">'
+          height = 480
+
+        } else if (selectedSize === "Medium") {
+          widgetContent += '<svg width=960 height=640 style="display: block; margin: auto;">'
+          height = 640
+
+        } else if (selectedSize === "Large") {
+          widgetContent += '<svg width=1200 height=800 style="display: block; margin: auto;">'
+          height = 800
+        }
 
         // Grab the widget content, which may be encrypted with the internal dataspace key
         if (widget.access.filter(x => x.type === "internal").length > 0) {
-          widgetContent =  keyStore?.decrypt_metadata(dataSpace?.key_id, widget.content)
+          widgetContent += keyStore?.decrypt_metadata(dataSpace?.key_id, widget.content)
 
         } else if (widget.access.filter(x => x.type === "public").length > 0) {
-          widgetContent = widget.content || ""
+          widgetContent += widget.content || ""
         }
+
+        widgetContent += '</svg>'
 
         // Crudely convert to ASCII by just replacing bad characters, as btoa does not like unicode very much.
         //
@@ -181,7 +199,7 @@ const Report: FC = (props) => {
           widget_id: widgetId,
           access: page.access,
           content: content,
-          height: widget.height,
+          height: height,
           draft: undefined
         }))
       }
@@ -189,7 +207,7 @@ const Report: FC = (props) => {
 
     setAddContentIsActive(false)
     setAddWidgetIsActive(false)
-  }, [ id, page, widgets, selectedWidget, widgetTitleMap, keyStore, dataSpace?.key_id, dispatch ])
+  }, [ id, page, widgets, selectedWidget, selectedSize, widgetTitleMap, keyStore, dataSpace?.key_id, dispatch ])
 
   useEffect(() => {
     const contentOrder = page?.content_order ?? []
@@ -276,6 +294,27 @@ const Report: FC = (props) => {
                 />
               </div>
 
+              <div className="field pb-0 pt-5">
+                <label id="publish" className="label pb-2"> Size </label>
+
+                <div className="control">
+                  <label className="radio">
+                    <input type="radio" className="mr-1" name="Small" checked={selectedSize === "Small"} onChange={() => setSelectedSize("Small")} />
+                    Small
+                  </label>
+
+                  <label className="radio">
+                    <input type="radio" className="mr-1" name="Medium" checked={selectedSize === "Medium"} onChange={() => setSelectedSize("Medium")} />
+                    Medium
+                  </label>
+
+                  <label className="radio">
+                    <input type="radio" className="mr-1" name="Large" checked={selectedSize === "Large"} onChange={() => setSelectedSize("Large")} />
+                    Large
+                  </label>
+                </div>
+              </div>
+
               <div className="field is-grouped is-grouped-right pt-0">
                 <div className="control">
                   <input type="submit" className="button is-primary" value="Add widget" />
@@ -289,7 +328,11 @@ const Report: FC = (props) => {
          <button className="modal-close is-large" aria-label="close" onClick={() => setAddWidgetIsActive(false)}></button>
       </div>
     )
-  }, [ addWidgetIsActive, handleAddWidgetContent, selectedWidget,widgetTitleMap ])
+  }, [ addWidgetIsActive, handleAddWidgetContent, selectedWidget, selectedSize, widgetTitleMap ])
+
+  const isInternal = useMemo(() => {
+    return (page?.access?.filter(x => x.type === "internal")?.length ?? []) > 0 && !!page?.key_id
+  }, [ page ])
 
   return (
     <div className="page px-0 pt-0">
@@ -300,9 +343,11 @@ const Report: FC = (props) => {
       <div className="title">
         { title }
 
-        <a className="button is-success is-outlined is-pulled-right" href={"/pages/ds1/" + id} target="_blank" rel="noreferrer">
-          Preview
-        </a>
+        { !isInternal &&
+          <a className="button is-success is-outlined is-pulled-right" href={"/pages/ds1/" + id} target="_blank" rel="noreferrer">
+            Preview
+          </a>
+        }
 
         <div className="border" />
       </div>
