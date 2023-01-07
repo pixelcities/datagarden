@@ -10,6 +10,7 @@ import { useAppSelector, useAppDispatch } from 'hooks'
 import { selectPages, selectPageById, selectContentIdsByPageId, selectMetadataMap, selectMetadataById, selectActiveDataSpace, selectUsers, selectPublishedWidgets } from 'state/selectors'
 import { createPage, setPageOrder, createContent, createMetadata, shareSecret } from 'state/actions'
 import { toASCII } from 'utils/helpers'
+import { wrapChartContent } from 'utils/charts'
 
 import Navbar from 'components/Navbar'
 import Sidebar from 'components/Sidebar'
@@ -156,31 +157,17 @@ const Report: FC = (props) => {
       // unwise to use the actualy dataspace key for this.
       if (widget && widget.access) {
         let widgetContent = ""
-        let height = 640
 
-        // Wrap the svg widget with the selected size
-        if (selectedSize === "Small") {
-          widgetContent += '<svg width=720 height=480 style="display: block; margin: auto;">'
-          height = 480
-
-        } else if (selectedSize === "Medium") {
-          widgetContent += '<svg width=960 height=640 style="display: block; margin: auto;">'
-          height = 640
-
-        } else if (selectedSize === "Large") {
-          widgetContent += '<svg width=1200 height=800 style="display: block; margin: auto;">'
-          height = 800
-        }
+        // Set height in pixels, this also determines the width in wrapChartContent()
+        const height = selectedSize === "Small" ? 480 : selectedSize === "Large" ? 800 : 640
 
         // Grab the widget content, which may be encrypted with the internal dataspace key
         if (widget.access.filter(x => x.type === "internal").length > 0) {
-          widgetContent += keyStore?.decrypt_metadata(dataSpace?.key_id, widget.content)
+          widgetContent = wrapChartContent(keyStore?.decrypt_metadata(dataSpace?.key_id, widget.content), height)
 
         } else if (widget.access.filter(x => x.type === "public").length > 0) {
-          widgetContent += widget.content || ""
+          widgetContent = wrapChartContent(widget.content || "", height)
         }
-
-        widgetContent += '</svg>'
 
         // Crudely convert to ASCII by just replacing bad characters, as btoa does not like unicode very much.
         //

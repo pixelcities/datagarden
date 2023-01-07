@@ -98,7 +98,8 @@ import {
   selectContentHeightById,
   selectContentIds,
   selectContentByPageId,
-  selectContentIdsByPageId
+  selectContentIdsByPageId,
+  selectContentByWidgetId
 } from './slices/content'
 
 
@@ -209,5 +210,6 @@ export {
   selectContentIds,
   selectContentHeightById,
   selectContentByPageId,
-  selectContentIdsByPageId
+  selectContentIdsByPageId,
+  selectContentByWidgetId
 }

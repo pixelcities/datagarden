@@ -30,6 +30,7 @@ export const KeyStoreProvider: FC = ({ children }) => {
   const [password, setPassword] = useState("")
   const [isLocked, setIsLocked] = useState(true)
   const [isReady, setIsReady] = useState(false)
+  const [error, setError] = useState(false)
 
   const { isAuthenticated, user } = useAuthContext();
 
@@ -71,20 +72,25 @@ export const KeyStoreProvider: FC = ({ children }) => {
 
 
   const handleSubmit = useCallback((e: any) => {
-    e.preventDefault();
+    e.preventDefault()
+    setError(false)
 
     if (user) {
       if (password.length >= 8) {
         keyStore?.open_sesame(user.email, password)
 
         keyStore?.init().then(() => {
+          setIsLocked(false)
+
           const secret_key = keyStore?.get_named_key("protocol")
           protocol?.init(secret_key).then(() => {
             setIsReady(true)
           })
+        }).catch(() => {
+          setError(true)
         })
-
-        setIsLocked(false)
+      } else {
+        setError(true)
       }
     }
   }, [ user, password, keyStore, protocol ])
@@ -106,13 +112,13 @@ export const KeyStoreProvider: FC = ({ children }) => {
             <form onSubmit={handleSubmit}>
               <div className="field has-addons">
                 <p className="control has-icons-left is-expanded">
-                  <input className="input" style={{height: "40px"}} type="password" placeholder="Password" value={password} onChange={(e: any) => setPassword(e.target.value)} />
+                  <input className={"input" + (error ? " is-danger" : "")} style={{height: "40px"}} type="password" placeholder="Password" value={password} onChange={(e: any) => setPassword(e.target.value)} />
                   <span className="icon is-small is-left">
                     <FontAwesomeIcon icon={faLock} size="xs"/>
                   </span>
                 </p>
                 <p className="control">
-                  <input type="submit" className="button is-info" value="Unlock" />
+                  <input type="submit" className={"button " + (error ? "is-danger" : "is-info")} value="Unlock" />
                 </p>
               </div>
             </form>
@@ -120,7 +126,7 @@ export const KeyStoreProvider: FC = ({ children }) => {
         </div>
       </div>
     )
-  }, [ isActive, location.pathname, handleSubmit, password ])
+  }, [ isActive, error, location.pathname, handleSubmit, password ])
 
   return (
     <KeyStoreContext.Provider value={{keyStore, keyStoreIsReady: isReady, protocol, __setIsReady__: setIsReady}} >

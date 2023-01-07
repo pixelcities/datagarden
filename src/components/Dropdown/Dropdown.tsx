@@ -6,10 +6,11 @@ interface DropdownProps {
   items: string[],
   onClick: (item: string) => void,
   selected?: string,
-  isDropUp?: boolean
+  isDropUp?: boolean,
+  isDisabled?: boolean
 }
 
-const Dropdown: FC<DropdownProps> = ({items, onClick, selected, isDropUp = false}) => {
+const Dropdown: FC<DropdownProps> = ({items, onClick, selected, isDropUp = false, isDisabled = false}) => {
   const [isActive, setIsActive] = useState(false)
   const [selectedItem, setSelectedItem] = useState<string | undefined>(selected)
 
@@ -37,12 +38,12 @@ const Dropdown: FC<DropdownProps> = ({items, onClick, selected, isDropUp = false
   }, [ items, selectedItem, onClick ])
 
   return (
-    <div className={"dropdown" + (isActive ? " is-active" : "") + (isDropUp ? " is-up" : "")}>
+    <div className={"dropdown" + (isActive && !isDisabled ? " is-active" : "") + (isDropUp ? " is-up" : "")}>
       <div className="dropdown-trigger">
-        <div className="button" onClick={() => setIsActive(!isActive)} aria-haspopup="true" aria-controls="dropdown-menu">
+        <div className="button" onClick={() => setIsActive(!isActive && !isDisabled)} aria-haspopup="true" aria-controls="dropdown-menu" style={isDisabled ? {cursor: "default", pointerEvents: "none"} : {}}>
           <span> { selectedItem } </span>
           <span className="icon is-small">
-            <FontAwesomeIcon icon={faAngleDown} size="sm"/>
+            <FontAwesomeIcon icon={faAngleDown} size="sm" color={isDisabled ? "#bbb" : "#363636"} />
           </span>
         </div>
       </div>

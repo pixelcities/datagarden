@@ -12,10 +12,11 @@ import { renderDonut } from 'utils/charts'
 interface DonutSettingsProps {
   id: string,
   columnNames: {[key: string]: string},
-  settings: WidgetSettings
+  settings: WidgetSettings,
+  isPublished: boolean
 }
 
-const DonutSettings: FC<DonutSettingsProps> = ({ id, columnNames, settings }) => {
+const DonutSettings: FC<DonutSettingsProps> = ({ id, columnNames, settings, isPublished }) => {
   const dispatch = useAppDispatch()
 
   const handleColumn = (key: string, item: string) => {
@@ -42,6 +43,7 @@ const DonutSettings: FC<DonutSettingsProps> = ({ id, columnNames, settings }) =>
           items={Object.values(columnNames)}
           onClick={e => handleColumn("nameColumnId", e)}
           selected={columnNames[settings.nameColumnId]}
+          isDisabled={isPublished}
         />
       </>
 
@@ -54,6 +56,7 @@ const DonutSettings: FC<DonutSettingsProps> = ({ id, columnNames, settings }) =>
           items={Object.values(columnNames)}
           onClick={e => handleColumn("valueColumnId", e)}
           selected={columnNames[settings.valueColumnId]}
+          isDisabled={isPublished}
         />
       </>
     </>

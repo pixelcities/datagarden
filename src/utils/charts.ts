@@ -4,6 +4,13 @@ import * as d3 from 'd3'
 const WIDTH = 800
 const HEIGHT = 600
 
+export const wrapChartContent = (svg: string, height: number | undefined = 640) => {
+ const start = `<svg width=${height * 1.5} height=${height} style="display: block; margin: auto;">`
+ const end = '</svg>'
+
+ return start + svg + end
+}
+
 export const renderDonut = (data: any, nameColumnId: string, valueColumnId: string): SVGSVGElement => {
   // Constants
   const innerRadius = Math.min(WIDTH, HEIGHT) / 3

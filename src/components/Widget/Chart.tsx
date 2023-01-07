@@ -6,10 +6,12 @@ import Histogram, { HistogramSettings } from './Histogram'
 import Donut, { DonutSettings } from './Donut'
 
 import { useAppDispatch, useAppSelector } from 'hooks'
-import { selectActiveDataSpace } from 'state/selectors'
-import { putWidgetSetting, publishWidget } from 'state/actions'
-import { Schema, Share, WidgetSettings } from 'types'
+import { selectActiveDataSpace, selectPages, selectContentByWidgetId } from 'state/selectors'
+import { putWidgetSetting, publishWidget, updateContent } from 'state/actions'
+import { Schema, Share, WidgetSettings, Page } from 'types'
 import { useKeyStoreContext } from 'contexts'
+import { toASCII } from 'utils/helpers'
+import { wrapChartContent } from 'utils/charts'
 
 import './Widget.sass'
 
@@ -32,6 +34,10 @@ const Chart: FC<ChartProps> = ({ id, collectionId, columnNames, schema, settings
 
   const { keyStore } = useKeyStoreContext()
   const dataSpace = useAppSelector(selectActiveDataSpace)
+  const pages = useAppSelector(selectPages)
+  const contentBlocks = useAppSelector(state => selectContentByWidgetId(state, id))
+
+  const pageMap = useMemo(() => pages.reduce((a: {[key: string]: Page}, b) => ({...a, [b.id]: b}), {}), [ pages ])
 
   const handleChartType = (item: string) => {
     if (item !== settings.type) {
@@ -85,6 +91,7 @@ const Chart: FC<ChartProps> = ({ id, collectionId, columnNames, schema, settings
           id={id}
           columnNames={columnNames}
           settings={settings}
+          isPublished={isPublished}
         />
       )
     } else if (settings.type === "Donut") {
@@ -93,14 +100,16 @@ const Chart: FC<ChartProps> = ({ id, collectionId, columnNames, schema, settings
           id={id}
           columnNames={columnNames}
           settings={settings}
+          isPublished={isPublished}
         />
       )
     }
 
-  }, [ id, columnNames, settings ])
+  }, [ id, columnNames, settings, isPublished ])
 
   const handlePublish = useCallback(() => {
     if (content && newAccess) {
+      // Start with updating the widget
       const payload = {
         id: id,
         workspace: "default",
@@ -123,8 +132,27 @@ const Chart: FC<ChartProps> = ({ id, collectionId, columnNames, schema, settings
           height: height
         }}))
       }
+
+      // Next, update all linked content (if any)
+      if (contentBlocks.length > 0 && !isPublished) {
+        for (const c of contentBlocks) {
+          const page = pageMap[c.page_id]
+          const pageContent = wrapChartContent(content, c.height)
+
+          if (page.access.filter(x => x.type === "internal").length > 0 && page.key_id) {
+            dispatch(updateContent({...c, ...{
+              content: keyStore?.encrypt_metadata(page.key_id, pageContent)
+            }}))
+
+          } else {
+            dispatch(updateContent({...c, ...{
+              content: btoa(toASCII(pageContent))
+            }}))
+          }
+        }
+      }
     }
-  }, [ id, content, height, newAccess, isPublished, dispatch, dataSpace?.key_id, keyStore ])
+  }, [ id, content, height, newAccess, isPublished, contentBlocks, pageMap, dispatch, dataSpace?.key_id, keyStore ])
 
   return (
     <>
@@ -142,6 +170,7 @@ const Chart: FC<ChartProps> = ({ id, collectionId, columnNames, schema, settings
             items={["Histogram", "Donut"]}
             onClick={handleChartType}
             selected={settings.type}
+            isDisabled={isPublished}
           />
 
           { renderChartSettings }
@@ -150,7 +179,7 @@ const Chart: FC<ChartProps> = ({ id, collectionId, columnNames, schema, settings
             <label id="publish" className="label pb-2"> Release process </label>
 
             <div className="control has-icons-left pb-4">
-              <div className="select is-fullwidth">
+              <div className={"select is-fullwidth" + (isPublished ? " is-disabled" : "")} style={isPublished ? {pointerEvents: "none"} : {}}>
                 <select onChange={(e: any) => setNewAccess([{"type": e.target.value}])} value={(newAccess && newAccess.length > 0) ? newAccess[0].type : ""}>
                   <option value="internal">Internal</option>
                   <option value="public">Public</option>

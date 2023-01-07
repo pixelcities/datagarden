@@ -11,10 +11,11 @@ import { renderHistogram } from 'utils/charts'
 interface HistogramSettingsProps {
   id: string,
   columnNames: {[key: string]: string},
-  settings: WidgetSettings
+  settings: WidgetSettings,
+  isPublished: boolean
 }
 
-const HistogramSettings: FC<HistogramSettingsProps> = ({ id, columnNames, settings }) => {
+const HistogramSettings: FC<HistogramSettingsProps> = ({ id, columnNames, settings, isPublished }) => {
   const dispatch = useAppDispatch()
 
   const handleColumn = (item: string) => {
@@ -50,6 +51,7 @@ const HistogramSettings: FC<HistogramSettingsProps> = ({ id, columnNames, settin
           items={Object.values(columnNames)}
           onClick={handleColumn}
           selected={columnNames[settings.column]}
+          isDisabled={isPublished}
         />
       </>
 
@@ -58,7 +60,7 @@ const HistogramSettings: FC<HistogramSettingsProps> = ({ id, columnNames, settin
           <label className="label">X Label</label>
         </div>
 
-        <input type="text" className="input" value={settings.xLabel || ""} onChange={e => handleDispatch(e, "xLabel")} />
+        <input type="text" className="input" value={settings.xLabel || ""} onChange={e => handleDispatch(e, "xLabel")} disabled={isPublished} />
       </>
 
       <>
@@ -66,7 +68,7 @@ const HistogramSettings: FC<HistogramSettingsProps> = ({ id, columnNames, settin
           <label className="label">Y Label</label>
         </div>
 
-        <input type="text" className="input" value={settings.yLabel || ""} onChange={e => handleDispatch(e, "yLabel")} />
+        <input type="text" className="input" value={settings.yLabel || ""} onChange={e => handleDispatch(e, "yLabel")} disabled={isPublished} />
       </>
 
       <>
@@ -74,7 +76,7 @@ const HistogramSettings: FC<HistogramSettingsProps> = ({ id, columnNames, settin
           <label className="label">Bins</label>
         </div>
 
-        <input type="number" className="input" value={settings.nrBins || 5} onChange={e => handleDispatch(e, "nrBins")} />
+        <input type="number" className="input" value={settings.nrBins || 5} onChange={e => handleDispatch(e, "nrBins")} disabled={isPublished} />
       </>
     </>
   )

@@ -67,3 +67,10 @@ export const selectContentIdsByPageId = createSelector(
   (content, pageId) => content.filter(x => x.page_id === pageId).map(c => c.id)
 )
 
+export const selectContentByWidgetId = createSelector(
+  selectContent,
+  (_: RootState, widgetId: string) => widgetId,
+  (content, widgetId) => content.filter(x => x.widget_id === widgetId)
+)
+
+
