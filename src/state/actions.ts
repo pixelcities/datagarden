@@ -16,6 +16,7 @@ import {
   transformerCreated,
   transformerUpdated,
   transformerPositionSet,
+  transformerIsReadySet,
   transformerTargetAdded,
   transformerInputAdded,
   transformerWALUpdated,
@@ -26,6 +27,7 @@ import {
   widgetCreated,
   widgetUpdated,
   widgetPositionSet,
+  widgetIsReadySet,
   widgetInputAdded,
   widgetSettingPut,
   widgetPublished,
@@ -133,6 +135,7 @@ const deleteCollection = recreateAction<typeof collectionDeleted>("DeleteCollect
 const createTransformer = recreateAction<typeof transformerCreated>("CreateTransformer")
 const updateTransformer = recreateAction<typeof transformerUpdated>("UpdateTransformer")
 const setTransformerPosition = recreateAction<typeof transformerPositionSet>("SetTransformerPosition")
+const setTransformerIsReady = recreateAction<typeof transformerIsReadySet>("SetTransformerIsReady")
 const addTransformerTarget = recreateAction<typeof transformerTargetAdded>("AddTransformerTarget")
 const addTransformerInput = recreateAction<typeof transformerInputAdded>("AddTransformerInput")
 const updateTransformerWAL = recreateAction<typeof transformerWALUpdated>("UpdateTransformerWAL")
@@ -140,6 +143,7 @@ const deleteTransformer = recreateAction<typeof transformerDeleted>("DeleteTrans
 const createWidget = recreateAction<typeof widgetCreated>("CreateWidget")
 const updateWidget = recreateAction<typeof widgetUpdated>("UpdateWidget")
 const setWidgetPosition = recreateAction<typeof widgetPositionSet>("SetWidgetPosition")
+const setWidgetIsReady = recreateAction<typeof widgetIsReadySet>("SetWidgetIsReady")
 const addWidgetInput = recreateAction<typeof widgetInputAdded>("AddWidgetInput")
 const putWidgetSetting = recreateAction<typeof widgetSettingPut>("PutWidgetSetting")
 const publishWidget = recreateAction<typeof widgetPublished>("PublishWidget")
@@ -178,6 +182,7 @@ const events: {[key: string]: ActionCreatorWithPayload<any, string>} = {
   "TransformerCreated": transformerCreated,
   "TransformerUpdated": transformerUpdated,
   "TransformerPositionSet": transformerPositionSet,
+  "TransformerIsReadySet": transformerIsReadySet,
   "TransformerTargetAdded": transformerTargetAdded,
   "TransformerInputAdded": transformerInputAdded,
   "TransformerWALUpdated": transformerWALUpdated,
@@ -185,6 +190,7 @@ const events: {[key: string]: ActionCreatorWithPayload<any, string>} = {
   "WidgetCreated": widgetCreated,
   "WidgetUpdated": widgetUpdated,
   "WidgetPositionSet": widgetPositionSet,
+  "WidgetIsReadySet": widgetIsReadySet,
   "WidgetInputAdded": widgetInputAdded,
   "WidgetSettingPut": widgetSettingPut,
   "WidgetPublished": widgetPublished,
@@ -241,6 +247,7 @@ export {
   createTransformer,
   updateTransformer,
   setTransformerPosition,
+  setTransformerIsReady,
   addTransformerTarget,
   addTransformerInput,
   updateTransformerWAL,
@@ -248,6 +255,7 @@ export {
   createWidget,
   updateWidget,
   setWidgetPosition,
+  setWidgetIsReady,
   addWidgetInput,
   putWidgetSetting,
   publishWidget,

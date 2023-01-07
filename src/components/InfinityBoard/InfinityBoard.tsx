@@ -192,7 +192,7 @@ const InfinityBoard: FC = (props) => {
           onClose={() => setActiveTransformerId("")}
         />
       )
-    } else if (activeWidget) {
+    } else if (activeWidget && activeWidget.is_ready) {
       return (
         <Widget
           id={activeWidget.id}

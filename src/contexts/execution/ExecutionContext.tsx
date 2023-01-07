@@ -13,6 +13,7 @@ import { useDataFusionContext } from 'contexts'
 
 import { handleTask as handleProtocolTask } from './protocol'
 import { handleTask as handleTransformerTask } from './transformer'
+import { handleTask as handleWidgetTask } from './widget'
 
 
 interface ExecutionProviderI {
@@ -44,6 +45,9 @@ export const ExecutionProvider: FC<ExecutionProviderI> = ({ store, children }) =
           const result = (() => {
             if (task.type === "protocol") {
               return handleProtocolTask(task, protocol)
+
+            } else if (task.type === "widget") {
+              return handleWidgetTask(task, user, dataSpace, store, keyStore, arrow, dataFusion)
 
             } else { // "transformer"
               return handleTransformerTask(task, user, dataSpace, store, keyStore, protocol, arrow, dataFusion)

@@ -109,7 +109,26 @@ const Chart: FC<ChartProps> = ({ id, collectionId, columnNames, schema, settings
 
   const handlePublish = useCallback(() => {
     if (content && newAccess) {
-      // Start with updating the widget
+      // Start with updating all the linked content (if any)
+      if (contentBlocks.length > 0 && !isPublished) {
+        for (const c of contentBlocks) {
+          const page = pageMap[c.page_id]
+          const pageContent = wrapChartContent(content, c.height)
+
+          if (page.access.filter(x => x.type === "internal").length > 0 && page.key_id) {
+            dispatch(updateContent({...c, ...{
+              content: keyStore?.encrypt_metadata(page.key_id, pageContent)
+            }}))
+
+          } else {
+            dispatch(updateContent({...c, ...{
+              content: btoa(toASCII(pageContent))
+            }}))
+          }
+        }
+      }
+
+      // Next, update the widget itself
       const payload = {
         id: id,
         workspace: "default",
@@ -131,25 +150,6 @@ const Chart: FC<ChartProps> = ({ id, collectionId, columnNames, schema, settings
           content: content,
           height: height
         }}))
-      }
-
-      // Next, update all linked content (if any)
-      if (contentBlocks.length > 0 && !isPublished) {
-        for (const c of contentBlocks) {
-          const page = pageMap[c.page_id]
-          const pageContent = wrapChartContent(content, c.height)
-
-          if (page.access.filter(x => x.type === "internal").length > 0 && page.key_id) {
-            dispatch(updateContent({...c, ...{
-              content: keyStore?.encrypt_metadata(page.key_id, pageContent)
-            }}))
-
-          } else {
-            dispatch(updateContent({...c, ...{
-              content: btoa(toASCII(pageContent))
-            }}))
-          }
-        }
       }
     }
   }, [ id, content, height, newAccess, isPublished, contentBlocks, pageMap, dispatch, dataSpace?.key_id, keyStore ])

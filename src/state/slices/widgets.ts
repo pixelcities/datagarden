@@ -18,6 +18,12 @@ const widgetsSlice = createSlice({
         widget.position = action.payload.position
       }
     },
+    widgetIsReadySet(state, action: PayloadAction<{id: string, workspace: string, is_ready: boolean}>) {
+      const widget = state.entities[action.payload.id]
+      if (widget) {
+        widget.is_ready = action.payload.is_ready
+      }
+    },
     widgetInputAdded(state, action: PayloadAction<{id: string, workspace: string, collection: string, widget: string}>) {
       const widget = state.entities[action.payload.id]
 
@@ -59,6 +65,7 @@ export const {
   widgetCreated,
   widgetUpdated,
   widgetPositionSet,
+  widgetIsReadySet,
   widgetInputAdded,
   widgetSettingPut,
   widgetPublished,
