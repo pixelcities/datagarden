@@ -6,6 +6,7 @@ import MergeTransformer from './components/MergeTransformer'
 import FilterTransformer from './components/FilterTransformer'
 import AggregateTransformer from './components/AggregateTransformer'
 import FunctionTransformer from './components/FunctionTransformer'
+import PrivatiseTransformer from './components/PrivatiseTransformer'
 
 
 interface TransformerSettingsProps {
@@ -63,6 +64,14 @@ const TransformerSettings: FC<TransformerSettingsProps> = (props) => {
   } else if (transformerType === "function") {
     return (
       <FunctionTransformer
+        schema={props.schemas[0]}
+        {...props}
+      />
+    )
+
+  } else if (transformerType === "privatise") {
+    return (
+      <PrivatiseTransformer
         schema={props.schemas[0]}
         {...props}
       />

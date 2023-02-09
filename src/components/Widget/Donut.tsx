@@ -22,7 +22,7 @@ const DonutSettings: FC<DonutSettingsProps> = ({ id, columnNames, settings, isPu
   const handleColumn = (key: string, item: string) => {
     const columnId = Object.keys(columnNames).find(id => columnNames[id] === item)
 
-    if (columnId && columnId !== settings.column) {
+    if (columnId && columnId !== settings[key]) {
       dispatch(putWidgetSetting({
         id: id,
         workspace: "default",

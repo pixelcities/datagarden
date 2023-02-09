@@ -109,6 +109,17 @@ const WorkspaceTab: FC = (props) => {
 
       <div className="panel-block-nb">
         <p className="header-label">
+          Privacy
+        </p>
+      </div>
+      <div className="columns ml-3 is-gapless is-multiline">
+        <div className="column is-4 mt-4">
+          <TransformerCard title="Privatise" type="privatise" />
+        </div>
+      </div>
+
+      <div className="panel-block-nb">
+        <p className="header-label">
           Spatial
         </p>
       </div>

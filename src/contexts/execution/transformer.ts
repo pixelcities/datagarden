@@ -47,7 +47,7 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
         })
       })).then(() => {
         // Handle transformer tasks with just one input collection
-        if (transformer.type !== "merge") {
+        if (transformer.type !== "merge" && transformer.type !== "privatise") {
           const collection = collections[0]
 
           if (collection && target) {
@@ -111,7 +111,7 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
           }
 
         // Handle merge transformers by simply creating up to two tables
-        } else {
+        } else if (transformer.type === "merge") {
           const uri = task.task["uri"]
           const leftCollection = collections[0]
           const rightCollection = collections[1]
@@ -189,6 +189,39 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
               })
             })
           }
+
+        // Privatise transformers generate synthesized data based on the schema
+        } else if (transformer.type === "privatise") {
+          const collection = collections[0]
+
+          if (collection && target) {
+            verifySchema(collection.schema, keyStore.get_key(collection.schema.key_id)).then(schemaIsValid => {
+              if (!schemaIsValid) {
+                reject(ExecutionError.Integrity)
+                return
+              }
+
+              const id = dataFusion?.clone_table(collection.id, transformer_id)
+
+              rebuildSchema(id, target, collection.id, collection.schema, [], fragments, task_meta, user, metadata, dataSpace, keyStore, protocol).then(({actions, schema, renames, meta}) => {
+
+                // Generate the synthesized table
+                dataFusion?.synthesize_table(collection.id, id, 1.0).then(() => {
+                  updateSchema(id, fragments, renames, dataFusion)
+                  writeRemoteTable(id, task.task["uri"], schema, user, arrow, dataFusion, keyStore).then(() => {
+                    resolve({
+                      actions: actions,
+                      metadata: meta
+                    })
+                  }).catch(() => {
+                    reject(ExecutionError.Failure)
+                    return
+                  })
+                })
+              })
+            })
+          }
+
         }
       })
 
@@ -206,7 +239,7 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
           }
         })
       })).then(() => {
-        if (transformer.type !== "merge") {
+        if (transformer.type !== "merge" && transformer.type !== "privatise") {
           const collection = collections[0]
 
           if (collection) {
@@ -243,7 +276,7 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
             })
           }
 
-        } else {
+        } else if (transformer.type === "merge") {
           const leftCollection = collections[0]
           const rightCollection = collections[1]
 
