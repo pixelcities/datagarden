@@ -92,9 +92,9 @@ const SourceTable: FC<SourceTableProps> = (props) => {
     let res
 
     if (source || collection) {
-      let schema = source?.schema || collection?.schema
+      let shareSchema = isCollection ? collection?.schema : source?.schema
 
-      const shares = schema?.shares.filter(share => share.type !== "public" && share.principal)
+      const shares = shareSchema?.shares.filter(share => share.type !== "public" && share.principal)
       res = shares?.map(share => {
         const user_share = users.find(u => u.id === share.principal)
 
@@ -106,7 +106,7 @@ const SourceTable: FC<SourceTableProps> = (props) => {
     }
 
     return res
-  }, [ source, collection, users, user ] )
+  }, [ source, collection, isCollection, users, user ] )
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
@@ -151,9 +151,9 @@ const SourceTable: FC<SourceTableProps> = (props) => {
     }
 
     if (user && (source || collection)) {
-      const schema = collection?.schema || source?.schema
+      const schema = isCollection ? collection?.schema : source?.schema
 
-      if (schema) {
+      if (schema && schemaIsValid) {
         protocol?.encrypt(selectedUser.id, keyStore?.get_key(schema.key_id)).then((secret: string) => {
           dispatch(shareSecret({
             key_id: schema.key_id,
@@ -165,27 +165,31 @@ const SourceTable: FC<SourceTableProps> = (props) => {
       }
 
       if (isCollection && collection && schemaIsValid) {
-        signSchema({...collection.schema, ...{
-          shares: [...collection.schema.shares, share]
-        }}, keyStore?.get_key(collection.schema.key_id)).then(signedSchema => {
-          dispatch(updateCollection({...collection, ...{
-            schema: signedSchema
-          }}))
-        })
+        if (!collection.schema.shares.find(s => s.principal === share.principal)) {
+          signSchema({...collection.schema, ...{
+            shares: [...collection.schema.shares, share]
+          }}, keyStore?.get_key(collection.schema.key_id)).then(signedSchema => {
+            dispatch(updateCollection({...collection, ...{
+              schema: signedSchema
+            }}))
+          })
+        }
 
       } else if (source && schemaIsValid) {
-        signSchema({...source.schema, ...{
-          shares: [...source.schema.shares, share]
-        }}, keyStore?.get_key(source.schema.key_id)).then(signedSchema => {
-          dispatch(updateSource({
-            id: source.id,
-            workspace: source.workspace,
-            type: source.type,
-            uri: source.uri,
-            schema: signedSchema,
-            is_published: source.is_published
-          }))
-        })
+        if (!source.schema.shares.find(s => s.principal === share.principal)) {
+          signSchema({...source.schema, ...{
+            shares: [...source.schema.shares, share]
+          }}, keyStore?.get_key(source.schema.key_id)).then(signedSchema => {
+            dispatch(updateSource({
+              id: source.id,
+              workspace: source.workspace,
+              type: source.type,
+              uri: source.uri,
+              schema: signedSchema,
+              is_published: source.is_published
+            }))
+          })
+        }
       }
     }
 
@@ -401,6 +405,7 @@ const SourceTable: FC<SourceTableProps> = (props) => {
               id={tableId}
               schema={schema}
               interactiveHeader={true}
+              isSource={!(isCollection === true)}
             />
           :
             <div className="table-loader">

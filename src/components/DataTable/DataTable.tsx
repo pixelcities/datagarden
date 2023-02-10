@@ -20,11 +20,12 @@ interface DataTableProps {
   interactiveHeader: boolean,
   style?: any,
   versionId?: number,
+  isSource?: boolean,
   highlightHeader?: boolean,
   onHeaderClick?: (id: string) => void
 }
 
-const DataTable: FC<DataTableProps> = ({ id, schema, interactiveHeader, style, versionId, highlightHeader, onHeaderClick }) => {
+const DataTable: FC<DataTableProps> = ({ id, schema, interactiveHeader, style, versionId, isSource, highlightHeader, onHeaderClick }) => {
   const heightRef = useRef<HTMLDivElement | null>(null)
   const popupRef = useRef<HTMLDivElement | null>(null)
 
@@ -192,7 +193,7 @@ const DataTable: FC<DataTableProps> = ({ id, schema, interactiveHeader, style, v
   return (
     <>
       <div ref={popupRef} className="header-popup" style={{visibility: "hidden"}}>
-        <HeaderDropdown fieldId={columnId} fieldName={columns && columns.find(c => c.accessor === columnId)?.Header} inputId={id} settings={true} />
+        <HeaderDropdown fieldId={columnId} fieldName={columns && columns.find(c => c.accessor === columnId)?.Header} inputId={id} settings={true} isSource={isSource} />
       </div>
 
       <div ref={heightRef} style={{position: "absolute", height: "100%", width: "0"}} />

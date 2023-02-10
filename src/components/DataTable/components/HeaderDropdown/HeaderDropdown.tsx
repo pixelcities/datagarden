@@ -21,7 +21,8 @@ interface HeaderDropdownProps {
   fieldId: string,
   fieldName?: string,
   inputId: string,
-  settings: boolean
+  settings: boolean,
+  isSource?: boolean
 }
 
 interface ShareInstanceProps {
@@ -185,33 +186,37 @@ const ShareOptions: FC<ShareOptionsI> = ({ me, columnId, source, collection }) =
           }]
         })
 
-        protocol?.encrypt(user.id, keyStore?.get_key(column.key_id)).then((secret: string) => {
-          dispatch(shareSecret({
-            key_id: column.key_id,
-            owner: me.id,
-            receiver: user.id,
-            ciphertext: secret
-          }))
+        if (schemaIsValid) {
+          protocol?.encrypt(user.id, keyStore?.get_key(column.key_id)).then((secret: string) => {
+            dispatch(shareSecret({
+              key_id: column.key_id,
+              owner: me.id,
+              receiver: user.id,
+              ciphertext: secret
+            }))
 
-          if (source && schemaIsValid) {
-            signSchema({...schema, ...{
-              columns: columns
-            }}, keyStore?.get_key(schema.key_id)).then(signedSchema => {
-              dispatch(updateSource({...source, ...{
-                schema: signedSchema
-              }}))
-            })
+            if (source) {
+              signSchema({...schema, ...{
+                columns: columns
+              }}, keyStore?.get_key(schema.key_id)).then(signedSchema => {
+                dispatch(updateSource({...source, ...{
+                  schema: signedSchema
+                }}))
+              })
 
-          } else if (collection && schemaIsValid) {
-            signSchema({...schema, ...{
-              columns: columns
-            }}, keyStore?.get_key(schema.key_id)).then(signedSchema => {
-              dispatch(updateCollection({...collection, ...{
-                schema: signedSchema
-              }}))
-            })
-          }
-        })
+            } else if (collection) {
+              signSchema({...schema, ...{
+                columns: columns
+              }}, keyStore?.get_key(schema.key_id)).then(signedSchema => {
+                dispatch(updateCollection({...collection, ...{
+                  schema: signedSchema
+                }}))
+              })
+            }
+          })
+        } else {
+          console.log("[WARNING] Not sharing column because schema signature could not be verified")
+        }
       }
 
     } else if (access === "Blocked" && user.id in shares) {
@@ -321,7 +326,7 @@ const ShareOptions: FC<ShareOptionsI> = ({ me, columnId, source, collection }) =
   )
 }
 
-const HeaderDropdown: FC<HeaderDropdownProps> = ({ fieldId, fieldName, inputId, settings }) => {
+const HeaderDropdown: FC<HeaderDropdownProps> = ({ fieldId, fieldName, inputId, settings, isSource }) => {
   const { user } = useAuthContext();
 
   const source = useAppSelector(state => selectSourceById(state, inputId))
@@ -330,7 +335,7 @@ const HeaderDropdown: FC<HeaderDropdownProps> = ({ fieldId, fieldName, inputId, 
   const [settingsActive, setSettingsActive] = useState<boolean>(settings)
 
   const renderDropdown = React.useMemo(() => {
-    if (user && settingsActive && source) {
+    if (user && settingsActive && isSource && source) {
       return (
         <ShareOptions me={user} columnId={fieldId} source={source} />
       )
@@ -346,7 +351,7 @@ const HeaderDropdown: FC<HeaderDropdownProps> = ({ fieldId, fieldName, inputId, 
       )
 
     }
-  }, [ user, settingsActive, fieldId, source, collection ])
+  }, [ user, settingsActive, fieldId, isSource, source, collection ])
 
   return (
     <nav className="panel" style={{background: "white"}}>

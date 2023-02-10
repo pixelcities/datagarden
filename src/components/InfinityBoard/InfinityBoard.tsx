@@ -6,6 +6,8 @@ import { selectComponents, selectConnectedComponents, selectCollectionById, sele
 import { setCoords, setWindowDimensions } from 'state/actions'
 import usePan from 'hooks/usePan'
 import useZoom from 'hooks/useZoom'
+import { isAuthorized } from 'utils/helpers'
+import { useAuthContext } from 'contexts'
 
 import grid from 'assets/grid.svg';
 
@@ -27,6 +29,8 @@ const InfinityBoard: FC = (props) => {
   const [activeCollectionId, setActiveCollectionId] = useState("")
   const [activeTransformerId, setActiveTransformerId] = useState("")
   const [activeWidgetId, setActiveWidgetId] = useState("")
+
+  const { user } = useAuthContext()
 
   const ref = useRef<HTMLDivElement | null>(null)
   const zoom = useZoom(ref)
@@ -173,7 +177,7 @@ const InfinityBoard: FC = (props) => {
   }, [ connectedComponents, dragRefs, offset, zoom, dimensions ])
 
   const renderModal = useMemo(() => {
-    if (activeCollection && activeCollection.is_ready) {
+    if (activeCollection && activeCollection.is_ready && isAuthorized(user, activeCollection.schema)) {
       return (
         <Collection
           id={activeCollection.id}
@@ -201,7 +205,7 @@ const InfinityBoard: FC = (props) => {
         />
       )
     }
-  }, [ activeCollection, activeTransformer, activeWidget ])
+  }, [ activeCollection, activeTransformer, activeWidget, user ])
 
   return (
     <>

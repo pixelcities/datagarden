@@ -1,3 +1,5 @@
+import { User, Schema } from 'types'
+
 export {
   altAsSvg
 } from './_helpers'
@@ -42,3 +44,6 @@ export const toColor = (str: string | undefined) => {
   return toModNumber(str, nrMagicColors) + 1
 }
 
+export const isAuthorized = (user: User | undefined, schema: Schema): boolean => {
+  return !!schema.shares.find(s => s.principal === user?.id)
+}

@@ -17,6 +17,7 @@ import { useKeyStoreContext } from 'contexts'
 import { useAuthContext } from 'contexts'
 import { loadRemoteTable } from 'utils/loadRemoteTable'
 import { emptyTaxonomy } from 'utils/taxonomy'
+import { isAuthorized } from 'utils/helpers'
 
 import './Transformer.sass'
 
@@ -60,11 +61,15 @@ const Transformer: FC<TransformerProps> = ({id, collections, transformers, wal, 
     if (!leftInputId) {
       Promise.all(inputCollections.map((collection) => {
         return new Promise<void>((resolve, reject) => {
-          if (dataFusion?.table_exists(collection.id)) {
-            resolve()
+          if (isAuthorized(user, collection.schema)) {
+            if (dataFusion?.table_exists(collection.id)) {
+              resolve()
 
+            } else {
+              loadRemoteTable(collection.id, collection.uri, collection.schema, user, arrow, dataFusion, keyStore).then(() => resolve())
+            }
           } else {
-            loadRemoteTable(collection.id, collection.uri, collection.schema, user, arrow, dataFusion, keyStore).then(() => resolve())
+            reject()
           }
         })
       })).then(() => {
@@ -73,9 +78,9 @@ const Transformer: FC<TransformerProps> = ({id, collections, transformers, wal, 
         if (inputCollections.length > 1) {
           setRightInputId(inputCollections[1].id)
         }
-      })
+      }).catch(() => onClose())
     }
-  }, [inputCollections, user, arrow, dataFusion, keyStore, leftInputId])
+  }, [inputCollections, user, arrow, dataFusion, keyStore, leftInputId, onClose])
 
   useEffect(() => {
     if (rightInputId) {

@@ -14,6 +14,7 @@ import { useAuthContext } from 'contexts'
 
 import { loadRemoteTable } from 'utils/loadRemoteTable'
 import { emptyTaxonomy } from 'utils/taxonomy'
+import { isAuthorized } from 'utils/helpers'
 
 
 interface WidgetProps {
@@ -43,13 +44,17 @@ const Widget: FC<WidgetProps> = ({ id, collection, onClose }) => {
   useEffect(() => loadDataFusion(), [ loadDataFusion ])
   useEffect(() => {
     if (!inputId && inputCollection) {
-      if (dataFusion?.table_exists(inputCollection.id)) {
-        setInputId(inputCollection.id)
+      if (isAuthorized(user, inputCollection.schema)) {
+        if (dataFusion?.table_exists(inputCollection.id)) {
+          setInputId(inputCollection.id)
+        } else {
+          loadRemoteTable(inputCollection.id, inputCollection.uri, inputCollection.schema, user, arrow, dataFusion, keyStore).then(() => setInputId(inputCollection.id))
+        }
       } else {
-        loadRemoteTable(inputCollection.id, inputCollection.uri, inputCollection.schema, user, arrow, dataFusion, keyStore).then(() => setInputId(inputCollection.id))
+        onClose()
       }
     }
-  }, [inputCollection, user, arrow, dataFusion, keyStore, inputId])
+  }, [inputCollection, user, arrow, dataFusion, keyStore, inputId, onClose])
 
   const onTitleChange = React.useCallback((e: any) => {
     e.preventDefault()
