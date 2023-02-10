@@ -10,8 +10,7 @@ const getKey = (secret: string): Promise<CryptoKey> => {
     fromHex(secret),
     {
       "name": "HMAC",
-      "hash": "SHA-256",
-      "length": 16
+      "hash": "SHA-256"
     },
     false,
     ["sign", "verify"]

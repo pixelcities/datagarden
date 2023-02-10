@@ -1,7 +1,7 @@
 import React, { FC } from 'react'
 
 import { User } from 'types'
-import { toColor } from 'utils/helpers'
+import { altAsSvg, toColor } from 'utils/helpers'
 
 interface ShareCardProps {
   principal: string,
@@ -16,7 +16,7 @@ const ShareCard: FC<ShareCardProps> = (props) => {
     <div key={principal} className="columns pt-2 pb-1 share-card">
       <div className="column is-2 py-0">
         <span className="icon is-medium ml-3">
-          <img src={user.picture} className={(!user.picture ? " default-icon is-medium bg-" + toColor(user.id) : "")} alt={user.email[0]?.toUpperCase()} />
+          <img src={user.picture || altAsSvg(user.email[0]?.toUpperCase())} className={(!user.picture ? " default-icon is-medium bg-" + toColor(user.id) : "")} alt={user.email[0]?.toUpperCase()} />
         </span>
       </div>
       <div className="column is-7 py-0 has-text-left fineprint-label label-size-3 ">

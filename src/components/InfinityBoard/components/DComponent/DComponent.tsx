@@ -206,8 +206,8 @@ const DComponent = forwardRef<{[id: string]: any}, DComponentProps>((props, _ref
           dragTarget.current = null
 
           if (sourceId === targetId) {
-            const newX = (+e.clientX - parentCoordsRef.current.x) / zoomRef.current - e.layerX + offsetRef.current.x
-            const newY = (+e.clientY - parentCoordsRef.current.y) / zoomRef.current - e.layerY + offsetRef.current.y
+            const newX = (+e.clientX - parentCoordsRef.current.x) / zoomRef.current - (e.clientX - element.getBoundingClientRect().x) + offsetRef.current.x
+            const newY = (+e.clientY - parentCoordsRef.current.y) / zoomRef.current - (e.clientY - element.getBoundingClientRect().y) + offsetRef.current.y
 
             setComponentPosition({
               id: component.id,

@@ -1,3 +1,7 @@
+export {
+  altAsSvg
+} from './_helpers'
+
 export const toHex = (byteArray: Uint8Array): string => {
   return Array.from(byteArray, (byte) => (byte < 16 ? '0' : '') + (byte).toString(16)).join('')
 }
@@ -37,3 +41,4 @@ export const toColor = (str: string | undefined) => {
 
   return toModNumber(str, nrMagicColors) + 1
 }
+

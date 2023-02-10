@@ -71,6 +71,10 @@ const Connector = forwardRef<{[id: string]: any}, ConnectorProps>((props, _refs)
     }
   }, [ connectorRef ])
 
+  if (Number.isNaN(x) || Number.isNaN(y)) {
+    return (<></>)
+  }
+
   return (
     <svg ref={connectorRef} xmlns="http://www.w3.org/2000/svg" style={style} width={windowDimensions.width/zoom} height={windowDimensions.height/zoom}>
       <path className="path" d={pathData} />

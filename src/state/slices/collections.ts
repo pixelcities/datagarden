@@ -39,7 +39,7 @@ const collectionsSlice = createSlice({
     },
     collectionTargetAdded(state, action: PayloadAction<{id: string, workspace: string, target: string}>) {
       const collection = state.entities[action.payload.id]
-      if (collection) {
+      if (collection && collection.targets.indexOf(action.payload.target) === -1) {
         collection.targets.push(action.payload.target)
       }
     },

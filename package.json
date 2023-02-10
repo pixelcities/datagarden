@@ -10,7 +10,7 @@
     "@fortawesome/free-regular-svg-icons": "^5.15.2",
     "@fortawesome/free-solid-svg-icons": "^5.15.2",
     "@fortawesome/react-fontawesome": "^0.1.14",
-    "@pixelcities/arrow-wasm": "^0.1.1",
+    "@pixelcities/arrow-wasm": "^0.1.2",
     "@pixelcities/datafusion-wasm": "file:../datafusion-wasm/pkg",
     "@pixelcities/key-x-wasm": "file:../key-x-wasm/pkg",
     "@reduxjs/toolkit": "^1.7.2",

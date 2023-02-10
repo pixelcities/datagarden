@@ -5,7 +5,7 @@ import { Route } from "react-router-dom";
 import { User } from 'types'
 import { useAppSelector } from 'hooks'
 import { selectUsers } from 'state/selectors'
-import { toColor } from 'utils/helpers'
+import { altAsSvg, toColor } from 'utils/helpers'
 
 import Navbar from 'components/Navbar'
 import Section from 'components/Section'
@@ -73,7 +73,7 @@ const Contacts: FC = () => {
         <div key={id} className="box columns">
           <div className="column is-1 has-text-centered">
             <span className="icon is-medium mt-2">
-              <img src={contact?.picture} className={(!contact.picture ? " default-icon is-medium bg-" + toColor(contact?.id) : "")} alt={contact?.email[0]?.toUpperCase()} />
+              <img src={contact?.picture || altAsSvg(contact?.email[0]?.toUpperCase())} className={(!contact.picture ? " default-icon is-medium bg-" + toColor(contact?.id) : "")} alt={contact?.email[0]?.toUpperCase()} />
             </span>
           </div>
 

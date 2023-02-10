@@ -25,7 +25,7 @@ interface DataTableProps {
 }
 
 const DataTable: FC<DataTableProps> = ({ id, schema, interactiveHeader, style, versionId, highlightHeader, onHeaderClick }) => {
-  const containerRef = useRef<HTMLDivElement | null>(null)
+  const heightRef = useRef<HTMLDivElement | null>(null)
   const popupRef = useRef<HTMLDivElement | null>(null)
 
   const [dimensions, setDimensions] = useState({height: 0, width: 0});
@@ -44,15 +44,15 @@ const DataTable: FC<DataTableProps> = ({ id, schema, interactiveHeader, style, v
   }, [ dataFusion, id, versionId ]);
 
   useLayoutEffect(() => {
-    if (containerRef.current) {
-      const rect = containerRef.current.getBoundingClientRect()
+    if (heightRef.current) {
+      const rect = heightRef.current.getBoundingClientRect()
 
       setDimensions({
         height: rect.height,
         width: rect.width
       })
     }
-  }, [containerRef]);
+  }, [ heightRef ]);
 
   const defaultColumn = React.useMemo(
     () => ({
@@ -176,7 +176,7 @@ const DataTable: FC<DataTableProps> = ({ id, schema, interactiveHeader, style, v
         ))}
       </div>
       <FixedSizeList
-        height={dimensions.height-35-scrollBarSize}
+        height={dimensions.height-35-scrollBarSize+10} // height - header - scrollbar + buffer
         itemCount={nrRows}
         itemSize={35}
         width={totalColumnsWidth+scrollBarSize}
@@ -195,7 +195,9 @@ const DataTable: FC<DataTableProps> = ({ id, schema, interactiveHeader, style, v
         <HeaderDropdown fieldId={columnId} fieldName={columns && columns.find(c => c.accessor === columnId)?.Header} inputId={id} settings={true} />
       </div>
 
-      <div ref={containerRef} className="data-container" style={style}>
+      <div ref={heightRef} style={{position: "absolute", height: "100%", width: "0"}} />
+
+      <div className="data-container" style={style}>
         { renderTable }
       </div>
     </>
