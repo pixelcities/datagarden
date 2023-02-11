@@ -6,11 +6,12 @@ interface DropdownProps {
   items: string[],
   onClick: (item: string) => void,
   selected?: string,
+  maxWidth?: number,
   isDropUp?: boolean,
   isDisabled?: boolean
 }
 
-const Dropdown: FC<DropdownProps> = ({items, onClick, selected, isDropUp = false, isDisabled = false}) => {
+const Dropdown: FC<DropdownProps> = ({items, onClick, selected, maxWidth, isDropUp = false, isDisabled = false}) => {
   const [isActive, setIsActive] = useState(false)
   const [selectedItem, setSelectedItem] = useState<string | undefined>(selected)
 
@@ -40,8 +41,8 @@ const Dropdown: FC<DropdownProps> = ({items, onClick, selected, isDropUp = false
   return (
     <div className={"dropdown" + (isActive && !isDisabled ? " is-active" : "") + (isDropUp ? " is-up" : "")}>
       <div className="dropdown-trigger">
-        <div className="button" onClick={() => setIsActive(!isActive && !isDisabled)} aria-haspopup="true" aria-controls="dropdown-menu" style={isDisabled ? {cursor: "default", pointerEvents: "none"} : {}}>
-          <span> { selectedItem } </span>
+        <div className="button" onClick={() => setIsActive(!isActive && !isDisabled)} aria-haspopup="true" aria-controls="dropdown-menu" style={isDisabled ? {maxWidth: maxWidth, cursor: "default", pointerEvents: "none"} : {maxWidth: maxWidth}}>
+          <span style={{minWidth: 75, maxInlineSize: maxWidth, overflow: "clip"}}> { selectedItem } </span>
           <span className="icon is-small">
             <FontAwesomeIcon icon={faAngleDown} size="sm" color={isDisabled ? "#bbb" : "#363636"} />
           </span>

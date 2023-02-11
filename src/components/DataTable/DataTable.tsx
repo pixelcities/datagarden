@@ -196,7 +196,7 @@ const DataTable: FC<DataTableProps> = ({ id, schema, interactiveHeader, style, v
         <HeaderDropdown fieldId={columnId} fieldName={columns && columns.find(c => c.accessor === columnId)?.Header} inputId={id} settings={true} isSource={isSource} />
       </div>
 
-      <div ref={heightRef} style={{position: "absolute", height: "100%", width: "0"}} />
+      <div ref={heightRef} style={{position: "absolute", height: (style && "height" in style) ? style.height :"100%", width: "0"}} />
 
       <div className="data-container" style={style}>
         { renderTable }

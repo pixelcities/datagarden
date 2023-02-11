@@ -1,4 +1,4 @@
-import React, { FC, useState } from 'react'
+import React, { FC, useEffect, useState } from 'react'
 
 import { useAppDispatch } from 'hooks'
 import { updateTransformerWAL } from 'state/actions'
@@ -32,11 +32,33 @@ const FunctionTransformer: FC<FunctionTransformerProps> = ({ id, wal, tableId, l
   const [selectedFunction, selectFunction] = useState<Function1 | null>(null)
   const [log, setLog] = useState<WAL>(wal ?? {identifiers: {}, values: {}, transactions: [], artifacts: []})
 
+  const [startup, setStartup] = useState(true)
+  const [replay, setReplay] = useState(false)
+
   const { dataFusion } = useDataFusionContext()
 
-  const handleFunction = React.useCallback((e: any) => {
-    e.preventDefault()
+  // Rebuild state
+  useEffect(() => {
+    if (tableId && startup && wal && wal.transactions.length > 0) {
+      for (const match of wal.transactions[0].matchAll(/([a-zA-Z0-9_]+)\(([[0-9I%$]+)\)/g)) {
+        if (match[1] && match[2]) {
+          const id = Number(match[2].match(/%([0-9]+)\$I/)![1])
+          const columnId = wal.identifiers[id]
+          const columnName = columnNames[columnId]
 
+          if (columnName) {
+            selectFunction(Function1[match[1] as Function1Key])
+            setColumn(columnName)
+          }
+        }
+      }
+
+      setStartup(false)
+      setReplay(true)
+    }
+  }, [ tableId, startup, wal, columnNames ])
+
+  const execute = React.useCallback(async () => {
     const columnId = Object.keys(columnNames).find(id => schema.column_order.indexOf(id) !== -1 && columnNames[id] === column)
 
     if (tableId && columnId) {
@@ -60,41 +82,55 @@ const FunctionTransformer: FC<FunctionTransformerProps> = ({ id, wal, tableId, l
 
       const cloneId = dataFusion?.clone_table(tableId, "")
 
-      dataFusion?.query(tableId, query).then((artifact: string) => {
-        const resultSchema = dataFusion?.get_schema(tableId)
-        const resultColumns: string[] = resultSchema.fields.map((field: any) => field.name)
+      const artifact: string = await dataFusion?.query(tableId, query)
+      const resultSchema = dataFusion?.get_schema(tableId)
+      const resultColumns: string[] = resultSchema.fields.map((field: any) => field.name)
 
-        const done = new Promise<void>((resolve, reject) => {
-          // Verify all the columns are present
-          if (schema.column_order.filter(column => resultColumns.indexOf(column) === -1).length === 0) {
-            dataFusion?.drop_table(cloneId)
-            resolve()
+      // Verify all the columns are present
+      if (schema.column_order.filter(column => resultColumns.indexOf(column) === -1).length === 0) {
+        dataFusion?.drop_table(cloneId)
 
-          // If not, apply the artifact and merge the results
-          } else {
-            dataFusion?.apply_artifact(cloneId, artifact).then(() => {
-              dataFusion?.merge_table(cloneId, tableId)
-              dataFusion?.move_table(cloneId, tableId)
-              resolve()
-            })
-          }
-        })
+      // If not, apply the artifact and merge the results
+      } else {
+        await dataFusion?.apply_artifact(cloneId, artifact)
+        dataFusion?.merge_table(cloneId, tableId)
+        dataFusion?.move_table(cloneId, tableId)
+      }
 
-        done.then(() => {
-          setLog({...log, ...{
-            identifiers: identifiers,
-            transactions: [transaction],
-            artifacts: [artifact]
-          }})
+      onComplete()
 
-          onComplete()
-        })
-      })
+      return {
+        identifiers: identifiers,
+        transactions: [transaction],
+        artifacts: [artifact],
+        values: {}
+      }
     } else {
-      console.log("Cannot build query: missing identifier")
+      throw new Error("Cannot build query: missing identifier")
     }
+  }, [ tableId, schema.column_order, column, selectedFunction, columnNames, log.identifiers, dataFusion, onComplete ])
 
-  }, [ tableId, schema.column_order, column, selectedFunction, columnNames, log, dataFusion, onComplete ])
+  // Replay if old state was loaded
+  useEffect(() => {
+    if (tableId && replay && column && selectedFunction) {
+      setReplay(false)
+
+      dataFusion?.clone_table(leftId, tableId)
+      execute()
+        .catch((e) => console.log(e))
+    }
+  }, [ leftId, tableId, replay, column, selectedFunction, execute, dataFusion ])
+
+  const handleFunction = React.useCallback((e: any) => {
+    e.preventDefault()
+
+    dataFusion?.clone_table(leftId, tableId)
+    execute()
+      .then((result) => {
+        setLog(result)
+      })
+      .catch((e) => console.log(e))
+  }, [ leftId, tableId, execute, setLog, dataFusion ])
 
   const handleCommit = () => {
     dispatch(updateTransformerWAL({
@@ -106,34 +142,48 @@ const FunctionTransformer: FC<FunctionTransformerProps> = ({ id, wal, tableId, l
     onClose()
   }
 
+  if (!tableId) {
+    return (
+      <div className="is-relative px-4 py-4" style={{height: "100%"}}>
+        <progress className="progress is-small is-primary" style={{marginTop: "50%"}} />
+      </div>
+    )
+  }
 
   return (
-    <div className="is-relative px-4 py-4" style={{height: "100%"}}>
-
-      <form onSubmit={handleFunction}>
-        <div className="field pb-0">
-          <label className="label">Function</label>
-        </div>
-        <div className="field has-addons is-horizontal pb-0">
-          <Dropdown
-            items={Object.keys(Function1)}
-            onClick={(item: string) => selectFunction((Function1[item as Function1Key]))}
-          />
-
-          <span className="is-size-4 has-text-weight-bold px-2"> ( </span>
-          <Dropdown
-            items={Object.values(columnNames)}
-            onClick={(item: string) => setColumn(item)}
-          />
-          <span className="is-size-4 has-text-weight-bold px-2"> ) </span>
-        </div>
-
-        <div className="field is-grouped is-grouped-right pt-0">
-          <div className="control">
-            <input type="submit" className="button is-text" value="Apply Function" />
+    <div className="control-body px-4 py-4">
+      <div className="control-settings">
+        <form onSubmit={handleFunction}>
+          <div className="field pb-0">
+            <label className="label">Function</label>
           </div>
-        </div>
-      </form>
+          <div className="field has-addons is-horizontal pb-0">
+            <Dropdown
+              key={selectedFunction || "fn"}
+              items={Object.keys(Function1)}
+              maxWidth={120}
+              onClick={(item: string) => selectFunction((Function1[item as Function1Key]))}
+              selected={selectedFunction !== null ? selectedFunction : undefined}
+            />
+
+            <span className="is-size-4 has-text-weight-bold px-2"> ( </span>
+            <Dropdown
+              key={column || "col"}
+              items={Object.values(columnNames)}
+              maxWidth={150}
+              onClick={(item: string) => setColumn(item)}
+              selected={column !== null ? column : undefined}
+            />
+            <span className="is-size-4 has-text-weight-bold px-2"> ) </span>
+          </div>
+
+          <div className="field is-grouped is-grouped-right pt-0">
+            <div className="control">
+              <input type="submit" className="button is-text" value="Apply Function" />
+            </div>
+          </div>
+        </form>
+      </div>
 
       <div className="commit-footer">
         <button className="button is-primary is-fullwidth" onClick={handleCommit}> Commit </button>

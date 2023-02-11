@@ -1,4 +1,4 @@
-import React, { FC, useState } from 'react'
+import React, { FC, useEffect, useState } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPlus } from '@fortawesome/free-solid-svg-icons'
 
@@ -38,18 +38,60 @@ const AggregateTransformer: FC<AggregateTransformerProps> = ({ id, wal, tableId,
   const [groupClauses, addGroupClause] = useState<(string | null)[]>([])
   const [log, setLog] = useState<WAL>(wal ?? {identifiers: {}, values: {}, transactions: [], artifacts: []})
 
+  const [startup, setStartup] = useState(true)
+  const [replay, setReplay] = useState(false)
+
   const { dataFusion } = useDataFusionContext()
 
-  const handleAggregate = React.useCallback((e: any) => {
-    e.preventDefault()
+  // Rebuild state
+  useEffect(() => {
+    if (tableId && startup && wal && wal.transactions.length > 0) {
+      // Crudely parse the transaction to display human friendly history. This is
+      // just used for visualization purposes when visiting old transformers.
+      let aggregates = []
+      let selectNames = []
+      let groupClauses = []
 
+      for (const match of wal.transactions[0].matchAll(/([A-Z]+)\(([[0-9I%$]+)\)/g)) {
+        if (match[1] && match[2]) {
+          const id = Number(match[2].match(/%([0-9]+)\$I/)![1])
+          const columnId = wal.identifiers[id]
+          const columnName = columnNames[columnId]
+
+          if (columnName) {
+            aggregates.push(match[1])
+            selectNames.push(columnName)
+          }
+        }
+      }
+
+      for (const match of wal.transactions[0].split("GROUP BY")[1].matchAll(/ *%([0-9]+)\$I/g)) {
+        if (match[1]) {
+          const columnId = wal.identifiers[Number(match[1])]
+          const columnName = columnNames[columnId]
+
+          if (columnName) {
+            groupClauses.push(columnName)
+          }
+        }
+      }
+
+      addAggregateFn(aggregates)
+      addColumn(selectNames)
+      addGroupClause(groupClauses)
+
+      setStartup(false)
+      setReplay(true)
+    }
+  }, [ tableId, startup, wal, columnNames ])
+
+  const execute = React.useCallback(async () => {
     const columnIds = columns.map(column => Object.entries(columnNames).find(([a, b]) => b === column)).filter((x): x is [string, string] => !!x).map(x => x[0])
     const groupIds = groupClauses.map(group => Object.entries(columnNames).find(([a, b]) => b === group)).filter((x): x is [string, string] => !!x).map(x => x[0])
 
     // Datafusion does not like having the group clause as an aggregate
     if (groupIds.filter(group => columnIds.indexOf(group) !== -1).length > 0) {
-      console.log("Error: group clauses should not be part of the aggregate expressions")
-      return
+      throw new Error("Error: group clauses should not be part of the aggregate expressions")
     }
 
     if (tableId) {
@@ -108,41 +150,57 @@ const AggregateTransformer: FC<AggregateTransformerProps> = ({ id, wal, tableId,
 
       const cloneId = dataFusion?.clone_table(tableId, "")
 
-      dataFusion?.query(tableId, query).then((artifact: string) => {
-        const resultSchema = dataFusion?.get_schema(tableId)
-        const resultColumns: string[] = resultSchema.fields.map((field: any) => field.name)
+      const artifact: string = await dataFusion?.query(tableId, query)
+      const resultSchema = dataFusion?.get_schema(tableId)
+      const resultColumns: string[] = resultSchema.fields.map((field: any) => field.name)
 
-        const done = new Promise<void>((resolve, reject) => {
-          // Verify all the columns are present
-          if (schema.column_order.filter(column => resultColumns.indexOf(column) === -1).length === 0) {
-            dataFusion?.drop_table(cloneId)
-            resolve()
+      // Verify all the columns are present
+      if (schema.column_order.filter(column => resultColumns.indexOf(column) === -1).length === 0) {
+        dataFusion?.drop_table(cloneId)
 
-          // If not, apply the artifact and merge the results
-          } else {
-            dataFusion?.apply_artifact(cloneId, artifact).then(() => {
-              dataFusion?.merge_table(cloneId, tableId)
-              dataFusion?.move_table(cloneId, tableId)
-              resolve()
-            })
-          }
-        })
+      // If not, apply the artifact and merge the results
+      } else {
+        await dataFusion?.apply_artifact(cloneId, artifact)
+        dataFusion?.merge_table(cloneId, tableId)
+        dataFusion?.move_table(cloneId, tableId)
+      }
 
-        done.then(() => {
-          setLog({...log, ...{
-            identifiers: identifiers,
-            transactions: [transaction],
-            artifacts: [artifact]
-          }})
+      onComplete()
 
-          onComplete()
-        })
-      })
+      return {
+        identifiers: identifiers,
+        transactions: [transaction],
+        artifacts: [artifact],
+        values: {}
+      }
+
     } else {
-      console.log("Cannot build query: missing identifier")
+      throw new Error("Cannot build query: missing identifier")
     }
+  }, [ tableId, schema, columns, columnNames, log, onComplete, dataFusion, dataSpace, concepts, aggregateFns, groupClauses ])
 
-  }, [ tableId, schema, columns, columnNames, log, dataFusion, dataSpace, concepts, aggregateFns, groupClauses, onComplete ])
+  // Replay if old state was loaded
+  useEffect(() => {
+    if (tableId && replay && columns.length > 1 && aggregateFns.length > 1) {
+      setReplay(false)
+
+      dataFusion?.clone_table(leftId, tableId)
+      execute()
+        .catch((e) => console.log(e))
+    }
+  }, [ leftId, tableId, replay, columns, aggregateFns, groupClauses, execute, dataFusion ])
+
+  const handleAggregate = React.useCallback((e: any) => {
+    e.preventDefault()
+
+    dataFusion?.clone_table(leftId, tableId)
+    execute()
+      .then((result) => {
+        setLog(result)
+      })
+      .catch((e) => console.log(e))
+  }, [ leftId, tableId, execute, setLog, dataFusion ])
+
 
   const handleCommit = () => {
     dispatch(updateTransformerWAL({
@@ -157,16 +215,20 @@ const AggregateTransformer: FC<AggregateTransformerProps> = ({ id, wal, tableId,
   const columnSelection = React.useMemo(() => {
     return columns.map((column, i) => {
       return (
-        <div key={"column" + i} className="field has-addons is-horizontal pb-0">
+        <div key={"column" + column} className="field has-addons is-horizontal pb-0">
           <Dropdown
             items={["SUM", "AVG", "MIN", "MAX"]}
+            maxWidth={100}
             onClick={(item: string) => addAggregateFn(aggregateFns.map((x, j) => i === j ? item : x))}
+            selected={aggregateFns[i]}
           />
 
           <span className="is-size-4 has-text-weight-bold px-2"> ( </span>
           <Dropdown
             items={Object.values(columnNames).filter((x) => columns.indexOf(x) === -1)}
+            maxWidth={150}
             onClick={(item: string) => addColumn(columns.map((x, j) => i === j ? item : x))}
+            selected={column !== null ? column: undefined}
           />
           <span className="is-size-4 has-text-weight-bold px-2"> ) </span>
         </div>
@@ -187,7 +249,9 @@ const AggregateTransformer: FC<AggregateTransformerProps> = ({ id, wal, tableId,
         <div key={"column" + i} className="field has-addons is-horizontal pb-0">
           <Dropdown
             items={Object.values(columnNames)}
+            maxWidth={200}
             onClick={(item: string) => addGroupClause(groupClauses.map((x, j) => i === j ? item : x))}
+            selected={group !== null ? group : undefined}
           />
 
           { (i !== groupClauses.length -1) ?
@@ -206,39 +270,47 @@ const AggregateTransformer: FC<AggregateTransformerProps> = ({ id, wal, tableId,
     addGroupClause([...groupClauses, null])
   }
 
+  if (!tableId) {
+    return (
+      <div className="is-relative px-4 py-4" style={{height: "100%"}}>
+        <progress className="progress is-small is-primary" style={{marginTop: "50%"}} />
+      </div>
+    )
+  }
 
   return (
-    <div className="is-relative px-4 py-4" style={{height: "100%"}}>
-
-      <form onSubmit={handleAggregate}>
-        <div className="field pb-0">
-          <button className="hover-button is-right is-small" onClick={handleAddColumn}>
-            <span className="icon is-small">
-              <FontAwesomeIcon icon={faPlus} size="sm"/>
-            </span>
-          </button>
-          <label className="label">Aggregate Columns</label>
-        </div>
-
-        { columnSelection }
-
-        <div className="field pb-0">
-          <button className="hover-button is-right is-small" onClick={handleAddGroupClause}>
-            <span className="icon is-small">
-              <FontAwesomeIcon icon={faPlus} size="sm"/>
-            </span>
-          </button>
-          <label className="label">Group By</label>
-        </div>
-
-        { groupSelection }
-
-        <div className="field is-grouped is-grouped-right pt-0">
-          <div className="control">
-            <input type="submit" className="button is-text" value="Aggregate" />
+    <div className="control-body px-4 py-4">
+      <div className="control-settings">
+        <form onSubmit={handleAggregate}>
+          <div className="field pb-0">
+            <button className="hover-button is-right is-small" onClick={handleAddColumn}>
+              <span className="icon is-small">
+                <FontAwesomeIcon icon={faPlus} size="sm"/>
+              </span>
+            </button>
+            <label className="label">Aggregate Columns</label>
           </div>
-        </div>
-      </form>
+
+          { columnSelection }
+
+          <div className="field pb-0">
+            <button className="hover-button is-right is-small" onClick={handleAddGroupClause}>
+              <span className="icon is-small">
+                <FontAwesomeIcon icon={faPlus} size="sm"/>
+              </span>
+            </button>
+            <label className="label">Group By</label>
+          </div>
+
+          { groupSelection }
+
+          <div className="field is-grouped is-grouped-right pt-0">
+            <div className="control">
+              <input type="submit" className="button is-text" value="Aggregate" />
+            </div>
+          </div>
+        </form>
+      </div>
 
       <div className="commit-footer">
         <button className="button is-primary is-fullwidth" onClick={handleCommit}> Commit </button>

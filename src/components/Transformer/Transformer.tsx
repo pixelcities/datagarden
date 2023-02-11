@@ -66,7 +66,9 @@ const Transformer: FC<TransformerProps> = ({id, collections, transformers, wal, 
               resolve()
 
             } else {
-              loadRemoteTable(collection.id, collection.uri, collection.schema, user, arrow, dataFusion, keyStore).then(() => resolve())
+              loadRemoteTable(collection.id, collection.uri, collection.schema, user, arrow, dataFusion, keyStore)
+                .then(() => resolve())
+                .catch((e) => console.log("Error loading table:", e))
             }
           } else {
             reject()
@@ -193,18 +195,6 @@ const Transformer: FC<TransformerProps> = ({id, collections, transformers, wal, 
     }
   }, [ title, isEditingTitle, newTitle, setNewTitle, onTitleChange ])
 
-  const containerHeight = React.useMemo(() => {
-    if (wal) {
-      const nrIdentifiers = Object.keys(wal.identifiers).length
-      const nrValues = Object.keys(wal.values).length
-      const nrTransactions = wal.transactions.length
-
-      return 700 + (nrIdentifiers + nrValues + nrTransactions) * 33
-    } else {
-      return 700 + 2 * 33 // default
-    }
-  }, [ wal ])
-
   return (
     <div className={"p-modal " + (isActive ? "is-active" : "")}>
       <div className="modal-background"></div>
@@ -230,12 +220,12 @@ const Transformer: FC<TransformerProps> = ({id, collections, transformers, wal, 
               id={rightInputId}
               schema={inputCollections[1].schema}
               interactiveHeader={false}
-              style={{width: "40%", height: "50%"}}
+              style={{width: "40%", top: "50%", height: "50%"}}
             />
           : null
           }
 
-          <div ref={settingsRef} className="transformer-control-container" style={{minHeight: containerHeight}}>
+          <div ref={settingsRef} className="transformer-control-container">
             <TransformerSettings
               id={id}
               type={transformer?.type}

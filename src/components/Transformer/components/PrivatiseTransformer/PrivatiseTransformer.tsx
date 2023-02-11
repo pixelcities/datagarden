@@ -64,24 +64,24 @@ const PrivatiseTransformer: FC<PrivatiseTransformerProps> = ({ id, wal, tableId,
     onClose()
   }
 
-
   return (
-    <div className="is-relative px-4 py-4" style={{height: "100%"}}>
-
-      <form onSubmit={handlePrivatise}>
-        <div className="field pb-0">
-          <label className="label">Privatise</label>
-        </div>
-        <p className="has-text-justified">
-          Generate a synthesized dataset that no longer contains the original data, so that it can be shared with your collaborators.
-        </p>
-
-        <div className="field is-grouped is-grouped-right pt-0">
-          <div className="control">
-            <input type="submit" className="button is-text" value="Privatise" />
+    <div className="control-body px-4 py-4">
+      <div className="control-settings">
+        <form onSubmit={handlePrivatise}>
+          <div className="field pb-0">
+            <label className="label">Privatise</label>
           </div>
-        </div>
-      </form>
+          <p className="has-text-justified">
+            Generate a synthesized dataset that no longer contains the original data, so that it can be shared with your collaborators.
+          </p>
+
+          <div className="field is-grouped is-grouped-right pt-0">
+            <div className="control">
+              <input type="submit" className="button is-text" value="Privatise" />
+            </div>
+          </div>
+        </form>
+      </div>
 
       <div className="commit-footer">
         <button className="button is-primary is-fullwidth" onClick={handleCommit}> Commit </button>

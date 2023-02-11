@@ -281,80 +281,81 @@ const CustomTransformer: FC<CustomTransformerProps> = ({ id, wal, tableId, colum
 
 
   return (
-    <div className="is-relative px-4 py-4" style={{height: "100%"}}>
-
+    <div className="control-body px-4 py-4">
       <Onboarding />
 
-      { renderIdModal }
-      { renderValueModal }
+      <div className="control-settings">
+        { renderIdModal }
+        { renderValueModal }
 
-      <div className="field">
-        <button className="hover-button is-right is-small" onClick={() => handleIdModal()}>
-          <span className="icon is-small">
-            <FontAwesomeIcon icon={faPlus} size="sm"/>
-          </span>
-        </button>
-        <label className="label"> Identifiers </label>
-        <table className="table is-hoverable is-narrow is-fullwidth">
-          <thead>
-            <tr>
-              <th style={{width: "34px"}}><span style={{fontSize: "small"}}> # </span></th>
-              <th><span style={{fontSize: "small"}}> Name </span></th>
-            </tr>
-          </thead>
+        <div className="field">
+          <button className="hover-button is-right is-small" onClick={() => handleIdModal()}>
+            <span className="icon is-small">
+              <FontAwesomeIcon icon={faPlus} size="sm"/>
+            </span>
+          </button>
+          <label className="label"> Identifiers </label>
+          <table className="table is-hoverable is-narrow is-fullwidth">
+            <thead>
+              <tr>
+                <th style={{width: "34px"}}><span style={{fontSize: "small"}}> # </span></th>
+                <th><span style={{fontSize: "small"}}> Name </span></th>
+              </tr>
+            </thead>
 
-          <tbody>
-            { renderIdentifiers }
-          </tbody>
-        </table>
-      </div>
-
-      <div className="field">
-        <button className="hover-button is-right is-small" onClick={() => setValueModalIsActive(true)}>
-          <span className="icon is-small">
-            <FontAwesomeIcon icon={faPlus} size="sm"/>
-          </span>
-        </button>
-        <label className="label"> Values </label>
-        <table className="table is-hoverable is-narrow is-fullwidth">
-          <thead>
-            <tr>
-              <th style={{width: "34px"}}><span style={{fontSize: "small"}}> # </span></th>
-              <th><span style={{fontSize: "small"}}> Value </span></th>
-            </tr>
-          </thead>
-
-          <tbody>
-            { renderValues }
-          </tbody>
-        </table>
-      </div>
-
-      <div className="field">
-        <label className="label">Transaction Log</label>
-        <table className="table is-hoverable is-narrow is-fullwidth" style={{fontSize: "small"}}>
-          <tbody>
-            { renderTransactions }
-          </tbody>
-        </table>
-      </div>
-
-
-      <form onSubmit={handleQueryExecute}>
-
-        <div className="field pb-0">
-          <label id="query-intro" className="label">Query</label>
-          <div className="control">
-            <textarea className="textarea is-hovered query-font" rows={10} placeholder={query} value={query} onChange={(e: any) => setQuery(e.target.value)} />
-          </div>
+            <tbody>
+              { renderIdentifiers }
+            </tbody>
+          </table>
         </div>
 
-        <div className="field is-grouped is-grouped-right pt-0">
-          <div className="control">
-            <input type="submit" className="button is-text" value="Query" />
-          </div>
+        <div className="field">
+          <button className="hover-button is-right is-small" onClick={() => setValueModalIsActive(true)}>
+            <span className="icon is-small">
+              <FontAwesomeIcon icon={faPlus} size="sm"/>
+            </span>
+          </button>
+          <label className="label"> Values </label>
+          <table className="table is-hoverable is-narrow is-fullwidth">
+            <thead>
+              <tr>
+                <th style={{width: "34px"}}><span style={{fontSize: "small"}}> # </span></th>
+                <th><span style={{fontSize: "small"}}> Value </span></th>
+              </tr>
+            </thead>
+
+            <tbody>
+              { renderValues }
+            </tbody>
+          </table>
         </div>
-      </form>
+
+        <div className="field">
+          <label className="label">Transaction Log</label>
+          <table className="table is-hoverable is-narrow is-fullwidth" style={{fontSize: "small"}}>
+            <tbody>
+              { renderTransactions }
+            </tbody>
+          </table>
+        </div>
+
+
+        <form onSubmit={handleQueryExecute}>
+
+          <div className="field pb-0">
+            <label id="query-intro" className="label">Query</label>
+            <div className="control">
+              <textarea className="textarea is-hovered query-font" rows={10} placeholder={query} value={query} onChange={(e: any) => setQuery(e.target.value)} />
+            </div>
+          </div>
+
+          <div className="field is-grouped is-grouped-right pt-0">
+            <div className="control">
+              <input type="submit" className="button is-text" value="Query" />
+            </div>
+          </div>
+        </form>
+      </div>
 
       <div className="commit-footer">
         <button className="button is-primary is-fullwidth" onClick={handleCommit}> Commit </button>

@@ -1,7 +1,7 @@
-import React, { FC, useState } from 'react'
+import React, { FC, useEffect, useMemo, useState } from 'react'
 
 import { useAppDispatch, useAppSelector } from 'hooks'
-import { selectActiveDataSpace } from 'state/selectors'
+import { selectActiveDataSpace, selectMetadataMap } from 'state/selectors'
 import { createMetadata, updateTransformerWAL } from 'state/actions'
 
 import Dropdown from 'components/Dropdown'
@@ -29,6 +29,7 @@ const FilterTransformer: FC<FilterTransformerProps> = ({ id, wal, tableId, leftI
   const dispatch = useAppDispatch()
 
   const dataSpace = useAppSelector(selectActiveDataSpace)
+  const metadata = useAppSelector(selectMetadataMap)
 
   const [column, setColumn] = useState<string | null>(null)
   const [value, setValue] = useState<string | undefined>()
@@ -36,13 +37,45 @@ const FilterTransformer: FC<FilterTransformerProps> = ({ id, wal, tableId, leftI
   const [filterType, setFilterType] = useState("=")
   const [log, setLog] = useState<WAL>(wal ?? {identifiers: {}, values: {}, transactions: [], artifacts: []})
 
+  const [startup, setStartup] = useState(true)
+  const [replay, setReplay] = useState(false)
+
   const { dataFusion } = useDataFusionContext()
   const { keyStore } = useKeyStoreContext()
 
-  const handleFilter = React.useCallback((e: any) => {
-    e.preventDefault()
-    setValueIsLocked(true)
+  // Rebuild state
+  useEffect(() => {
+    if (tableId && startup && wal && wal.transactions.length > 0) {
+      for (const match of wal.transactions[0].split("WHERE")[1].matchAll(/([=!><]+) +\$1/g)) {
+        if (match[1]) {
+          setFilterType(match[1])
+        }
+      }
 
+      for (const match of wal.transactions[0].split("WHERE")[1].matchAll(/ *%([0-9]+)\$I/g)) {
+        if (match[1]) {
+          const columnId = wal.identifiers[Number(match[1])]
+          const columnName = columnNames[columnId]
+
+          if (columnName) {
+            setColumn(columnName)
+          }
+        }
+      }
+
+      // Just one value for now
+      const valueId = wal.values[1]
+      if (valueId in metadata) {
+        setValue(keyStore?.decrypt_metadata(dataSpace?.key_id, metadata[valueId]))
+      }
+
+      setStartup(false)
+      setReplay(true)
+      setValueIsLocked(true)
+    }
+  }, [ tableId, startup, wal, columnNames, metadata, keyStore, dataSpace?.key_id ])
+
+  const execute = React.useCallback(async () => {
     const columnId = Object.keys(columnNames).find(id => schema.column_order.indexOf(id) !== -1 && columnNames[id] === column)
 
     if (tableId && columnId) {
@@ -73,41 +106,56 @@ const FilterTransformer: FC<FilterTransformerProps> = ({ id, wal, tableId, leftI
 
       const cloneId = dataFusion?.clone_table(tableId, "")
 
-      dataFusion?.query(tableId, query).then((artifact: string) => {
-        const resultSchema = dataFusion?.get_schema(tableId)
-        const resultColumns: string[] = resultSchema.fields.map((field: any) => field.name)
+      const artifact: string = await dataFusion?.query(tableId, query)
+      const resultSchema = dataFusion?.get_schema(tableId)
+      const resultColumns: string[] = resultSchema.fields.map((field: any) => field.name)
 
-        const done = new Promise<void>((resolve, reject) => {
-          // Verify all the columns are present
-          if (schema.column_order.filter(column => resultColumns.indexOf(column) === -1).length === 0) {
-            dataFusion?.drop_table(cloneId)
-            resolve()
+      // Verify all the columns are present
+      if (schema.column_order.filter(column => resultColumns.indexOf(column) === -1).length === 0) {
+        dataFusion?.drop_table(cloneId)
 
-          // If not, apply the artifact and merge the results
-          } else {
-            dataFusion?.apply_artifact(cloneId, artifact).then(() => {
-              dataFusion?.merge_table(cloneId, tableId)
-              dataFusion?.move_table(cloneId, tableId)
-              resolve()
-            })
-          }
-        })
+      // If not, apply the artifact and merge the results
+      } else {
+        await dataFusion?.apply_artifact(cloneId, artifact)
+        dataFusion?.merge_table(cloneId, tableId)
+        dataFusion?.move_table(cloneId, tableId)
+      }
 
-        done.then(() => {
-          setLog({...log, ...{
-            identifiers: identifiers,
-            transactions: [...log.transactions, transaction],
-            artifacts: [...log.artifacts, artifact]
-          }})
+      onComplete()
 
-          onComplete()
-        })
-      })
+      return {
+        identifiers: identifiers,
+        transactions: [transaction],
+        artifacts: [artifact],
+        values: {}
+      }
     } else {
-      console.log("Cannot build query: missing identifier")
+      throw new Error("Cannot build query: missing identifier")
     }
+  }, [ tableId, schema.column_order, column, filterType, value, columnNames, log.identifiers, dataFusion, onComplete ])
 
-  }, [ tableId, schema.column_order, column, filterType, value, columnNames, log, dataFusion, onComplete ])
+  // Replay if old state was loaded
+  useEffect(() => {
+    if (tableId && replay && column && value) {
+      setReplay(false)
+
+      dataFusion?.clone_table(leftId, tableId)
+      execute()
+        .catch((e) => console.log(e))
+    }
+  }, [ leftId, tableId, replay, column, value, execute, dataFusion ])
+
+  const handleFilter = React.useCallback((e: any) => {
+    e.preventDefault()
+    setValueIsLocked(true)
+
+    dataFusion?.clone_table(leftId, tableId)
+    execute()
+      .then((result) => {
+        setLog(result)
+      })
+      .catch((e) => console.log(e))
+  }, [ tableId, leftId, execute, dataFusion ])
 
   const handleFilterType = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setFilterType(e.target.value)
@@ -146,41 +194,61 @@ const FilterTransformer: FC<FilterTransformerProps> = ({ id, wal, tableId, leftI
     onClose()
   }
 
+  const renderFilter = useMemo(() => {
+    return (
+      <div className="field has-addons is-horizontal pb-0">
+        <Dropdown
+          key={column}
+          items={Object.values(columnNames)}
+          maxWidth={150}
+          onClick={(item: string) => setColumn(item)}
+          selected={column !== null ? column : undefined}
+          isDisabled={valueIsLocked}
+        />
+        <p className="control my-1">
+          <span className="select">
+            <select onChange={handleFilterType} value={filterType}>
+              <option> {"="} </option>
+              <option> {"!="} </option>
+              <option> {">"} </option>
+              <option> {">="} </option>
+              <option> {"<"} </option>
+              <option> {"<="} </option>
+            </select>
+          </span>
+        </p>
+        <p className="control my-1">
+          <input className="input is-normal" type="text" placeholder={value} onChange={handleValue} disabled={valueIsLocked} />
+        </p>
+      </div>
+    )
+  }, [ columnNames, column, filterType, value, valueIsLocked ])
+
+  if (!tableId) {
+    return (
+      <div className="is-relative px-4 py-4" style={{height: "100%"}}>
+        <progress className="progress is-small is-primary" style={{marginTop: "50%"}} />
+      </div>
+    )
+  }
 
   return (
-    <div className="is-relative px-4 py-4" style={{height: "100%"}}>
-
-      <form onSubmit={handleFilter}>
-        <div className="field pb-0">
-          <label className="label">Filter Condition</label>
-        </div>
-        <div className="field has-addons is-horizontal pb-0">
-          <Dropdown
-            items={Object.values(columnNames)}
-            onClick={(item: string) => setColumn(item)}
-          />
-          <p className="control my-1">
-            <span className="select">
-              <select onChange={handleFilterType}>
-                <option> {"="} </option>
-                <option> {">"} </option>
-                <option> {">="} </option>
-                <option> {"<"} </option>
-                <option> {"<="} </option>
-              </select>
-            </span>
-          </p>
-          <p className="control my-1">
-            <input className="input is-normal" type="text" placeholder={value} onChange={handleValue} disabled={valueIsLocked} />
-          </p>
-        </div>
-
-        <div className="field is-grouped is-grouped-right pt-0">
-          <div className="control">
-            <input type="submit" className="button is-text" value="Filter" />
+    <div className="control-body px-4 py-4">
+      <div className="control-settings">
+        <form onSubmit={handleFilter}>
+          <div className="field pb-0">
+            <label className="label">Filter Condition</label>
           </div>
-        </div>
-      </form>
+
+          { renderFilter }
+
+          <div className="field is-grouped is-grouped-right pt-0">
+            <div className="control">
+              <input type="submit" className="button is-text" value="Filter" />
+            </div>
+          </div>
+        </form>
+      </div>
 
       <div className="commit-footer">
         <button className="button is-primary is-fullwidth" onClick={handleCommit}> Commit </button>
