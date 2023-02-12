@@ -17,7 +17,11 @@ import helpIcon from 'assets/help-000.svg'
 import './ControlPanel.sass'
 
 
-const SourcesTab: FC = (props) => {
+interface SourcesTabProps {
+  search: string
+}
+
+const SourcesTab: FC<SourcesTabProps> = ({ search }) => {
   const { user } = useAuthContext();
   const { keyStore, keyStoreIsReady } = useKeyStoreContext();
 
@@ -33,27 +37,31 @@ const SourcesTab: FC = (props) => {
       const share = source.schema.shares.find(s => s.principal === user?.id)
 
       if (share) {
-        return (
-          <div className="panel-block-nb" key={source.id}>
-            <DataSource source={source} title={name} color={share.type === "owner" ? "#00B7BE" : "#F39D01"} />
-          </div>
-        )
+        if (search === "" || name.indexOf(search) !== -1) {
+          return (
+            <div className="panel-block-nb" key={source.id}>
+              <DataSource source={source} title={name} color={share.type === "owner" ? "#00B7BE" : "#F39D01"} />
+            </div>
+          )
+        }
       }
 
       return null
     }).filter(x => !!x)
-  }, [ sources, metadata, user, dataSpace, keyStore, keyStoreIsReady ])
+  }, [ sources, search, metadata, user, dataSpace, keyStore, keyStoreIsReady ])
 
   return (
     <>
-      <div id="collection-intro">
+      <div id="collection-intro" style={{position: "relative", maxHeight: "50%"}}>
         <div className="panel-block-nb">
           <p className="header-label">
             Data Space Sources
           </p>
         </div>
 
-        { dSources }
+        <div style={{maxHeight: "calc(100% - 2rem)", overflowY: "scroll"}}>
+          { dSources }
+        </div>
       </div>
 
       <div className="panel-block" />
@@ -171,6 +179,12 @@ const WorkspaceTab: FC = (props) => {
 
 const ControlPanel: FC = (props) => {
   const [ activeTab, setActiveTab ] = useState("sources")
+  const [ search, setSearch ] = useState("")
+
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setActiveTab("sources")
+    setSearch(e.target.value)
+  }
 
   return (
     <>
@@ -182,7 +196,7 @@ const ControlPanel: FC = (props) => {
         </p>
         <div className="panel-block">
           <p className="control has-icons-left">
-            <input className="input" type="text" placeholder="Search" />
+            <input className="input" type="text" placeholder="Search" onChange={handleSearch} />
             <span className="icon is-left">
               <FontAwesomeIcon icon={faSearch} size="xs"/>
             </span>
@@ -190,7 +204,7 @@ const ControlPanel: FC = (props) => {
         </div>
 
         { activeTab === "sources" &&
-          <SourcesTab />
+          <SourcesTab search={search} />
         }
 
         { activeTab === "workspace" &&
