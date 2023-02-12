@@ -159,18 +159,18 @@ const FunctionTransformer: FC<FunctionTransformerProps> = ({ id, wal, tableId, l
           </div>
           <div className="field has-addons is-horizontal pb-0">
             <Dropdown
-              key={selectedFunction || "fn"}
+              key={"dropdown-fn-" + (selectedFunction !== null).toString()}
               items={Object.keys(Function1)}
-              maxWidth={120}
+              maxWidth={50}
               onClick={(item: string) => selectFunction((Function1[item as Function1Key]))}
               selected={selectedFunction !== null ? selectedFunction : undefined}
             />
 
             <span className="is-size-4 has-text-weight-bold px-2"> ( </span>
             <Dropdown
-              key={column || "col"}
+              key={"dropdown-col-" + (column !== null).toString()}
               items={Object.values(columnNames)}
-              maxWidth={150}
+              maxWidth={100}
               onClick={(item: string) => setColumn(item)}
               selected={column !== null ? column : undefined}
             />

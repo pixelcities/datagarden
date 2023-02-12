@@ -225,7 +225,7 @@ const AggregateTransformer: FC<AggregateTransformerProps> = ({ id, wal, tableId,
 
           <span className="is-size-4 has-text-weight-bold px-2"> ( </span>
           <Dropdown
-            items={Object.values(columnNames).filter((x) => columns.indexOf(x) === -1)}
+            items={Object.values(columnNames)}
             maxWidth={150}
             onClick={(item: string) => addColumn(columns.map((x, j) => i === j ? item : x))}
             selected={column !== null ? column: undefined}

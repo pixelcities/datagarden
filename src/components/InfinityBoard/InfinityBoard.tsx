@@ -222,7 +222,7 @@ const InfinityBoard: FC = (props) => {
 
         </div>
 
-        <div id="deleteComponent" className="delete trash" />
+        <div id="deleteComponent" className="delete" style={{position: "absolute", bottom: "30px", left: "30px", width: "20px", height: "20px" }} />
 
         <div className="preview" style={{position: "absolute", bottom: "30px", right: "30px", width: "200px", height: "200px" }}>
           <CanvasPreview

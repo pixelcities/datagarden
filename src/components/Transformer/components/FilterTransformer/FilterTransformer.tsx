@@ -198,7 +198,7 @@ const FilterTransformer: FC<FilterTransformerProps> = ({ id, wal, tableId, leftI
     return (
       <div className="field has-addons is-horizontal pb-0">
         <Dropdown
-          key={column}
+          key={"dropdown-col-" + (column !== null).toString()}
           items={Object.values(columnNames)}
           maxWidth={150}
           onClick={(item: string) => setColumn(item)}

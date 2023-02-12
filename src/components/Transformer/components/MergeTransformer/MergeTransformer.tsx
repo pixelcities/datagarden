@@ -178,7 +178,7 @@ const MergeTransformer: FC<MergeTransformerProps> = ({ id, wal, tableId, leftId,
           <div className="field pb-0">
             <label className="label">Join Condition</label>
             <Dropdown
-              key={"left" + leftColumn}
+              key={"dropdown-left-" + (leftColumn !== null).toString()}
               items={leftColumns}
               maxWidth={145}
               onClick={(item: string) => setLeftColumn(item)}
@@ -188,7 +188,7 @@ const MergeTransformer: FC<MergeTransformerProps> = ({ id, wal, tableId, leftId,
               <FontAwesomeIcon icon={faEquals} size="sm"/>
             </span>
             <Dropdown
-              key={"right" + rightColumn}
+              key={"dropdown-right-" + (rightColumn !== null).toString()}
               items={rightColumns}
               maxWidth={145}
               onClick={(item: string) => setRightColumn(item)}
