@@ -67,6 +67,9 @@ $colors: indigo, darkviolet, magenta, mediumvioletred, deeppink, crimson, red, o
   &.is-left
     text-align: left
 
+  &.is-white
+    color: #FFFFFF
+
 .button-label
   font-family: "Nunito Sans"
   font-style: normal
@@ -159,4 +162,10 @@ $colors: indigo, darkviolet, magenta, mediumvioletred, deeppink, crimson, red, o
   @for $i from 1 through length($colors)
     &.bg-#{$i}
       background: lighten(nth($colors, $i), 20%)
+
+.modal-footer
+  position: fixed
+  bottom: 3rem
+  right: 4rem
+  z-index: 41 // Modal z-index + 1
 

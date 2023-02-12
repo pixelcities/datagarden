@@ -11,6 +11,21 @@ const Logout: FC = () => {
 
   useEffect(() => {
     if (isAuthenticated) {
+      // Clear out localStorage, except for the onboarding steps
+      let keys = []
+      for (let i=0; i < localStorage.length; i++) {
+        const key = localStorage.key(i)
+
+        if (key && key.indexOf("onboarding") === -1) {
+          keys.push(key)
+        }
+      }
+
+      for (const key of keys) {
+        localStorage.removeItem(key)
+      }
+
+      // Logout
       fetch(process.env.REACT_APP_API_BASE_PATH + "/auth/local/logout", {
         method: "DELETE",
         credentials: "include",

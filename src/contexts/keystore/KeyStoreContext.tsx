@@ -124,6 +124,10 @@ export const KeyStoreProvider: FC = ({ children }) => {
             </form>
           </div>
         </div>
+
+        <div className="modal-footer">
+          <a className="fineprint-label label-size-1 is-white" href="/logout"> Logout </a>
+        </div>
       </div>
     )
   }, [ isActive, error, location.pathname, handleSubmit, password ])
