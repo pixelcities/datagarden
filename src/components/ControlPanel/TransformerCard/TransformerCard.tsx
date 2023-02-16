@@ -13,6 +13,7 @@ import './TransformerCard.sass'
 interface TransformerCardProps {
   title: string,
   type: string,
+  tooltip?: string,
   isDisabled?: boolean
 }
 
@@ -21,7 +22,7 @@ interface Coords {
   y: number
 }
 
-const TransformerCard: FC<TransformerCardProps> = ({ title, type, isDisabled }) => {
+const TransformerCard: FC<TransformerCardProps> = ({ title, type, tooltip, isDisabled }) => {
   const dispatch = useAppDispatch()
   const { keyStore } = useKeyStoreContext();
   const dataSpace = useAppSelector(selectActiveDataSpace)
@@ -66,9 +67,10 @@ const TransformerCard: FC<TransformerCardProps> = ({ title, type, isDisabled }) 
 
   return (
     <>
-      <div className="card-block"
+      <div className={"card-block has-tooltip-right " + (tooltip && tooltip.length > 32 ? "has-tooltip-multiline" : "")}
         ref={isDisabled ? null : dragRef}
         style={{opacity: opacity, cursor: (isDisabled ? "default" : "pointer"), backgroundColor: (isDisabled ? "#3c3c3c3d" : "#ffffff")}}
+        data-tooltip={tooltip}
       >
         <svg className="card-icon" xmlns="http://www.w3.org/2000/svg" width={40} height={40}>
           <use href={sprites + "#" + type} style={{color: "black"}} />

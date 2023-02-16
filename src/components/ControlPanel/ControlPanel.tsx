@@ -79,6 +79,8 @@ const SourcesTab: FC<SourcesTabProps> = ({ search }) => {
 }
 
 const WorkspaceTab: FC = (props) => {
+  const [helpIsActive, setHelpIsActive] = useState(false)
+
   return (
     <>
       <div className="panel-block-nb">
@@ -88,7 +90,7 @@ const WorkspaceTab: FC = (props) => {
           </p>
         </div>
         <div className="div is-1">
-          <img src={helpIcon} alt="" />
+          <img className="help-icon" src={helpIcon} alt="" style={helpIsActive ? {backgroundColor: "#f9cd307e"} : {}} onClick={() => setHelpIsActive(!helpIsActive)} />
         </div>
       </div>
 
@@ -99,22 +101,22 @@ const WorkspaceTab: FC = (props) => {
       </div>
       <div className="columns ml-3 is-gapless is-multiline">
         <div className="column is-4 mt-4">
-          <TransformerCard title="Merge" type="merge" />
+          <TransformerCard title="Merge" type="merge" tooltip={helpIsActive ? "Merge two collections when both share a column" : undefined} />
         </div>
         <div className="column is-4 mt-4">
-          <TransformerCard title="Aggregate" type="aggregate" />
+          <TransformerCard title="Aggregate" type="aggregate" tooltip={helpIsActive ? "Aggregate data" : undefined} />
         </div>
         <div className="column is-4 mt-4">
-          <TransformerCard title="Filter" type="filter" />
+          <TransformerCard title="Filter" type="filter" tooltip={helpIsActive ? "Filter data to only keep target rows" : undefined} />
         </div>
         <div className="column is-4 mt-4">
-          <TransformerCard title="Function" type="function" />
+          <TransformerCard title="Function" type="function" tooltip={helpIsActive ? "Apply a function or do basic arithmetics on your data" : undefined} />
         </div>
         <div className="column is-4 mt-4">
-          <TransformerCard title="Attribute" type="attribute" />
+          <TransformerCard title="Attribute" type="attribute" tooltip={helpIsActive ? "Add or drop columns, or change data types" : undefined} />
         </div>
         <div className="column is-4 mt-4">
-          <TransformerCard title="Custom" type="custom" />
+          <TransformerCard title="Custom" type="custom" tooltip={helpIsActive ? "Advanced SQL query editor" : undefined} />
         </div>
       </div>
 
@@ -125,7 +127,7 @@ const WorkspaceTab: FC = (props) => {
       </div>
       <div className="columns ml-3 is-gapless is-multiline">
         <div className="column is-4 mt-4">
-          <TransformerCard title="Privatise" type="privatise" />
+          <TransformerCard title="Privatise" type="privatise" tooltip={helpIsActive ? "Create a synthetic copy of your original data" : undefined} />
         </div>
       </div>
 
@@ -148,9 +150,6 @@ const WorkspaceTab: FC = (props) => {
             Export
           </p>
         </div>
-        <div className="div is-1">
-          <img src={helpIcon} alt="" />
-        </div>
 
       </div>
 
@@ -161,7 +160,7 @@ const WorkspaceTab: FC = (props) => {
       </div>
       <div className="columns ml-3 is-gapless is-multiline">
         <div className="column is-4 mt-4">
-          <WidgetCard title="Chart" type="chart" />
+          <WidgetCard title="Chart" type="chart" tooltip={helpIsActive ? "Create and publish charts, to gain insights about your data" : undefined} />
         </div>
       </div>
 

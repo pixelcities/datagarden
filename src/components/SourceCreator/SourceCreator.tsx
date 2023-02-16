@@ -22,7 +22,7 @@ const SourceCreator: FC<SourceCreatorProps> = (props) => {
 
   const fileTypePicker = (
     <p className="buttons">
-      <button className="button is-large" onClick={() => setFileType("csv")}>
+      <button className="button is-large has-tooltip-right" onClick={() => setFileType("csv")} data-tooltip="Upload a CSV file">
         <span className="icon is-medium">
           <FontAwesomeIcon icon={faFileCsv} color="#4f4f4f" size="lg"/>
         </span>
