@@ -8,6 +8,7 @@ import { updateTransformerWAL } from 'state/actions'
 
 import Dropdown from 'components/Dropdown'
 import { Schema, WAL } from 'types'
+import { getIdentifiers } from 'utils/query'
 
 import { useDataFusionContext } from 'contexts'
 import { emptyTaxonomy } from 'utils/taxonomy'
@@ -33,9 +34,9 @@ const AggregateTransformer: FC<AggregateTransformerProps> = ({ id, wal, tableId,
   const concepts = useAppSelector(selectConceptMap)
   const dataSpace = useAppSelector(selectActiveDataSpace)
 
-  const [columns, addColumn] = useState<(string | null)[]>([null])
+  const [columns, addColumn] = useState<([string, string] | null)[]>([null])
   const [aggregateFns, addAggregateFn] = useState<string[]>(["SUM"])
-  const [groupClauses, addGroupClause] = useState<(string | null)[]>([])
+  const [groupClauses, addGroupClause] = useState<([string, string] | null)[]>([])
   const [log, setLog] = useState<WAL>(wal ?? {identifiers: {}, values: {}, transactions: [], artifacts: []})
 
   const [startup, setStartup] = useState(true)
@@ -49,29 +50,29 @@ const AggregateTransformer: FC<AggregateTransformerProps> = ({ id, wal, tableId,
       // Crudely parse the transaction to display human friendly history. This is
       // just used for visualization purposes when visiting old transformers.
       let aggregates = []
-      let selectNames = []
-      let groupClauses = []
+      let selectNames: [string, string][] = []
+      let groupClauses: [string, string][] = []
 
       for (const match of wal.transactions[0].matchAll(/([A-Z]+)\(([[0-9I%$]+)\)/g)) {
         if (match[1] && match[2]) {
           const id = Number(match[2].match(/%([0-9]+)\$I/)![1])
-          const columnId = wal.identifiers[id]
+          const columnId = wal.identifiers[id]?.id
           const columnName = columnNames[columnId]
 
           if (columnName) {
             aggregates.push(match[1])
-            selectNames.push(columnName)
+            selectNames.push([columnId, columnName])
           }
         }
       }
 
       for (const match of wal.transactions[0].split("GROUP BY")[1].matchAll(/ *%([0-9]+)\$I/g)) {
         if (match[1]) {
-          const columnId = wal.identifiers[Number(match[1])]
+          const columnId = wal.identifiers[Number(match[1])]?.id
           const columnName = columnNames[columnId]
 
           if (columnName) {
-            groupClauses.push(columnName)
+            groupClauses.push([columnId, columnName])
           }
         }
       }
@@ -86,8 +87,8 @@ const AggregateTransformer: FC<AggregateTransformerProps> = ({ id, wal, tableId,
   }, [ tableId, startup, wal, columnNames ])
 
   const execute = React.useCallback(async () => {
-    const columnIds = columns.map(column => Object.entries(columnNames).find(([a, b]) => b === column)).filter((x): x is [string, string] => !!x).map(x => x[0])
-    const groupIds = groupClauses.map(group => Object.entries(columnNames).find(([a, b]) => b === group)).filter((x): x is [string, string] => !!x).map(x => x[0])
+    const columnIds = columns.filter((x): x is [string, string] => !!x).map(x => x[0])
+    const groupIds = groupClauses.filter((x): x is [string, string] => !!x).map(x => x[0])
 
     // Datafusion does not like having the group clause as an aggregate
     if (groupIds.filter(group => columnIds.indexOf(group) !== -1).length > 0) {
@@ -95,19 +96,7 @@ const AggregateTransformer: FC<AggregateTransformerProps> = ({ id, wal, tableId,
     }
 
     if (tableId) {
-      // Check if the identifiers need to be added to the log
-      const missingIdentifiers = [tableId, ...columnIds, ...groupIds].filter(i => Object.values(log.identifiers).indexOf(i) === -1)
-      const nextId = Object.keys(log.identifiers).length ? Math.max(...Object.keys(log.identifiers).map(Number)) + 1 : 1
-
-      // Add the missing identifiers
-      let identifiers: {[key: string]: string} = JSON.parse(JSON.stringify(log.identifiers))
-      for (let i = 0; i < missingIdentifiers.length; i++) {
-        identifiers[nextId + i] = missingIdentifiers[i]
-      }
-
-      // Invert the map for easy access
-      let ids: {[key: string]: string} = {}
-      Object.entries(identifiers).forEach(([i, id]) => ids[id] = i)
+      const { identifiers, ids } = getIdentifiers(log.identifiers, [tableId], [...columnIds, ...groupIds])
 
       // Build a proper transaction to be saved, and a query for the preview
       const groupIdClauses = groupIds.map((groupId, i) => `%${ids[groupId]}$I`)
@@ -177,7 +166,7 @@ const AggregateTransformer: FC<AggregateTransformerProps> = ({ id, wal, tableId,
     } else {
       throw new Error("Cannot build query: missing identifier")
     }
-  }, [ tableId, schema, columns, columnNames, log, onComplete, dataFusion, dataSpace, concepts, aggregateFns, groupClauses ])
+  }, [ tableId, schema, columns, log, onComplete, dataFusion, dataSpace, concepts, aggregateFns, groupClauses ])
 
   // Replay if old state was loaded
   useEffect(() => {
@@ -219,16 +208,16 @@ const AggregateTransformer: FC<AggregateTransformerProps> = ({ id, wal, tableId,
           <Dropdown
             items={["SUM", "AVG", "MIN", "MAX"]}
             maxWidth={100}
-            onClick={(item: string) => addAggregateFn(aggregateFns.map((x, j) => i === j ? item : x))}
+            onClick={item => addAggregateFn(aggregateFns.map((x, j) => i === j ? item : x))}
             selected={aggregateFns[i]}
           />
 
           <span className="is-size-4 has-text-weight-bold px-2"> ( </span>
           <Dropdown
-            items={Object.values(columnNames)}
+            items={Object.entries(columnNames)}
             maxWidth={150}
-            onClick={(item: string) => addColumn(columns.map((x, j) => i === j ? item : x))}
-            selected={column !== null ? column: undefined}
+            onClick={item => addColumn(columns.map((x, j) => i === j ? item : x))}
+            selected={column}
           />
           <span className="is-size-4 has-text-weight-bold px-2"> ) </span>
         </div>
@@ -248,10 +237,10 @@ const AggregateTransformer: FC<AggregateTransformerProps> = ({ id, wal, tableId,
       return (
         <div key={"column" + i} className="field has-addons is-horizontal pb-0">
           <Dropdown
-            items={Object.values(columnNames)}
+            items={Object.entries(columnNames)}
             maxWidth={200}
-            onClick={(item: string) => addGroupClause(groupClauses.map((x, j) => i === j ? item : x))}
-            selected={group !== null ? group : undefined}
+            onClick={item => addGroupClause(groupClauses.map((x, j) => i === j ? item : x))}
+            selected={group}
           />
 
           { (i !== groupClauses.length -1) ?

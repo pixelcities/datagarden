@@ -3,7 +3,7 @@ import React, { FC } from 'react'
 import { useAppDispatch } from 'hooks'
 import { updateTransformerWAL } from 'state/actions'
 
-import { Schema, WAL } from 'types'
+import { Schema, Identifier, WAL } from 'types'
 
 import { useDataFusionContext } from 'contexts'
 
@@ -45,9 +45,9 @@ const PrivatiseTransformer: FC<PrivatiseTransformerProps> = ({ id, wal, tableId,
   }, [ tableId, dataFusion, onComplete ])
 
   const handleCommit = () => {
-    let identifiers: {[key: string]: string} = {"1": id}
+    let identifiers: {[key: string]: Identifier} = {"1": {"id": id, "type": "table"}}
     for (let i = 0; i < schema.column_order.length; i++) {
-      identifiers[1+i] = schema.column_order[i]
+      identifiers[1+i] = {"id": schema.column_order[i], "type": "column"}
     }
 
     dispatch(updateTransformerWAL({

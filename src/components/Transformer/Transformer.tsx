@@ -237,6 +237,7 @@ const Transformer: FC<TransformerProps> = ({id, collections, transformers, wal, 
               schemas={inputCollections.map(collection => collection.schema)}
               dimensions={dimensions}
               setHeaderCallback={handleHeaderCallback}
+              setSchemaCallback={setPreviewSchema}
               onComplete={() => setVersionId(versionId + 1)}
               onClose={handleClose}
             />

@@ -45,8 +45,15 @@ export interface Row {
   [key: string]: string
 }
 
+export interface Identifier {
+  id: string,
+  type: "table" | "column",
+  action?: "add" | "drop" | "alter",
+  params?: any[]
+}
+
 export interface WAL {
-  identifiers: {[key: number]: string},
+  identifiers: {[key: number]: Identifier},
   values: {[key: number]: string},
   transactions: string[],
   artifacts: string[]

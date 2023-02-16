@@ -7,6 +7,7 @@ import FilterTransformer from './components/FilterTransformer'
 import AggregateTransformer from './components/AggregateTransformer'
 import FunctionTransformer from './components/FunctionTransformer'
 import PrivatiseTransformer from './components/PrivatiseTransformer'
+import AttributeTransformer from './components/AttributeTransformer'
 
 
 interface TransformerSettingsProps {
@@ -20,6 +21,7 @@ interface TransformerSettingsProps {
   schemas: Schema[],
   dimensions: {height: number, width: number},
   setHeaderCallback: any,
+  setSchemaCallback: any,
   onComplete: any,
   onClose: any
 }
@@ -72,6 +74,14 @@ const TransformerSettings: FC<TransformerSettingsProps> = (props) => {
   } else if (transformerType === "privatise") {
     return (
       <PrivatiseTransformer
+        schema={props.schemas[0]}
+        {...props}
+      />
+    )
+
+  } else if (transformerType === "attribute") {
+    return (
+      <AttributeTransformer
         schema={props.schemas[0]}
         {...props}
       />

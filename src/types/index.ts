@@ -17,6 +17,7 @@ export type {
   Column,
   Row,
   Attribute,
+  Identifier,
   WAL,
   User,
   Metadata,
@@ -33,6 +34,7 @@ export type {
 export {
   ExecutionError,
   DataType,
+  SqlTypeMap,
   Function1
 } from './enums'
 

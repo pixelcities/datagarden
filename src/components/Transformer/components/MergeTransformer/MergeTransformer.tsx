@@ -7,6 +7,7 @@ import { updateTransformerWAL } from 'state/actions'
 
 import Dropdown from 'components/Dropdown'
 import { Schema, WAL } from 'types'
+import { getIdentifiers } from 'utils/query'
 
 import { useDataFusionContext } from 'contexts'
 
@@ -30,8 +31,8 @@ const MergeTransformer: FC<MergeTransformerProps> = ({ id, wal, tableId, leftId,
   const dispatch = useAppDispatch()
 
   const [joinType, setJoinType] = useState("LEFT JOIN")
-  const [leftColumn, setLeftColumn] = useState<string | null>(null)
-  const [rightColumn, setRightColumn] = useState<string | null>(null)
+  const [leftColumn, setLeftColumn] = useState<[string, string] | null>(null)
+  const [rightColumn, setRightColumn] = useState<[string, string] | null>(null)
   const [log, setLog] = useState<WAL>(wal ?? {identifiers: {}, values: {}, transactions: [], artifacts: []})
 
   const [startup, setStartup] = useState(true)
@@ -39,12 +40,12 @@ const MergeTransformer: FC<MergeTransformerProps> = ({ id, wal, tableId, leftId,
 
   const { dataFusion } = useDataFusionContext();
 
-  const leftColumns = React.useMemo(() => {
-    return leftSchema.columns.map(column => columnNames[column.id])
+  const leftColumns: [string, string][] = React.useMemo(() => {
+    return leftSchema.columns.map(column => [column.id, columnNames[column.id]])
   }, [ leftSchema, columnNames ])
 
-  const rightColumns = React.useMemo(() => {
-    return rightSchema.columns.map(column => columnNames[column.id])
+  const rightColumns: [string, string][] = React.useMemo(() => {
+    return rightSchema.columns.map(column => [column.id, columnNames[column.id]])
   }, [ rightSchema, columnNames ])
 
   // Rebuild state
@@ -53,17 +54,17 @@ const MergeTransformer: FC<MergeTransformerProps> = ({ id, wal, tableId, leftId,
       for (const match of wal.transactions[0].matchAll(/FROM +(?:[[0-9I%$]+) +([A-Z ]+) +(?:[[0-9I%$]+) +ON +([[0-9I%$]+) += +([[0-9I%$]+)/g)) {
         if (match[1] && match[2] && match[3]) {
           const maybeLeftId = Number(match[2].match(/%([0-9]+)\$I/)![1])
-          const leftColumnId = wal.identifiers[maybeLeftId]
+          const leftColumnId = wal.identifiers[maybeLeftId]?.id
           const leftColumnName = columnNames[leftColumnId]
 
           const maybeRightId = Number(match[3].match(/%([0-9]+)\$I/)![1])
-          const rightColumnId = wal.identifiers[maybeRightId]
+          const rightColumnId = wal.identifiers[maybeRightId]?.id
           const rightColumnName = columnNames[rightColumnId]
 
           if (leftColumnName && rightColumnName) {
             setJoinType(match[1])
-            setLeftColumn(leftColumnName)
-            setRightColumn(rightColumnName)
+            setLeftColumn([leftColumnId, leftColumnName])
+            setRightColumn([rightColumnId, rightColumnName])
           }
         }
       }
@@ -74,23 +75,11 @@ const MergeTransformer: FC<MergeTransformerProps> = ({ id, wal, tableId, leftId,
   }, [ leftId, rightId, startup, wal, columnNames ])
 
   const execute = React.useCallback(async () => {
-    const leftColumnId = Object.keys(columnNames).find(id => leftSchema.column_order.indexOf(id) !== -1 && columnNames[id] === leftColumn)
-    const rightColumnId = Object.keys(columnNames).find(id => rightSchema.column_order.indexOf(id) !== -1 && columnNames[id] === rightColumn)
+    if (leftId && rightId && leftColumn && rightColumn) {
+      const leftColumnId = leftColumn[0]
+      const rightColumnId = rightColumn[0]
 
-    if (leftId && rightId && leftColumnId && rightColumnId) {
-      // Check if the identifiers need to be added to the log
-      const missingIdentifiers = [leftId, rightId, leftColumnId, rightColumnId].filter(i => Object.values(log.identifiers).indexOf(i) === -1)
-      const nextId = Object.keys(log.identifiers).length ? Math.max(...Object.keys(log.identifiers).map(Number)) + 1 : 1
-
-      // Add the missing identifiers
-      let identifiers: {[key: string]: string} = JSON.parse(JSON.stringify(log.identifiers))
-      for (let i = 0; i < missingIdentifiers.length; i++) {
-        identifiers[nextId + i] = missingIdentifiers[i]
-      }
-
-      // Invert the map for easy access
-      let ids: {[key: string]: string} = {}
-      Object.entries(identifiers).forEach(([i, id]) => ids[id] = i)
+      const { identifiers, ids } = getIdentifiers(log.identifiers, [leftId, rightId], [leftColumnId, rightColumnId])
 
       // Build a proper transaction to be saved, and a query for the preview
       const transaction = `SELECT %${ids[leftColumnId]}$I, %${ids[rightColumnId]}$I FROM %${ids[leftId]}$I ${joinType} %${ids[rightId]}$I ON %${ids[leftColumnId]}$I = %${ids[rightColumnId]}$I ORDER BY 1, 2`
@@ -117,7 +106,7 @@ const MergeTransformer: FC<MergeTransformerProps> = ({ id, wal, tableId, leftId,
       throw new Error("Cannot build query: missing identifier")
     }
 
-  }, [ tableId, leftId, rightId, leftSchema.column_order, rightSchema.column_order, leftColumn, rightColumn, joinType, columnNames, log, dataFusion, onComplete ])
+  }, [ tableId, leftId, rightId, leftColumn, rightColumn, joinType, log, dataFusion, onComplete ])
 
   // Replay if old state was loaded
   useEffect(() => {
@@ -170,7 +159,7 @@ const MergeTransformer: FC<MergeTransformerProps> = ({ id, wal, tableId, leftId,
               key={joinType}
               items={["LEFT JOIN", "INNER JOIN", "FULL JOIN"]}
               maxWidth={200}
-              onClick={(item: string) => setJoinType(item)}
+              onClick={item => setJoinType(item)}
               selected={joinType}
             />
           </div>
@@ -181,8 +170,8 @@ const MergeTransformer: FC<MergeTransformerProps> = ({ id, wal, tableId, leftId,
               key={"dropdown-left-" + (leftColumn !== null).toString()}
               items={leftColumns}
               maxWidth={145}
-              onClick={(item: string) => setLeftColumn(item)}
-              selected={leftColumn !== null ? leftColumn : undefined}
+              onClick={item => setLeftColumn(item)}
+              selected={leftColumn}
             />
             <span className="icon is-small mx-3 mt-3">
               <FontAwesomeIcon icon={faEquals} size="sm"/>
@@ -191,8 +180,8 @@ const MergeTransformer: FC<MergeTransformerProps> = ({ id, wal, tableId, leftId,
               key={"dropdown-right-" + (rightColumn !== null).toString()}
               items={rightColumns}
               maxWidth={145}
-              onClick={(item: string) => setRightColumn(item)}
-              selected={rightColumn !== null ? rightColumn : undefined}
+              onClick={item => setRightColumn(item)}
+              selected={rightColumn}
             />
           </div>
 

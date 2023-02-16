@@ -12,7 +12,7 @@ import { Schema, WAL } from 'types'
 
 import { useDataFusionContext } from 'contexts'
 import { useKeyStoreContext } from 'contexts'
-import { buildQuery } from 'utils/buildQuery'
+import { buildQuery } from 'utils/query'
 import { emptyTaxonomy } from 'utils/taxonomy'
 
 
@@ -67,7 +67,7 @@ const CustomTransformer: FC<CustomTransformerProps> = ({ id, wal, tableId, colum
       if (! Object.keys(log.identifiers).length) {
         setLog({...log, ...{
           identifiers: {
-            1: tableId
+            1: {"id": tableId, "type": "table"}
           }
         }})
       }
@@ -157,8 +157,8 @@ const CustomTransformer: FC<CustomTransformerProps> = ({ id, wal, tableId, colum
 
   const renderIdentifiers = React.useMemo(() => {
     return Object.entries(log.identifiers).map(([i, identifier]) => {
-      const maybe_concept = emptyTaxonomy(dataSpace?.key_id).deserialize(columnConcepts[identifier])
-      const name = maybe_concept ? maybe_concept.name : identifier
+      const maybe_concept = emptyTaxonomy(dataSpace?.key_id).deserialize(columnConcepts[identifier.id])
+      const name = maybe_concept ? maybe_concept.name : identifier.id
 
       return (
         <tr key={i}>
@@ -205,12 +205,12 @@ const CustomTransformer: FC<CustomTransformerProps> = ({ id, wal, tableId, colum
   }, [ setIdModalIsActive, setHeaderCallback ])
 
   const addIdentifier = React.useCallback((id: string) => {
-    if (Object.values(log.identifiers).filter(i => i === id).length === 0) {
+    if (!Object.values(log.identifiers).find(i => i.id === id)) {
       const nextId = Math.max(...Object.keys(log.identifiers).map(Number)) + 1
 
       setLog({...log, ...{
         identifiers: {...log.identifiers, ...{
-          [nextId]: id
+          [nextId]: {"id": id, "type": "column"}
         }}
       }})
     }
@@ -279,6 +279,13 @@ const CustomTransformer: FC<CustomTransformerProps> = ({ id, wal, tableId, colum
     )
   }, [ valueModalIsActive, setValueModalIsActive, value, setValue, onValueSubmit ])
 
+  if (!tableId) {
+    return (
+      <div className="is-relative px-4 py-4" style={{height: "100%"}}>
+        <progress className="progress is-small is-primary" style={{marginTop: "50%"}} />
+      </div>
+    )
+  }
 
   return (
     <div className="control-body px-4 py-4">

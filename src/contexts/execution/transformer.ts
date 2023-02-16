@@ -6,7 +6,7 @@ import { shareSecret, createMetadata, updateCollectionSchema, updateTransformerW
 
 import { writeRemoteTable } from 'utils/writeRemoteTable'
 import { loadRemoteTable } from 'utils/loadRemoteTable'
-import { buildQuery } from 'utils/buildQuery'
+import { buildQuery } from 'utils/query'
 import { emptyTaxonomy } from 'utils/taxonomy'
 import { signSchema, verifySchema } from 'utils/integrity'
 
@@ -14,7 +14,7 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
   return new Promise<{actions: any[], metadata: {[key: string]: any}}>((resolve, reject) => {
     const instruction = task.task["instruction"]
     const transformer_id = task.task["transformer_id"]
-    const wal = task.task["wal"]
+    const wal: WAL = task.task["wal"]
 
     const transformer = store.getState().transformers.entities[transformer_id]
     const collections = transformer?.collections.map(id => store.getState().collections.entities[id]) ?? []
@@ -30,7 +30,7 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
 
     if (instruction === "compute_fragment") {
       const target_id = task.task["collection_id"]
-      const fragments = task.fragments
+      const fragments: string[] = JSON.parse(JSON.stringify(task.fragments))
       const task_meta = task.metadata
 
       const target = store.getState().collections.entities[target_id]
@@ -60,9 +60,58 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
 
               // Create a copy, in case the user was looking at this collection
               const id = dataFusion?.clone_table(collection.id, transformer_id)
+              const oldSchema: Schema = JSON.parse(JSON.stringify(collection.schema))
+
+              // Optionally drop a column from the schema
+              const dropIds = Object.values(wal.identifiers).filter(id => id.type === "column" && id.action === "drop").map(id => id.id)
+              if (dropIds.length > 0) {
+                dataFusion?.drop_columns(id, dropIds)
+
+                oldSchema.column_order = oldSchema.column_order.filter(c => dropIds.indexOf(c) === -1)
+                oldSchema.columns = oldSchema.columns.filter(c => dropIds.indexOf(c.id) === -1)
+              }
+
+              // Optionally add a column to the schema
+              const newColumns = Object.values(wal.identifiers).filter(id => id.type === "column" && id.action === "add")
+              if (newColumns.length > 0) {
+                // New columns are never part of the task fragments, so we have to add it here
+                for (const column of newColumns) {
+                  fragments.push(column.id)
+                }
+
+                oldSchema.column_order = [...oldSchema.column_order, ...newColumns.map(x => x.id)]
+                oldSchema.columns = [
+                  ...oldSchema.columns,
+                  ...newColumns.map(x => {
+                    return {
+                      id: x.id,
+                      concept_id: x.params![0],
+                      key_id: "", // Will be generated later
+                      shares: oldSchema.shares // Inherit the schema shares for new (and empty) columns by default
+                    }
+                  })
+                ]
+              }
+
+              // Optionally alter a column in the schema
+              const alterColumns = Object.values(wal.identifiers).filter(id => id.type === "column" && id.action === "alter")
+              if (alterColumns.length > 0) {
+                oldSchema.columns = oldSchema.columns.map(column => {
+                  const alteredColumn = alterColumns.find(id => id.id === column.id)
+
+                  // Just have to update the concept
+                  if (alteredColumn) {
+                    return {...column, ...{
+                      concept_id: alteredColumn.params![0]
+                    }}
+                  } else {
+                    return column
+                  }
+                })
+              }
 
               // Build a new schema, including new keys
-              rebuildSchema(id, target, collection.id, collection.schema, [], fragments, task_meta, user, metadata, dataSpace, keyStore, protocol).then(({actions, schema, renames, meta}) => {
+              rebuildSchema(id, target, collection.id, oldSchema, [], fragments, task_meta, user, metadata, dataSpace, keyStore, protocol).then(({actions, schema, renames, meta}) => {
 
                 // If this is an aggregate transformer, we need to include the appropiate aggregate function
                 // in the schema metadata, so that datafusion can use it for non active columns.
@@ -86,7 +135,7 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
                 // Look at the requested fragments, and determine if this requires executing the
                 // real query or if we can simply use the artifact.
                 const identifiers = Object.values(wal.identifiers)
-                const nrFragments = fragments.filter(f => identifiers.indexOf(f) !== -1)
+                const nrFragments = fragments.filter(f => !!identifiers.find(id => id.id === f))
                 const useArtifacts = nrFragments.length === 0
 
                 execute(id, wal, fragments, useArtifacts, true, dataFusion, metadata, dataSpace, keyStore).then(() => {
@@ -334,6 +383,11 @@ const execute = async (id: string, wal: WAL, fragments: string[], useArtifacts: 
   // Collect any query artifacts. Caller may optionally use these when updating artifacts.
   let artifacts: string[] = []
 
+  // Check if a new column will be added
+  const newColumns = Object.entries(wal.identifiers)
+    .filter(([i, identifier]) => identifier.type === "column" && identifier.action === "add")
+    .map(([i, _]) => i)
+
   if (useArtifacts) {
     for (const artifact of wal.artifacts) {
       let splitArtifact = artifact.split("|")
@@ -344,9 +398,21 @@ const execute = async (id: string, wal: WAL, fragments: string[], useArtifacts: 
   } else {
     for (let i = 0; i < wal.transactions.length; i++) {
       const transaction = wal.transactions[i]
-      const cloneId = dataFusion?.clone_table(id, "")
+      let cloneId = dataFusion?.clone_table(id, "")
 
+      // Run the query
       const artifact = await dataFusion?.query(id, buildQuery(transaction, wal, metadata, dataSpace, keyStore))
+
+      // Check if this transaction will add a new column
+      if (newColumns.length > 0) {
+        if (newColumns.filter(i => transaction.indexOf(`%${i}$I`) !== -1).length > 0) {
+
+          // A transaction with a new column will require the result to be appended
+          dataFusion?.append_table(id, cloneId)
+          cloneId = dataFusion?.clone_table(id, "")
+        }
+      }
+
       const resultSchema = dataFusion?.get_schema(id)
       const resultColumns: string[] = resultSchema.fields.map((field: any) => field.name)
 
@@ -468,18 +534,6 @@ const rebuildSchema = async (id: string, target: Collection, oldId: string, old:
       id: id,
       key_id: key_id
     }})
-
-    // Re-publish the column name
-    const maybe = metadata[column.id]
-    if (maybe && !(id in metadata)) {
-      const header = keyStore?.decrypt_metadata(dataSpace?.key_id, maybe)
-
-      actions.push(createMetadata({
-        id: id,
-        workspace: target.workspace,
-        metadata: keyStore?.encrypt_metadata(dataSpace?.key_id, header)
-      }))
-    }
 
     updated = true
   }

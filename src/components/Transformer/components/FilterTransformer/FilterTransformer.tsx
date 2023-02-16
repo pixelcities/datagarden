@@ -6,6 +6,7 @@ import { createMetadata, updateTransformerWAL } from 'state/actions'
 
 import Dropdown from 'components/Dropdown'
 import { Schema, WAL } from 'types'
+import { getIdentifiers } from 'utils/query'
 
 import { useDataFusionContext } from 'contexts'
 import { useKeyStoreContext } from 'contexts'
@@ -31,7 +32,7 @@ const FilterTransformer: FC<FilterTransformerProps> = ({ id, wal, tableId, leftI
   const dataSpace = useAppSelector(selectActiveDataSpace)
   const metadata = useAppSelector(selectMetadataMap)
 
-  const [column, setColumn] = useState<string | null>(null)
+  const [column, setColumn] = useState<[string, string] | null>(null)
   const [value, setValue] = useState<string | undefined>()
   const [valueIsLocked, setValueIsLocked] = useState(false)
   const [filterType, setFilterType] = useState("=")
@@ -54,11 +55,11 @@ const FilterTransformer: FC<FilterTransformerProps> = ({ id, wal, tableId, leftI
 
       for (const match of wal.transactions[0].split("WHERE")[1].matchAll(/ *%([0-9]+)\$I/g)) {
         if (match[1]) {
-          const columnId = wal.identifiers[Number(match[1])]
+          const columnId = wal.identifiers[Number(match[1])]?.id
           const columnName = columnNames[columnId]
 
           if (columnName) {
-            setColumn(columnName)
+            setColumn([columnId, columnName])
           }
         }
       }
@@ -76,22 +77,9 @@ const FilterTransformer: FC<FilterTransformerProps> = ({ id, wal, tableId, leftI
   }, [ tableId, startup, wal, columnNames, metadata, keyStore, dataSpace?.key_id ])
 
   const execute = React.useCallback(async () => {
-    const columnId = Object.keys(columnNames).find(id => schema.column_order.indexOf(id) !== -1 && columnNames[id] === column)
-
-    if (tableId && columnId) {
-      // Check if the identifiers need to be added to the log
-      const missingIdentifiers = [tableId, columnId].filter(i => Object.values(log.identifiers).indexOf(i) === -1)
-      const nextId = Object.keys(log.identifiers).length ? Math.max(...Object.keys(log.identifiers).map(Number)) + 1 : 1
-
-      // Add the missing identifiers
-      let identifiers: {[key: string]: string} = JSON.parse(JSON.stringify(log.identifiers))
-      for (let i = 0; i < missingIdentifiers.length; i++) {
-        identifiers[nextId + i] = missingIdentifiers[i]
-      }
-
-      // Invert the map for easy access
-      let ids: {[key: string]: string} = {}
-      Object.entries(identifiers).forEach(([i, id]) => ids[id] = i)
+    if (tableId && column) {
+      const columnId = column[0]
+      const { identifiers, ids } = getIdentifiers(log.identifiers, [tableId], [columnId])
 
       // Check if the value should be quoted
       const isQuoted = dataFusion?.get_schema(tableId).fields
@@ -111,7 +99,7 @@ const FilterTransformer: FC<FilterTransformerProps> = ({ id, wal, tableId, leftI
       const resultColumns: string[] = resultSchema.fields.map((field: any) => field.name)
 
       // Verify all the columns are present
-      if (schema.column_order.filter(column => resultColumns.indexOf(column) === -1).length === 0) {
+      if (schema.column_order.filter(col => resultColumns.indexOf(col) === -1).length === 0) {
         dataFusion?.drop_table(cloneId)
 
       // If not, apply the artifact and merge the results
@@ -132,7 +120,7 @@ const FilterTransformer: FC<FilterTransformerProps> = ({ id, wal, tableId, leftI
     } else {
       throw new Error("Cannot build query: missing identifier")
     }
-  }, [ tableId, schema.column_order, column, filterType, value, columnNames, log.identifiers, dataFusion, onComplete ])
+  }, [ tableId, schema.column_order, column, filterType, value, log.identifiers, dataFusion, onComplete ])
 
   // Replay if old state was loaded
   useEffect(() => {
@@ -199,10 +187,10 @@ const FilterTransformer: FC<FilterTransformerProps> = ({ id, wal, tableId, leftI
       <div className="field has-addons is-horizontal pb-0">
         <Dropdown
           key={"dropdown-col-" + (column !== null).toString()}
-          items={Object.values(columnNames)}
+          items={Object.entries(columnNames)}
           maxWidth={150}
-          onClick={(item: string) => setColumn(item)}
-          selected={column !== null ? column : undefined}
+          onClick={(item) => setColumn(item)}
+          selected={column}
           isDisabled={valueIsLocked}
         />
         <p className="control my-1">

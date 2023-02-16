@@ -111,6 +111,9 @@ const WorkspaceTab: FC = (props) => {
           <TransformerCard title="Function" type="function" />
         </div>
         <div className="column is-4 mt-4">
+          <TransformerCard title="Attribute" type="attribute" />
+        </div>
+        <div className="column is-4 mt-4">
           <TransformerCard title="Custom" type="custom" />
         </div>
       </div>

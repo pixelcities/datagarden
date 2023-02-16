@@ -5,6 +5,7 @@ import { updateTransformerWAL } from 'state/actions'
 
 import Dropdown from 'components/Dropdown'
 import { Schema, WAL, Function1 } from 'types'
+import { getIdentifiers } from 'utils/query'
 
 import { useDataFusionContext } from 'contexts'
 
@@ -28,7 +29,7 @@ interface FunctionTransformerProps {
 const FunctionTransformer: FC<FunctionTransformerProps> = ({ id, wal, tableId, leftId, rightId, columnNames, schema, dimensions, setHeaderCallback, onComplete, onClose }) => {
   const dispatch = useAppDispatch()
 
-  const [column, setColumn] = useState<string | null>(null)
+  const [column, setColumn] = useState<[string, string]| null>(null)
   const [selectedFunction, selectFunction] = useState<Function1 | null>(null)
   const [log, setLog] = useState<WAL>(wal ?? {identifiers: {}, values: {}, transactions: [], artifacts: []})
 
@@ -43,12 +44,12 @@ const FunctionTransformer: FC<FunctionTransformerProps> = ({ id, wal, tableId, l
       for (const match of wal.transactions[0].matchAll(/([a-zA-Z0-9_]+)\(([[0-9I%$]+)\)/g)) {
         if (match[1] && match[2]) {
           const id = Number(match[2].match(/%([0-9]+)\$I/)![1])
-          const columnId = wal.identifiers[id]
+          const columnId = wal.identifiers[id]?.id
           const columnName = columnNames[columnId]
 
           if (columnName) {
             selectFunction(Function1[match[1] as Function1Key])
-            setColumn(columnName)
+            setColumn([columnId, columnName])
           }
         }
       }
@@ -59,22 +60,9 @@ const FunctionTransformer: FC<FunctionTransformerProps> = ({ id, wal, tableId, l
   }, [ tableId, startup, wal, columnNames ])
 
   const execute = React.useCallback(async () => {
-    const columnId = Object.keys(columnNames).find(id => schema.column_order.indexOf(id) !== -1 && columnNames[id] === column)
-
-    if (tableId && columnId) {
-      // Check if the identifiers need to be added to the log
-      const missingIdentifiers = [tableId, columnId].filter(i => Object.values(log.identifiers).indexOf(i) === -1)
-      const nextId = Object.keys(log.identifiers).length ? Math.max(...Object.keys(log.identifiers).map(Number)) + 1 : 1
-
-      // Add the missing identifiers
-      let identifiers: {[key: string]: string} = JSON.parse(JSON.stringify(log.identifiers))
-      for (let i = 0; i < missingIdentifiers.length; i++) {
-        identifiers[nextId + i] = missingIdentifiers[i]
-      }
-
-      // Invert the map for easy access
-      let ids: {[key: string]: string} = {}
-      Object.entries(identifiers).forEach(([i, id]) => ids[id] = i)
+    if (tableId && column) {
+      const columnId = column[0]
+      const { identifiers, ids } = getIdentifiers(log.identifiers, [tableId], [columnId])
 
       // Build a proper transaction to be saved, and a query for the preview
       const transaction = `SELECT ${selectedFunction}(%${ids[columnId]}$I) AS %${ids[columnId]}$I FROM %${ids[tableId]}$I`
@@ -108,7 +96,7 @@ const FunctionTransformer: FC<FunctionTransformerProps> = ({ id, wal, tableId, l
     } else {
       throw new Error("Cannot build query: missing identifier")
     }
-  }, [ tableId, schema.column_order, column, selectedFunction, columnNames, log.identifiers, dataFusion, onComplete ])
+  }, [ tableId, schema.column_order, column, selectedFunction, log.identifiers, dataFusion, onComplete ])
 
   // Replay if old state was loaded
   useEffect(() => {
@@ -163,16 +151,16 @@ const FunctionTransformer: FC<FunctionTransformerProps> = ({ id, wal, tableId, l
               items={Object.keys(Function1)}
               maxWidth={50}
               onClick={(item: string) => selectFunction((Function1[item as Function1Key]))}
-              selected={selectedFunction !== null ? selectedFunction : undefined}
+              selected={selectedFunction}
             />
 
             <span className="is-size-4 has-text-weight-bold px-2"> ( </span>
             <Dropdown
               key={"dropdown-col-" + (column !== null).toString()}
-              items={Object.values(columnNames)}
+              items={Object.entries(columnNames)}
               maxWidth={100}
-              onClick={(item: string) => setColumn(item)}
-              selected={column !== null ? column : undefined}
+              onClick={item => setColumn(item)}
+              selected={column}
             />
             <span className="is-size-4 has-text-weight-bold px-2"> ) </span>
           </div>

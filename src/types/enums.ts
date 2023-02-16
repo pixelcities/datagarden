@@ -11,6 +11,13 @@ export enum DataType {
   Other = "Other",
 }
 
+export const SqlTypeMap: {[key: string]: string} = {
+  String: "VARCHAR",
+  RelativeNumber: "FLOAT",
+  AbsoluteNumber: "INT", // TODO: Have both int / float variant
+  Other: "VARCHAR"
+}
+
 export enum Function1 {
   abs = "abs",
   length = "length",
