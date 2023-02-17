@@ -3,6 +3,7 @@ import React, { FC, useEffect, useState } from 'react'
 import { useAppDispatch } from 'hooks'
 import { updateTransformerWAL } from 'state/actions'
 
+import FormulaBuilder from 'components/FormulaBuilder'
 import Dropdown from 'components/Dropdown'
 import { Schema, WAL, Function1 } from 'types'
 import { getIdentifiers } from 'utils/query'
@@ -165,7 +166,19 @@ const FunctionTransformer: FC<FunctionTransformerProps> = ({ id, wal, tableId, l
             <span className="is-size-4 has-text-weight-bold px-2"> ) </span>
           </div>
 
-          <input className="input" />
+          <div className="field has-addons is-horizontal pb-0">
+            <Dropdown
+              items={Object.entries(columnNames)}
+              maxWidth={50}
+              onClick={() => {}}
+            />
+            <span className="is-size-4 has-text-weight-bold px-2"> = </span>
+
+            <div style={{width: 150}}>
+              <FormulaBuilder columnNames={Object.values(columnNames)} />
+            </div>
+
+          </div>
 
           <div className="field is-grouped is-grouped-right pt-0">
             <div className="control">

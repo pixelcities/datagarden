@@ -23,6 +23,7 @@ export enum Block {
   NumberedList = "numbered-list",
   BulletedList = "bulleted-list",
   ListItem = "list-item",
+  Reference = "reference",
 }
 
 
@@ -74,6 +75,13 @@ export type ListItemElement = {
   children: Descendant[]
 }
 
+export type ReferenceElement = {
+  type: Block.Reference
+  name?: string
+  align?: Align
+  children: Descendant[]
+}
+
 export type CustomElement =
   | HeadingOneElement
   | HeadingTwoElement
@@ -83,6 +91,7 @@ export type CustomElement =
   | NumberedListElement
   | BulletedListElement
   | ListItemElement
+  | ReferenceElement
 
 export type CustomText = {
   bold?: boolean
