@@ -47,3 +47,36 @@ export const toColor = (str: string | undefined) => {
 export const isAuthorized = (user: User | undefined, schema: Schema): boolean => {
   return !!schema.shares.find(s => s.principal === user?.id)
 }
+
+export const toRelativeTime = (datetime: string | undefined): string | undefined => {
+  if (datetime) {
+    const rtf = new Intl.RelativeTimeFormat("en", {
+      localeMatcher: "best fit",
+      numeric: "auto",
+      style: "long"
+    })
+
+    const minutes = (Date.now() - Date.parse(datetime)) / 1000 / 60
+    if (minutes < 60) {
+      return rtf.format(Math.round(-minutes), "minutes")
+    }
+
+    const hours = minutes / 60
+    if (hours < 24) {
+      return rtf.format(Math.round(-hours), "hours")
+    }
+
+    const days = hours / 24
+    if (days < 28) {
+      return rtf.format(Math.round(-days), "days")
+    }
+
+    if (days < 335) {
+      const months = -(days / (365 / 12))
+      return rtf.format(Math.abs(months) < 1 ? Math.sign(months) : Math.round(months), "months")
+    }
+
+    const years = -(days / 365)
+    return rtf.format(Math.abs(years) < 1 ? Math.sign(years) : Math.round(years), "years")
+  }
+}

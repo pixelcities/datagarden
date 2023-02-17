@@ -52,3 +52,8 @@ body {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+[data-tooltip] {
+  border-bottom-width: 0 !important;
+}
+

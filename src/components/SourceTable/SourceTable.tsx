@@ -16,6 +16,7 @@ import Onboarding from './Onboarding'
 import { useDataFusionContext } from 'contexts'
 import { useKeyStoreContext } from 'contexts'
 import { useAuthContext } from 'contexts'
+import { toRelativeTime } from 'utils/helpers'
 import { loadRemoteTable } from 'utils/loadRemoteTable'
 import { signSchema, verifySchema } from 'utils/integrity'
 
@@ -247,7 +248,7 @@ const SourceTable: FC<SourceTableProps> = (props) => {
     if (!isCollection) {
       return (
         <div className="column is-one-quarter">
-          <button className="button is-danger is-outlined is-pulled-right mr-3" onClick={() => handleDelete(source)}> Delete </button>
+          <button className="button is-danger is-outlined is-pulled-right" onClick={() => handleDelete(source)}> Delete </button>
         </div>
       )
     } else {
@@ -312,67 +313,71 @@ const SourceTable: FC<SourceTableProps> = (props) => {
   }, [ downloadUrl, setDownloadUrl, title ])
 
   const renderSettings = (
-    <div className="is-relative px-4 py-4" style={{height: "100%"}}>
-      <div className="field">
-        <label className="label">Title</label>
-        <div className="control">
-          <input className="input" type="text" placeholder={title} value={title} onChange={handleTitleChange} />
-        </div>
-      </div>
-
-      { ((isCollection === true) && collection) ?
+    <div className="settings-wrapper px-4 pt-4">
+      <div className="settings-body">
         <div className="field">
-          <label className="label">Color</label>
-
-            <ColorPicker
-              color={collection.color}
-              onClick={handleColorChange}
-            />
-        </div>
-        : null
-      }
-
-      <div className="field">
-        <label className="label">Privacy Controls</label>
-        <div className="control has-icons-left">
-          <div className="select is-fullwidth">
-            <select>
-              <option>Private</option>
-            </select>
-          </div>
-          <div className="icon is-small is-left pb-2">
-            <FontAwesomeIcon icon={faKey} size="sm"/>
+          <label className="label">Title</label>
+          <div className="control">
+            <input className="input" type="text" placeholder={title} value={title} onChange={handleTitleChange} />
           </div>
         </div>
-      </div>
 
-      <div className="field">
-        <label id="share-intro" className="label">Explicit shares</label>
-          <div className="control pb-5">
-            <div className={"dropdown" + (renderUserDropdown.length > 0 ? " is-active" : "")} style={{width: "100%"}}>
-              <div className="dropdown-trigger" style={{width: "100%"}}>
-                <input className="input" type="text" placeholder="Add people and organisations" value={userSearch} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUserSearch(e.target.value)}/>
-              </div>
+        { ((isCollection === true) && collection) ?
+          <div className="field">
+            <label className="label">Color</label>
 
-              <div className="dropdown-menu" id="dropdown-menu" role="menu" style={{width: "100%"}}>
-                <div className="dropdown-content">
-                  { renderUserDropdown }
-                </div>
-              </div>
+              <ColorPicker
+                color={collection.color}
+                onClick={handleColorChange}
+              />
+          </div>
+          : null
+        }
 
+        <div className="field">
+          <label className="label">Privacy Controls</label>
+          <div className="control has-icons-left">
+            <div className="select is-fullwidth">
+              <select>
+                <option>Private</option>
+              </select>
+            </div>
+            <div className="icon is-small is-left pb-2">
+              <FontAwesomeIcon icon={faKey} size="sm"/>
             </div>
           </div>
+        </div>
 
-        { renderShares }
+        <div className="field">
+          <label id="share-intro" className="label">Explicit shares</label>
+            <div className="control pb-5">
+              <div className={"dropdown" + (renderUserDropdown.length > 0 ? " is-active" : "")} style={{width: "100%"}}>
+                <div className="dropdown-trigger" style={{width: "100%"}}>
+                  <input className="input" type="text" placeholder="Add people and organisations" value={userSearch} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUserSearch(e.target.value)}/>
+                </div>
+
+                <div className="dropdown-menu" id="dropdown-menu" role="menu" style={{width: "100%"}}>
+                  <div className="dropdown-content">
+                    { renderUserDropdown }
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+          { renderShares }
+        </div>
+
+        { !(isCollection === true) && renderPublish }
       </div>
-
-      { !(isCollection === true) && renderPublish }
 
       <div className="settings-footer">
         <div className="columns">
           <div className="column is-three-quarters">
             <p className="fineprint-label ml-3" style={{position: "absolute", bottom: "0px"}}>
-              Last updated at: { source?.date || collection?.date }
+              <span data-tooltip={source?.date || collection?.date}>
+                Last updated { toRelativeTime(source?.date) || toRelativeTime(collection?.date) }
+              </span>
             </p>
           </div>
 
@@ -381,7 +386,6 @@ const SourceTable: FC<SourceTableProps> = (props) => {
 
         </div>
       </div>
-
     </div>
   )
 

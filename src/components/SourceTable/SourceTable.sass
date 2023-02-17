@@ -24,11 +24,23 @@
   top: 0
   box-shadow: 0 0.5em 1em -0.125em rgba(#000, 0.1), 0 0px 0 1px rgba(#000, 0.02)
 
-.settings-footer
-  position: absolute
-  bottom: 10px
-  left: 0px
-  width: 100%
+.settings-wrapper
+  position: relative
+  height: 100%
+
+  .settings-body
+    position: relative
+    height: 90%
+    overflow-y: auto
+
+  .settings-footer
+    position: relative
+    height: 10%
+
+    .button
+      position: absolute
+      bottom: 0px
+      right: 0px
 
 .share-card
   border-radius: 19px

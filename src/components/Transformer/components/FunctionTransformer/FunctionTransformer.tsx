@@ -165,6 +165,8 @@ const FunctionTransformer: FC<FunctionTransformerProps> = ({ id, wal, tableId, l
             <span className="is-size-4 has-text-weight-bold px-2"> ) </span>
           </div>
 
+          <input className="input" />
+
           <div className="field is-grouped is-grouped-right pt-0">
             <div className="control">
               <input type="submit" className="button is-text" value="Apply Function" />
