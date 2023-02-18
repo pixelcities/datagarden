@@ -24,6 +24,7 @@ export enum Block {
   BulletedList = "bulleted-list",
   ListItem = "list-item",
   Reference = "reference",
+  Function = "function",
 }
 
 
@@ -77,10 +78,19 @@ export type ListItemElement = {
 
 export type ReferenceElement = {
   type: Block.Reference
+  id?: string
   name?: string
   align?: Align
   children: Descendant[]
 }
+
+export type FunctionElement = {
+  type: Block.Function
+  function?: string
+  align?: Align
+  children: Descendant[]
+}
+
 
 export type CustomElement =
   | HeadingOneElement
@@ -92,6 +102,7 @@ export type CustomElement =
   | BulletedListElement
   | ListItemElement
   | ReferenceElement
+  | FunctionElement
 
 export type CustomText = {
   bold?: boolean

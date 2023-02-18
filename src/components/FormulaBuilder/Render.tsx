@@ -1,5 +1,6 @@
 import React, { FC } from 'react'
 import { useSelected, useFocused, RenderElementProps, RenderLeafProps } from 'slate-react'
+import { Node, Element, Text } from 'slate'
 
 import { Block } from 'types'
 
@@ -7,7 +8,8 @@ import { Block } from 'types'
 interface ReferenceElementProps {
   children: any,
   attributes?: RenderElementProps["attributes"],
-  name?: string
+  name?: string,
+  func?: string
 }
 
 const ReferenceElement: FC<ReferenceElementProps> = ({ attributes, children, name }) => {
@@ -35,6 +37,16 @@ const ReferenceElement: FC<ReferenceElementProps> = ({ attributes, children, nam
   )
 }
 
+const FunctionElement: FC<ReferenceElementProps> = ({ attributes, children, func }) => {
+  return (
+    <span {...attributes}>
+      <span className="fineprint-label label-size-2 has-text-weight-semibold">{func}(</span>
+        {children}
+      <span className="fineprint-label label-size-2">)</span>
+    </span>
+  )
+}
+
 export const renderLeaf = (props: RenderLeafProps) => {
   return (
     <span {...props.attributes}>{props.children}</span>
@@ -47,8 +59,33 @@ export const renderElement = (props: RenderElementProps) => {
   switch (element.type) {
     case Block.Reference:
       return <ReferenceElement children={children} attributes={attributes} name={element.name} />
+    case Block.Function:
+      return <FunctionElement children={children} attributes={attributes} func={element.function} />
     default:
       return <p {...attributes}>{children}</p>
+  }
+}
+
+export const serialize = (node: Node): string => {
+  if (Text.isText(node)) {
+    return node.text
+
+  } else if (Element.isElement(node)) {
+    const children = node.children
+      .map(n => serialize(n))
+      .filter(n => n.trim() !== "")
+
+    switch (node.type) {
+      case Block.Reference:
+        return `${children.join("")} "${node.id}"`
+      case Block.Function:
+        return `${node.function}(${children.join(",")})`
+      default:
+        return children.join("")
+    }
+
+  } else {
+    return ""
   }
 }
 

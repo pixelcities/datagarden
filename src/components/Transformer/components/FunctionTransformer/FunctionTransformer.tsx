@@ -5,13 +5,11 @@ import { updateTransformerWAL } from 'state/actions'
 
 import FormulaBuilder from 'components/FormulaBuilder'
 import Dropdown from 'components/Dropdown'
-import { Schema, WAL, StringFunction1 } from 'types'
-import { getIdentifiers } from 'utils/query'
+import { Schema, WAL } from 'types'
+import { getIdentifiers, buildQuery } from 'utils/query'
 
 import { useDataFusionContext } from 'contexts'
 
-
-type StringFunction1Key = keyof typeof StringFunction1
 
 interface FunctionTransformerProps {
   id: string,
@@ -31,26 +29,31 @@ const FunctionTransformer: FC<FunctionTransformerProps> = ({ id, wal, tableId, l
   const dispatch = useAppDispatch()
 
   const [column, setColumn] = useState<[string, string]| null>(null)
-  const [selectedFunction, selectFunction] = useState<StringFunction1 | null>(null)
   const [log, setLog] = useState<WAL>(wal ?? {identifiers: {}, values: {}, transactions: [], artifacts: []})
+  const [formula, setFormula] = useState("")
 
   const [startup, setStartup] = useState(true)
   const [replay, setReplay] = useState(false)
+  const [isReplayed, setIsReplayed] = useState(false)
 
   const { dataFusion } = useDataFusionContext()
 
   // Rebuild state
   useEffect(() => {
     if (tableId && startup && wal && wal.transactions.length > 0) {
-      for (const match of wal.transactions[0].matchAll(/([a-zA-Z0-9_]+)\(([[0-9I%$]+)\)/g)) {
+      for (const match of wal.transactions[0].matchAll(/SELECT (.*) AS ([0-9I%$]+)/g)) {
         if (match[1] && match[2]) {
           const id = Number(match[2].match(/%([0-9]+)\$I/)![1])
           const columnId = wal.identifiers[id]?.id
           const columnName = columnNames[columnId]
 
+          const query = buildQuery(match[1], wal, undefined, undefined, undefined)
+
           if (columnName) {
-            selectFunction(StringFunction1[match[1] as StringFunction1Key])
             setColumn([columnId, columnName])
+            setFormula(query)
+
+            setIsReplayed(true)
           }
         }
       }
@@ -62,12 +65,26 @@ const FunctionTransformer: FC<FunctionTransformerProps> = ({ id, wal, tableId, l
 
   const execute = React.useCallback(async () => {
     if (tableId && column) {
-      const columnId = column[0]
-      const { identifiers, ids } = getIdentifiers(log.identifiers, [tableId], [columnId])
+      let columnIds = [column[0]]
 
-      // Build a proper transaction to be saved, and a query for the preview
-      const transaction = `SELECT ${selectedFunction}(%${ids[columnId]}$I) AS %${ids[columnId]}$I FROM %${ids[tableId]}$I`
-      const query = `SELECT ${selectedFunction}("${columnId}") AS "${columnId}" FROM "${tableId}"`
+      // Extract the columnIds from the formula
+      for (const match of formula.matchAll(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/g)) {
+        if (columnIds.indexOf(match[0]) === -1) {
+          columnIds.push(match[0])
+        }
+      }
+
+      const { identifiers, ids } = getIdentifiers(log.identifiers, [tableId], columnIds)
+
+      // Build a proper transaction to be saved, and a query for the preview. The formula will be rewritten to include
+      // identifier references.
+      let alteredFormula = formula
+      columnIds.forEach(columnId => {
+        alteredFormula = alteredFormula.replace(new RegExp(`(?:"${columnId}")`, "g"), `%${ids[columnId]}$I`)
+      })
+
+      const transaction = `SELECT ${alteredFormula} AS %${ids[column[0]]}$I FROM %${ids[tableId]}$I`
+      const query = `SELECT ${formula} AS "${column[0]}" FROM "${tableId}"`
 
       const cloneId = dataFusion?.clone_table(tableId, "")
 
@@ -97,18 +114,18 @@ const FunctionTransformer: FC<FunctionTransformerProps> = ({ id, wal, tableId, l
     } else {
       throw new Error("Cannot build query: missing identifier")
     }
-  }, [ tableId, schema.column_order, column, selectedFunction, log.identifiers, dataFusion, onComplete ])
+  }, [ tableId, schema.column_order, column, formula, log.identifiers, dataFusion, onComplete ])
 
   // Replay if old state was loaded
   useEffect(() => {
-    if (tableId && replay && column && selectedFunction) {
+    if (tableId && replay && column && formula) {
       setReplay(false)
 
       dataFusion?.clone_table(leftId, tableId)
       execute()
         .catch((e) => console.log(e))
     }
-  }, [ leftId, tableId, replay, column, selectedFunction, execute, dataFusion ])
+  }, [ leftId, tableId, replay, column, formula, execute, dataFusion ])
 
   const handleFunction = React.useCallback((e: any) => {
     e.preventDefault()
@@ -144,38 +161,29 @@ const FunctionTransformer: FC<FunctionTransformerProps> = ({ id, wal, tableId, l
       <div className="control-settings">
         <form onSubmit={handleFunction}>
           <div className="field pb-0">
-            <label className="label">Function</label>
+            <label className="label">Formula</label>
           </div>
           <div className="field has-addons is-horizontal pb-0">
-            <Dropdown
-              key={"dropdown-fn-" + (selectedFunction !== null).toString()}
-              items={Object.keys(StringFunction1)}
-              maxWidth={50}
-              onClick={(item: string) => selectFunction((StringFunction1[item as StringFunction1Key]))}
-              selected={selectedFunction}
-            />
-
-            <span className="is-size-4 has-text-weight-bold px-2"> ( </span>
             <Dropdown
               key={"dropdown-col-" + (column !== null).toString()}
               items={Object.entries(columnNames)}
-              maxWidth={100}
+              maxWidth={50}
               onClick={item => setColumn(item)}
               selected={column}
-            />
-            <span className="is-size-4 has-text-weight-bold px-2"> ) </span>
-          </div>
-
-          <div className="field has-addons is-horizontal pb-0">
-            <Dropdown
-              items={Object.entries(columnNames)}
-              maxWidth={50}
-              onClick={() => {}}
             />
             <span className="is-size-4 has-text-weight-bold px-2"> = </span>
 
             <div style={{width: 150}}>
-              <FormulaBuilder columnNames={Object.values(columnNames)} />
+              { isReplayed ?
+                <abbr title={formula}>
+                  <input className="input" disabled={true} value={formula} />
+                </abbr>
+              :
+                <FormulaBuilder
+                  schema={schema}
+                  onChange={setFormula}
+                />
+              }
             </div>
 
           </div>

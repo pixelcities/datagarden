@@ -1,11 +1,16 @@
 import React, { FC, useRef, useEffect, useMemo, useState, useCallback } from 'react'
 import ReactDOM from 'react-dom'
-import { createEditor, Transforms, Descendant, Range, Editor as SlateEditor } from 'slate'
+import { createEditor, Transforms, Descendant, Element, Range, Editor as SlateEditor } from 'slate'
 import { Slate, ReactEditor, Editable, withReact } from 'slate-react'
 
-import { renderLeaf, renderElement } from './Render'
+import { renderLeaf, renderElement, serialize } from './Render'
 
-import { CustomEditor, Block } from 'types'
+import { useAppSelector } from 'hooks'
+import { selectConceptMap, selectActiveDataSpace } from 'state/selectors'
+import { ConceptA, Schema, CustomEditor, Block, MathFunction1 } from 'types'
+import { useAuthContext } from 'contexts'
+
+import { emptyTaxonomy } from 'utils/taxonomy'
 
 
 const DEFAULT_VALUE: Descendant[] = [
@@ -15,31 +20,109 @@ const DEFAULT_VALUE: Descendant[] = [
   }
 ]
 
-interface FormulaBuilderProps {
-  columnNames: string[]
+const M_FUNC_1_MATCHERS = [...new Set(Object.keys(MathFunction1).map(x => x.slice(0, 2)))]
+
+
+enum SearchType {
+  Column,
+  MFunc1
 }
 
-const FormulaBuilder: FC<FormulaBuilderProps> = ({ columnNames } ) => {
+interface FormulaBuilderProps {
+  schema: Schema,
+  onChange?: (formula: string) => void
+}
+
+const FormulaBuilder: FC<FormulaBuilderProps> = ({ schema, onChange }) => {
   const ref = useRef<HTMLDivElement>(null)
 
   const [editor] = useState(() => withReferences(withReact(createEditor())))
   const [target, setTarget] = useState<Range | undefined>()
   const [index, setIndex] = useState(0)
   const [search, setSearch] = useState("")
+  const [searchType, setSearchType] = useState<SearchType | null>(null)
+
+  const { user } = useAuthContext()
+
+  const concepts = useAppSelector(selectConceptMap)
+  const dataSpace = useAppSelector(selectActiveDataSpace)
 
   const initialValue = useMemo(() => DEFAULT_VALUE, [])
 
-  const columnMatches = useMemo(() => {
-    return [...new Set(columnNames.map(c => c.slice(0, 2)))]
-  }, [ columnNames ])
+  const columns = useMemo(() => {
+    return schema.columns
+      .filter(c => !!c.shares.find(s => s.principal === user?.id))
+      .map(c => [c.id, c.concept_id])
+      .map(([id, conceptId]) => [id, emptyTaxonomy(dataSpace?.key_id).deserialize(concepts[conceptId])])
+      .filter((x): x is [string, ConceptA] => !!x[1])
+  }, [ schema.columns, concepts, user, dataSpace?.key_id ])
+
+
+  // The different search spaces
+
+  // TODO: split per data type
+  const columnMatchers = useMemo(() => {
+    return [...new Set(columns.map(([id, c]) => c.name.slice(0, 2)))]
+  }, [ columns ])
+
+  const columnChars = useMemo(() => {
+    return columns
+      .map(([id, c]) => [id, c.name] as [string, string])
+      .filter(([id, c]) => c.toLowerCase().startsWith(search.toLowerCase()))
+      .slice(0, 10)
+  }, [ columns, search ])
+
+  const mFunc1Chars = useMemo(() => {
+    return Object.keys(MathFunction1)
+      .filter(c => c.toLowerCase().startsWith(search.toLowerCase()))
+      .slice(0, 10)
+  }, [ search ])
 
   const chars = useMemo(() => {
-    return columnNames?.filter(c =>
-      c.toLowerCase().startsWith(search.toLowerCase())
-    ).slice(0, 10) ?? []
-  }, [ columnNames, search ])
+    if (searchType === SearchType.Column) {
+      return columnChars.map(([id, c]) => c)
+    }
+
+    if (searchType === SearchType.MFunc1) {
+      return mFunc1Chars
+    }
+
+    return []
+  }, [ searchType, columnChars, mFunc1Chars ])
+
+
+  // Slate handlers
 
   const onKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
+    const { selection } = editor
+
+    if (selection) {
+      // Allow entering into inline block
+      if (Range.isCollapsed(selection)) {
+        switch (event.key) {
+          case "ArrowLeft":
+            event.preventDefault()
+            Transforms.move(editor, { unit: 'offset', reverse: true })
+            break
+
+          case "ArrowRight":
+            event.preventDefault()
+            Transforms.move(editor, { unit: 'offset' })
+            break
+        }
+      }
+
+      const [ parent ] = SlateEditor.parent(editor, selection)
+
+      // Ignore closing parentheses in a function block
+      if (Element.isElement(parent) && parent.type === "function") {
+        if (event.key === ")") {
+          event.preventDefault()
+          Transforms.move(editor, { unit: 'offset' })
+        }
+      }
+    }
+
     if (target && chars.length > 0) {
       switch (event.key) {
         case "ArrowDown":
@@ -58,7 +141,13 @@ const FormulaBuilder: FC<FormulaBuilderProps> = ({ columnNames } ) => {
         case "Enter":
           event.preventDefault()
           Transforms.select(editor, target)
-          insertReference(editor, chars[index])
+
+          if (searchType === SearchType.Column) {
+            insertReference(editor, columnChars[index])
+          } else if (searchType === SearchType.MFunc1) {
+            insertFunction(editor, chars[index])
+          }
+
           setTarget(undefined)
           break
 
@@ -73,9 +162,9 @@ const FormulaBuilder: FC<FormulaBuilderProps> = ({ columnNames } ) => {
     if (event.key === "Enter") {
       event.preventDefault()
     }
-  }, [ editor, chars, index, target ])
+  }, [ editor, chars, columnChars, index, target, searchType ])
 
-  const onChange = useCallback(() => {
+  const onSlateChange = useCallback((value: Descendant[]) => {
     const { selection } = editor
 
     if (selection && Range.isCollapsed(selection)) {
@@ -98,12 +187,14 @@ const FormulaBuilder: FC<FormulaBuilderProps> = ({ columnNames } ) => {
 
       if (beforeText) {
         // Match on the first two characters of a match range
-        if (columnMatches.indexOf(beforeText.trim().slice(0, 2)) !== -1) {
+        if (columnMatchers.indexOf(beforeText.trim().slice(0, 2)) !== -1) {
+          setSearchType(SearchType.Column)
           beforeMatch = beforeText.trim()
 
-        // Or on a special character
-        } else {
-          beforeMatch = beforeText.match(/^@(\w+)$/)?.[1]
+        } else if (M_FUNC_1_MATCHERS.indexOf(beforeText.trim().slice(0, 2)) !== -1) {
+          setSearchType(SearchType.MFunc1)
+          beforeMatch = beforeText.trim()
+
         }
       }
       const after = SlateEditor.after(editor, start)
@@ -121,8 +212,17 @@ const FormulaBuilder: FC<FormulaBuilderProps> = ({ columnNames } ) => {
 
     setTarget(undefined)
 
-  }, [ editor, columnMatches ])
+    const isAstChange = editor.operations.some(
+      op => 'set_selection' !== op.type
+    )
 
+    if (isAstChange && onChange) {
+      onChange(value.map(v => serialize(v)).join("\n"))
+    }
+
+  }, [ editor, columnMatchers, onChange ])
+
+  // Portal visibility
   useEffect(() => {
     if (ref.current) {
       if (target && chars.length > 0) {
@@ -141,7 +241,7 @@ const FormulaBuilder: FC<FormulaBuilderProps> = ({ columnNames } ) => {
 
   return (
     <div className="input" style={{overflow: "hidden"}}>
-      <Slate editor={editor} value={initialValue} onChange={onChange}>
+      <Slate editor={editor} value={initialValue} onChange={onSlateChange}>
         <Editable
           style={{width: "100%", whiteSpace: "nowrap"}}
           renderElement={renderElement}
@@ -179,7 +279,7 @@ const withReferences = (editor: CustomEditor) => {
   const { isInline, isVoid, markableVoid } = editor
 
   editor.isInline = element => {
-    return element.type === Block.Reference ? true : isInline(element)
+    return element.type === Block.Reference || element.type === Block.Function ? true : isInline(element)
   }
 
   editor.isVoid = element => {
@@ -193,11 +293,22 @@ const withReferences = (editor: CustomEditor) => {
   return editor
 }
 
-const insertReference = (editor: CustomEditor, name: string) => {
+const insertReference = (editor: CustomEditor, ref: [string, string]) => {
   Transforms.insertNodes(editor, {
     type: Block.Reference,
-    name: name,
+    id: ref[0],
+    name: ref[1],
     children: [{ text: '' }],
+  })
+  Transforms.move(editor)
+}
+
+const insertFunction = (editor: CustomEditor, func: string) => {
+  Transforms.insertText(editor, ' ')
+  Transforms.insertNodes(editor, {
+    type: Block.Function,
+    function: func,
+    children: [{ text: ''}],
   })
   Transforms.move(editor)
 }
