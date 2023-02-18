@@ -3,6 +3,9 @@ import ReactDOM from 'react-dom'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faAngleDown } from '@fortawesome/free-solid-svg-icons'
 
+import { DataType } from 'types'
+
+
 interface DropdownProps<T> {
   items: T[],
   onClick: (item: T) => void,
@@ -20,7 +23,7 @@ type Primitive = string | number | boolean
  * Accepts primitive types as the dropdown items, or tuples of [T, T] where the first value is an identifier
  * and the second value is the printable text.
  */
-function Dropdown<T extends Primitive | [Primitive, Primitive]>(props: React.PropsWithChildren<DropdownProps<T>>) {
+function Dropdown<T extends Primitive | [Primitive, Primitive] | [string, DataType]>(props: React.PropsWithChildren<DropdownProps<T>>) {
   const {items, onClick, selected, maxWidth, isDropUp = false, isDisabled = false} = props
 
   const triggerRef = useRef<HTMLDivElement>(null)

@@ -115,11 +115,11 @@ const CsvSource: FC<CsvSourceProps> = ({onComplete}) => {
               if (description.data_type.indexOf("Int") !== -1 || description.data_type.indexOf("Float") !== -1) {
                 // Very basic check to auto assign the right aggregate function type
                 if (description.min > 0 && (description.max <= 1 || description.max <= 100)) {
-                  dataType = DataType.RelativeNumber
+                  dataType = description.data_type.indexOf("Int") !== -1 ? DataType.RelativeInteger : DataType.RelativeDecimal
                   aggregateFn = "avg"
 
                 } else {
-                  dataType = DataType.AbsoluteNumber
+                  dataType = description.data_type.indexOf("Int") !== -1 ? DataType.AbsoluteInteger : DataType.AbsoluteDecimal
                   aggregateFn = "sum"
                 }
               }

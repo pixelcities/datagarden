@@ -78,8 +78,6 @@ const ConceptDetail: FC<ConceptDetailI> = ({ concept }) => {
     }
   }
 
-  type DataTypeKey = keyof typeof DataType
-
   return (
     <div>
       <form onSubmit={handleSubmit}>
@@ -101,10 +99,10 @@ const ConceptDetail: FC<ConceptDetailI> = ({ concept }) => {
 
         <div className="field pb-0">
           <label className="label">Data Type</label>
-          <Dropdown
-            items={Object.keys(DataType)}
-            selected={dataType}
-            onClick={(item: string) => setDataType((DataType[item as DataTypeKey]))}
+          <Dropdown<[string, DataType]>
+            items={Object.entries(DataType)}
+            onClick={item => setDataType(item[1])}
+            selected={dataType && [(dataType as DataType), dataType]}
           />
         </div>
 

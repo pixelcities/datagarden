@@ -35,7 +35,9 @@ export {
   ExecutionError,
   DataType,
   SqlTypeMap,
-  Function1
+  StringFunction1,
+  MathFunction0,
+  MathFunction1
 } from './enums'
 
 export type {

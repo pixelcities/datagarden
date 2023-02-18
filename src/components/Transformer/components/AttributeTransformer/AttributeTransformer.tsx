@@ -219,9 +219,9 @@ const AttributeTransformer: FC<AttributeTransformerProps> = ({ id, wal, tableId,
       if (dataType) {
         let aggregateFn = "array_agg"
 
-        if (dataType === DataType.RelativeNumber) {
+        if (dataType === DataType.RelativeInteger || dataType === DataType.RelativeDecimal) {
           aggregateFn = "avg"
-        } else if (dataType === DataType.AbsoluteNumber) {
+        } else if (dataType === DataType.AbsoluteInteger || dataType === DataType.AbsoluteDecimal) {
           aggregateFn = "sum"
         }
 
@@ -249,9 +249,9 @@ const AttributeTransformer: FC<AttributeTransformerProps> = ({ id, wal, tableId,
       if (dataType) {
         let aggregateFn = "array_agg"
 
-        if (dataType === DataType.RelativeNumber) {
+        if (dataType === DataType.RelativeInteger || dataType === DataType.RelativeDecimal) {
           aggregateFn = "avg"
-        } else if (dataType === DataType.AbsoluteNumber) {
+        } else if (dataType === DataType.AbsoluteInteger || dataType === DataType.AbsoluteDecimal) {
           aggregateFn = "sum"
         }
 
@@ -352,11 +352,11 @@ const AttributeTransformer: FC<AttributeTransformerProps> = ({ id, wal, tableId,
           </td>
 
           <td>
-            <Dropdown
-              items={Object.keys(DataType)}
+            <Dropdown<[string, DataType]>
+              items={Object.entries(DataType)}
               maxWidth={75}
-              onClick={(item: string) => addNewType(newTypes.map((x, j) => i === j ? (DataType[item as DataTypeKey]) : x))}
-              selected={newTypes[i]}
+              onClick={item => addNewType(newTypes.map((x, j) => i === j ? item[0] : x))}
+              selected={[newTypes[i], DataType[(newTypes[i] as DataTypeKey)]]}
               isDisabled={isLocked}
             />
           </td>
@@ -405,11 +405,11 @@ const AttributeTransformer: FC<AttributeTransformerProps> = ({ id, wal, tableId,
           </td>
 
           <td>
-            <Dropdown
-              items={Object.keys(DataType)}
+            <Dropdown<[string, DataType]>
+              items={Object.entries(DataType)}
               maxWidth={75}
-              onClick={(item: string) => addNewType(alterTypes.map((x, j) => i === j ? (DataType[item as DataTypeKey]) : x))}
-              selected={alterTypes[i]}
+              onClick={item => addAlterType(alterTypes.map((x, j) => i === j ? item[0] : x))}
+              selected={[alterTypes[i], DataType[(alterTypes[i] as DataTypeKey)]]}
               isDisabled={isLocked}
             />
           </td>

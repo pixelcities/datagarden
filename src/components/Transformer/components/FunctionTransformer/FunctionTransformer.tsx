@@ -5,13 +5,13 @@ import { updateTransformerWAL } from 'state/actions'
 
 import FormulaBuilder from 'components/FormulaBuilder'
 import Dropdown from 'components/Dropdown'
-import { Schema, WAL, Function1 } from 'types'
+import { Schema, WAL, StringFunction1 } from 'types'
 import { getIdentifiers } from 'utils/query'
 
 import { useDataFusionContext } from 'contexts'
 
 
-type Function1Key = keyof typeof Function1
+type StringFunction1Key = keyof typeof StringFunction1
 
 interface FunctionTransformerProps {
   id: string,
@@ -31,7 +31,7 @@ const FunctionTransformer: FC<FunctionTransformerProps> = ({ id, wal, tableId, l
   const dispatch = useAppDispatch()
 
   const [column, setColumn] = useState<[string, string]| null>(null)
-  const [selectedFunction, selectFunction] = useState<Function1 | null>(null)
+  const [selectedFunction, selectFunction] = useState<StringFunction1 | null>(null)
   const [log, setLog] = useState<WAL>(wal ?? {identifiers: {}, values: {}, transactions: [], artifacts: []})
 
   const [startup, setStartup] = useState(true)
@@ -49,7 +49,7 @@ const FunctionTransformer: FC<FunctionTransformerProps> = ({ id, wal, tableId, l
           const columnName = columnNames[columnId]
 
           if (columnName) {
-            selectFunction(Function1[match[1] as Function1Key])
+            selectFunction(StringFunction1[match[1] as StringFunction1Key])
             setColumn([columnId, columnName])
           }
         }
@@ -149,9 +149,9 @@ const FunctionTransformer: FC<FunctionTransformerProps> = ({ id, wal, tableId, l
           <div className="field has-addons is-horizontal pb-0">
             <Dropdown
               key={"dropdown-fn-" + (selectedFunction !== null).toString()}
-              items={Object.keys(Function1)}
+              items={Object.keys(StringFunction1)}
               maxWidth={50}
-              onClick={(item: string) => selectFunction((Function1[item as Function1Key]))}
+              onClick={(item: string) => selectFunction((StringFunction1[item as StringFunction1Key]))}
               selected={selectedFunction}
             />
 
