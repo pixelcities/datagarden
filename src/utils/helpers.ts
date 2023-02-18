@@ -56,7 +56,7 @@ export const toRelativeTime = (datetime: string | undefined): string | undefined
       style: "long"
     })
 
-    const minutes = (Date.now() - Date.parse(datetime)) / 1000 / 60
+    const minutes = (Date.now() - Date.parse(datetime.split("Z").length > 1 ? datetime : datetime + "Z")) / 1000 / 60
     if (minutes < 60) {
       return rtf.format(Math.round(-minutes), "minutes")
     }
