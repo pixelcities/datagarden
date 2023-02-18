@@ -124,14 +124,17 @@ const FormulaBuilder: FC<FormulaBuilderProps> = ({ columnNames } ) => {
   }, [ editor, columnMatches ])
 
   useEffect(() => {
-    if (target && chars.length > 0) {
-      const el = ref.current
-      const domRange = ReactEditor.toDOMRange(editor, target)
-      const rect = domRange.getBoundingClientRect()
+    if (ref.current) {
+      if (target && chars.length > 0) {
+        const domRange = ReactEditor.toDOMRange(editor, target)
+        const rect = domRange.getBoundingClientRect()
 
-      if (el) {
-        el.style.top = `${rect.top + window.pageYOffset + 24}px`
-        el.style.left = `${rect.left + window.pageXOffset}px`
+        ref.current.style.top = `${rect.top + window.pageYOffset + 24}px`
+        ref.current.style.left = `${rect.left + window.pageXOffset}px`
+        ref.current.style.visibility = "visible"
+
+      } else {
+        ref.current.style.visibility = "hidden"
       }
     }
   }, [chars.length, editor, index, search, target])
@@ -147,7 +150,7 @@ const FormulaBuilder: FC<FormulaBuilderProps> = ({ columnNames } ) => {
         />
         {target && chars.length > 0 && (
           <Portal>
-            <div ref={ref} className="portal-popup">
+            <div ref={ref} className="portal is-box">
               {chars.map((char, i) => (
                 <div
                   key={char}

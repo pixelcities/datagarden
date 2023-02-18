@@ -169,13 +169,16 @@ $colors: indigo, darkviolet, magenta, mediumvioletred, deeppink, crimson, red, o
   right: 4rem
   z-index: 41 // Modal z-index + 1
 
-.portal-popup
-  top: -9999px
-  left: -9999px
+.portal
   position: absolute
   z-index: 100
-  padding: 3px
-  background: white
-  border-radius: 4px
-  box-shadow: 0 1px 5px rgba(0,0,0,0.2)
+  top: -9999px
+  left: -9999px
+  visibility: hidden
+
+  &.is-box
+    padding: 3px
+    background: white
+    border-radius: 4px
+    box-shadow: 0 1px 5px rgba(0,0,0,0.2)
 

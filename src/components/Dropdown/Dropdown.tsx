@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { FC, useEffect, useState, useRef } from 'react'
+import ReactDOM from 'react-dom'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faAngleDown } from '@fortawesome/free-solid-svg-icons'
 
@@ -21,6 +22,9 @@ type Primitive = string | number | boolean
  */
 function Dropdown<T extends Primitive | [Primitive, Primitive]>(props: React.PropsWithChildren<DropdownProps<T>>) {
   const {items, onClick, selected, maxWidth, isDropUp = false, isDisabled = false} = props
+
+  const triggerRef = useRef<HTMLDivElement>(null)
+  const contentRef = useRef<HTMLDivElement>(null)
 
   const [isActive, setIsActive] = useState(false)
   const [selectedItem, setSelectedItem] = useState<T | null | undefined>(selected)
@@ -61,23 +65,50 @@ function Dropdown<T extends Primitive | [Primitive, Primitive]>(props: React.Pro
     })
   }, [ items, selectedItem, onClick ])
 
+  // Manage the portal visibility and location
+  useEffect(() => {
+    if (triggerRef.current && contentRef.current) {
+      if (isActive && !isDisabled) {
+        const rect = triggerRef.current.getBoundingClientRect()
+
+        contentRef.current.style.top = `${rect.bottom + window.pageYOffset}px`
+        contentRef.current.style.left = `${rect.left + window.pageXOffset}px`
+        contentRef.current.style.visibility = "visible"
+      } else {
+        contentRef.current.style.visibility = "hidden"
+      }
+    }
+  }, [ isActive, isDisabled ])
+
   return (
     <div className={"dropdown" + (isActive && !isDisabled ? " is-active" : "") + (isDropUp ? " is-up" : "")}>
-      <div className="dropdown-trigger">
-        <div className="button" onClick={() => setIsActive(!isActive && !isDisabled)} aria-haspopup="true" aria-controls="dropdown-menu" style={isDisabled ? {maxWidth: "calc(2em + 8.75px + " + maxWidth + "px)", cursor: "default", pointerEvents: "none"} : {maxWidth: "calc(2em + 8.75px + " + maxWidth + "px)"}}>
-          <span style={{minWidth: 50, maxInlineSize: maxWidth, overflow: "clip"}}> { Array.isArray(selectedItem) ? selectedItem[1] : selectedItem } </span>
-          <span className="icon is-small">
-            <FontAwesomeIcon icon={faAngleDown} size="sm" color={isDisabled ? "#bbb" : "#363636"} />
-          </span>
-        </div>
+      <div ref={triggerRef} className="dropdown-trigger">
+        <abbr title={(Array.isArray(selectedItem) ? selectedItem[1] : selectedItem)?.toString()}>
+          <div className="button" onClick={() => setIsActive(!isActive && !isDisabled)} aria-haspopup="true" aria-controls="dropdown-menu" style={isDisabled ? {maxWidth: "calc(2em + 8.75px + " + maxWidth + "px)", cursor: "default", pointerEvents: "none"} : {maxWidth: "calc(2em + 8.75px + " + maxWidth + "px)"}}>
+            <span style={{minWidth: 50, maxInlineSize: maxWidth, overflow: "clip", textOverflow: "ellipsis"}}>
+              { Array.isArray(selectedItem) ? selectedItem[1] : selectedItem }
+            </span>
+            <span className="icon is-small">
+              <FontAwesomeIcon icon={faAngleDown} size="sm" color={isDisabled ? "#bbb" : "#363636"} />
+            </span>
+          </div>
+        </abbr>
       </div>
-      <div className="dropdown-menu" id="dropdown-menu" role="menu">
-        <div className="dropdown-content">
-          { renderItems }
+      <Portal>
+        <div ref={contentRef} className="portal">
+          <div className="dropdown-menu" id="dropdown-menu" role="menu" style={isActive && !isDisabled ? {display: "block"} : {}}>
+            <div className="dropdown-content">
+              { renderItems }
+            </div>
+          </div>
         </div>
-      </div>
+      </Portal>
     </div>
   )
+}
+
+const Portal: FC = ({ children }) => {
+  return ReactDOM.createPortal(children, document.body)
 }
 
 export default Dropdown
