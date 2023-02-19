@@ -44,7 +44,7 @@ const WidgetCard: FC<WidgetCardProps> = ({ title, type, tooltip, isDisabled }) =
         dispatch(createMetadata({
           id: idRef.current.id,
           workspace: "default",
-          metadata: keyStore?.encrypt_metadata(dataSpace?.key_id, `${idRef.current.id} [${type}]`)
+          metadata: keyStore?.encrypt_metadata(dataSpace?.key_id, `${type} [${new Date().toISOString().split("T")[0]}]`)
         }))
 
         dispatch(createWidget({

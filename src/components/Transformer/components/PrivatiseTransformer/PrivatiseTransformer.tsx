@@ -1,7 +1,7 @@
-import React, { FC } from 'react'
+import React, { FC, useCallback } from 'react'
 
 import { useAppDispatch } from 'hooks'
-import { updateTransformerWAL } from 'state/actions'
+import { updateTransformerWAL, sendLocalMessage } from 'state/actions'
 
 import { Schema, Identifier, WAL, ConceptA } from 'types'
 
@@ -27,6 +27,17 @@ const PrivatiseTransformer: FC<PrivatiseTransformerProps> = ({ id, wal, tableId,
 
   const { dataFusion } = useDataFusionContext()
 
+  const onError = useCallback((error: string) => {
+    console.log(error)
+
+    dispatch(sendLocalMessage({
+      id: crypto.randomUUID(),
+      type: "error",
+      message: error,
+      is_urgent: true
+    }))
+  }, [ dispatch ])
+
   const handlePrivatise = React.useCallback((e: any) => {
     e.preventDefault()
 
@@ -39,10 +50,10 @@ const PrivatiseTransformer: FC<PrivatiseTransformerProps> = ({ id, wal, tableId,
       })
 
     } else {
-      console.log("Cannot build query: missing identifier")
+      onError("Cannot build query: missing identifier")
     }
 
-  }, [ tableId, dataFusion, onComplete ])
+  }, [ tableId, dataFusion, onComplete, onError ])
 
   const handleCommit = () => {
     let identifiers: {[key: string]: Identifier} = {"1": {"id": id, "type": "table"}}

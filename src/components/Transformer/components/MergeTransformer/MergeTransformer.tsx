@@ -1,12 +1,12 @@
-import React, { FC, useEffect, useState } from 'react'
+import React, { FC, useCallback, useEffect, useState } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faEquals } from '@fortawesome/free-solid-svg-icons'
 
 import { useAppDispatch } from 'hooks'
-import { updateTransformerWAL } from 'state/actions'
+import { updateTransformerWAL, sendLocalMessage } from 'state/actions'
 
 import Dropdown from 'components/Dropdown'
-import { Schema, WAL, ConceptA } from 'types'
+import { Schema, WAL, ConceptA, SqlTypeMap } from 'types'
 import { getIdentifiers } from 'utils/query'
 
 import { useDataFusionContext } from 'contexts'
@@ -48,6 +48,17 @@ const MergeTransformer: FC<MergeTransformerProps> = ({ id, wal, tableId, leftId,
     return rightSchema.columns.map(column => [column.id, columns[column.id]?.name])
   }, [ rightSchema, columns ])
 
+  const onError = useCallback((error: string) => {
+    console.log(error)
+
+    dispatch(sendLocalMessage({
+      id: crypto.randomUUID(),
+      type: "error",
+      message: error,
+      is_urgent: true
+    }))
+  }, [ dispatch ])
+
   // Rebuild state
   useEffect(() => {
     if (leftId && rightId && startup && wal && wal.transactions.length > 0) {
@@ -79,6 +90,13 @@ const MergeTransformer: FC<MergeTransformerProps> = ({ id, wal, tableId, leftId,
       const leftColumnId = leftColumn[0]
       const rightColumnId = rightColumn[0]
 
+      const leftDataType = columns[leftColumnId].dataType
+      const rightDataType = columns[rightColumnId].dataType
+
+      if (leftDataType && rightDataType && SqlTypeMap[leftDataType] !== SqlTypeMap[rightDataType]) {
+        throw new Error(`Cannot compare types "${leftDataType}" and "${rightDataType}"`)
+      }
+
       const { identifiers, ids } = getIdentifiers(log.identifiers, [leftId, rightId], [leftColumnId, rightColumnId])
 
       // Build a proper transaction to be saved, and a query for the preview
@@ -106,7 +124,7 @@ const MergeTransformer: FC<MergeTransformerProps> = ({ id, wal, tableId, leftId,
       throw new Error("Cannot build query: missing identifier")
     }
 
-  }, [ tableId, leftId, rightId, leftColumn, rightColumn, joinType, log, dataFusion, onComplete ])
+  }, [ tableId, leftId, rightId, leftColumn, rightColumn, columns, joinType, log, dataFusion, onComplete ])
 
   // Replay if old state was loaded
   useEffect(() => {
@@ -115,9 +133,9 @@ const MergeTransformer: FC<MergeTransformerProps> = ({ id, wal, tableId, leftId,
 
       dataFusion?.clone_table(leftId, tableId)
       execute()
-        .catch((e) => console.log(e))
+        .catch((e) => onError(e ? e.message : "Error executing query"))
     }
-  }, [ leftId, tableId, replay, leftColumn, rightColumn, execute, dataFusion ])
+  }, [ leftId, tableId, replay, leftColumn, rightColumn, execute, dataFusion, onError ])
 
   const handleMerge = React.useCallback((e: any) => {
     e.preventDefault()
@@ -127,8 +145,8 @@ const MergeTransformer: FC<MergeTransformerProps> = ({ id, wal, tableId, leftId,
       .then((result) => {
         setLog(result)
       })
-      .catch((e) => console.log(e))
-  }, [ leftId, tableId, execute, setLog, dataFusion ])
+      .catch((e) => onError(e ? e.message : "Error executing query"))
+  }, [ leftId, tableId, execute, setLog, dataFusion, onError ])
 
   const handleCommit = () => {
     dispatch(updateTransformerWAL({
@@ -169,7 +187,7 @@ const MergeTransformer: FC<MergeTransformerProps> = ({ id, wal, tableId, leftId,
             <Dropdown
               key={"dropdown-left-" + (leftColumn !== null).toString()}
               items={leftColumns}
-              maxWidth={145}
+              maxWidth={75}
               onClick={item => setLeftColumn(item)}
               selected={leftColumn}
             />
@@ -179,7 +197,7 @@ const MergeTransformer: FC<MergeTransformerProps> = ({ id, wal, tableId, leftId,
             <Dropdown
               key={"dropdown-right-" + (rightColumn !== null).toString()}
               items={rightColumns}
-              maxWidth={145}
+              maxWidth={75}
               onClick={item => setRightColumn(item)}
               selected={rightColumn}
             />
@@ -194,7 +212,7 @@ const MergeTransformer: FC<MergeTransformerProps> = ({ id, wal, tableId, leftId,
       </div>
 
       <div className="commit-footer">
-        <button className="button is-primary is-fullwidth" onClick={handleCommit}> Commit </button>
+        <button className="button is-primary is-fullwidth" onClick={handleCommit} disabled={log.transactions.length === 0}> Commit </button>
       </div>
     </div>
   )

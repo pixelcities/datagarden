@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPlus } from '@fortawesome/free-solid-svg-icons'
 
 import { useAppDispatch, useAppSelector } from 'hooks'
-import { createConcept, updateTransformerWAL } from 'state/actions'
+import { createConcept, updateTransformerWAL, sendLocalMessage } from 'state/actions'
 import { selectConceptMap, selectActiveDataSpace } from 'state/selectors'
 
 import Dropdown from 'components/Dropdown'
@@ -53,6 +53,17 @@ const AttributeTransformer: FC<AttributeTransformerProps> = ({ id, wal, tableId,
   const { dataFusion } = useDataFusionContext()
 
   const columnNames: [string, string][] = useMemo(() => Object.entries(columns).map(([id, concept]) => [id, concept.name]), [ columns ])
+
+  const onError = useCallback((error: string) => {
+    console.log(error)
+
+    dispatch(sendLocalMessage({
+      id: crypto.randomUUID(),
+      type: "error",
+      message: error,
+      is_urgent: true
+    }))
+  }, [ dispatch ])
 
   // Rebuild state
   useEffect(() => {
@@ -193,9 +204,9 @@ const AttributeTransformer: FC<AttributeTransformerProps> = ({ id, wal, tableId,
 
       dataFusion?.clone_table(leftId, tableId)
       execute()
-        .catch((e) => console.log(e))
+        .catch((e) => onError(e ? e.message : "Error executing query"))
     }
-  }, [ leftId, tableId, replay, dropColumns, newColumns, alterColumns, execute, dataFusion ])
+  }, [ leftId, tableId, replay, dropColumns, newColumns, alterColumns, execute, dataFusion, onError ])
 
   const handleExecute = React.useCallback((e: any) => {
     e.preventDefault()
@@ -205,8 +216,8 @@ const AttributeTransformer: FC<AttributeTransformerProps> = ({ id, wal, tableId,
       .then((result) => {
         setLog(result)
       })
-      .catch((e) => console.log(e))
-  }, [ leftId, tableId, execute, setLog, dataFusion ])
+      .catch((e) => onError(e ? e.message : "Error executing query"))
+  }, [ leftId, tableId, execute, setLog, dataFusion, onError ])
 
   const handleCommit = () => {
     let identifiers: {[key: string]: Identifier} = log.identifiers
@@ -499,7 +510,7 @@ const AttributeTransformer: FC<AttributeTransformerProps> = ({ id, wal, tableId,
       </div>
 
       <div className="commit-footer">
-        <button className="button is-primary is-fullwidth" onClick={handleCommit} disabled={isLocked}> Commit </button>
+        <button className="button is-primary is-fullwidth" onClick={handleCommit} disabled={isLocked || Object.keys(log.identifiers).length === 0}> Commit </button>
       </div>
     </div>
   )

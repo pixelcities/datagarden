@@ -210,7 +210,7 @@ const FunctionTransformer: FC<FunctionTransformerProps> = ({ id, wal, tableId, l
       </div>
 
       <div className="commit-footer">
-        <button className="button is-primary is-fullwidth" onClick={handleCommit}> Commit </button>
+        <button className="button is-primary is-fullwidth" onClick={handleCommit} disabled={log.transactions.length === 0}> Commit </button>
       </div>
     </div>
   )

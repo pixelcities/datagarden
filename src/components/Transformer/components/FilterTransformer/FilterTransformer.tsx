@@ -1,8 +1,8 @@
-import React, { FC, useEffect, useMemo, useState } from 'react'
+import React, { FC, useCallback, useEffect, useMemo, useState } from 'react'
 
 import { useAppDispatch, useAppSelector } from 'hooks'
 import { selectActiveDataSpace, selectMetadataMap } from 'state/selectors'
-import { createMetadata, updateTransformerWAL } from 'state/actions'
+import { createMetadata, updateTransformerWAL, sendLocalMessage } from 'state/actions'
 
 import Dropdown from 'components/Dropdown'
 import { Schema, WAL, ConceptA } from 'types'
@@ -45,6 +45,17 @@ const FilterTransformer: FC<FilterTransformerProps> = ({ id, wal, tableId, leftI
   const { keyStore } = useKeyStoreContext()
 
   const columnNames: [string, string][] = useMemo(() => Object.entries(columns).map(([id, concept]) => [id, concept.name]), [ columns ])
+
+  const onError = useCallback((error: string) => {
+    console.log(error)
+
+    dispatch(sendLocalMessage({
+      id: crypto.randomUUID(),
+      type: "error",
+      message: error,
+      is_urgent: true
+    }))
+  }, [ dispatch ])
 
   // Rebuild state
   useEffect(() => {
@@ -131,9 +142,9 @@ const FilterTransformer: FC<FilterTransformerProps> = ({ id, wal, tableId, leftI
 
       dataFusion?.clone_table(leftId, tableId)
       execute()
-        .catch((e) => console.log(e))
+        .catch((e) => onError(e ? e.message : "Error executing query"))
     }
-  }, [ leftId, tableId, replay, column, value, execute, dataFusion ])
+  }, [ leftId, tableId, replay, column, value, execute, dataFusion, onError ])
 
   const handleFilter = React.useCallback((e: any) => {
     e.preventDefault()
@@ -144,8 +155,8 @@ const FilterTransformer: FC<FilterTransformerProps> = ({ id, wal, tableId, leftI
       .then((result) => {
         setLog(result)
       })
-      .catch((e) => console.log(e))
-  }, [ tableId, leftId, execute, dataFusion ])
+      .catch((e) => onError(e ? e.message : "Error executing query"))
+  }, [ tableId, leftId, execute, dataFusion, onError ])
 
   const handleFilterType = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setFilterType(e.target.value)
@@ -241,7 +252,7 @@ const FilterTransformer: FC<FilterTransformerProps> = ({ id, wal, tableId, leftI
       </div>
 
       <div className="commit-footer">
-        <button className="button is-primary is-fullwidth" onClick={handleCommit}> Commit </button>
+        <button className="button is-primary is-fullwidth" onClick={handleCommit} disabled={log.transactions.length === 0}> Commit </button>
       </div>
     </div>
   )

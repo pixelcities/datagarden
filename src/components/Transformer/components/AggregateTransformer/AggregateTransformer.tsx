@@ -1,10 +1,10 @@
-import React, { FC, useMemo, useEffect, useState } from 'react'
+import React, { FC, useCallback, useMemo, useEffect, useState } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPlus } from '@fortawesome/free-solid-svg-icons'
 
 import { useAppDispatch, useAppSelector } from 'hooks'
 import { selectConceptMap, selectActiveDataSpace } from 'state/selectors'
-import { updateTransformerWAL } from 'state/actions'
+import { updateTransformerWAL, sendLocalMessage } from 'state/actions'
 
 import Dropdown from 'components/Dropdown'
 import { Schema, WAL, ConceptA } from 'types'
@@ -45,6 +45,18 @@ const AggregateTransformer: FC<AggregateTransformerProps> = ({ id, wal, tableId,
   const { dataFusion } = useDataFusionContext()
 
   const columnNames: [string, string][] = useMemo(() => Object.entries(columns).map(([id, concept]) => [id, concept.name]), [ columns ])
+
+  const onError = useCallback((error: string) => {
+    console.log(error)
+
+    dispatch(sendLocalMessage({
+      id: crypto.randomUUID(),
+      type: "error",
+      message: error,
+      is_urgent: true
+    }))
+  }, [ dispatch ])
+
 
   // Rebuild state
   useEffect(() => {
@@ -177,9 +189,9 @@ const AggregateTransformer: FC<AggregateTransformerProps> = ({ id, wal, tableId,
 
       dataFusion?.clone_table(leftId, tableId)
       execute()
-        .catch((e) => console.log(e))
+        .catch((e) => onError(e ? e.message : "Error executing query"))
     }
-  }, [ leftId, tableId, replay, selects, aggregateFns, groupClauses, execute, dataFusion ])
+  }, [ leftId, tableId, replay, selects, aggregateFns, groupClauses, execute, dataFusion, onError ])
 
   const handleAggregate = React.useCallback((e: any) => {
     e.preventDefault()
@@ -189,8 +201,8 @@ const AggregateTransformer: FC<AggregateTransformerProps> = ({ id, wal, tableId,
       .then((result) => {
         setLog(result)
       })
-      .catch((e) => console.log(e))
-  }, [ leftId, tableId, execute, setLog, dataFusion ])
+      .catch((e) => onError(e ? e.message : "Error executing query"))
+  }, [ leftId, tableId, execute, setLog, dataFusion, onError ])
 
 
   const handleCommit = () => {
@@ -304,7 +316,7 @@ const AggregateTransformer: FC<AggregateTransformerProps> = ({ id, wal, tableId,
       </div>
 
       <div className="commit-footer">
-        <button className="button is-primary is-fullwidth" onClick={handleCommit}> Commit </button>
+        <button className="button is-primary is-fullwidth" onClick={handleCommit} disabled={log.transactions.length === 0}> Commit </button>
       </div>
     </div>
   )
