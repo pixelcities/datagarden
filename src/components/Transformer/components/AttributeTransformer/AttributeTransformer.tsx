@@ -7,7 +7,7 @@ import { createConcept, updateTransformerWAL } from 'state/actions'
 import { selectConceptMap, selectActiveDataSpace } from 'state/selectors'
 
 import Dropdown from 'components/Dropdown'
-import { Identifier, Schema, WAL, DataType, SqlTypeMap } from 'types'
+import { Identifier, Schema, WAL, DataType, SqlTypeMap, ConceptA } from 'types'
 import { getIdentifiers } from 'utils/query'
 import { emptyTaxonomy } from 'utils/taxonomy'
 
@@ -21,7 +21,7 @@ interface AttributeTransformerProps {
   tableId: string | null,
   leftId: string | null,
   rightId: string | null,
-  columnNames: {[key: string]: string},
+  columns: {[key: string]: ConceptA},
   schema: Schema,
   dimensions: {height: number, width: number},
   setHeaderCallback: any,
@@ -30,7 +30,7 @@ interface AttributeTransformerProps {
   onClose: any
 }
 
-const AttributeTransformer: FC<AttributeTransformerProps> = ({ id, wal, tableId, leftId, rightId, columnNames, schema, dimensions, setHeaderCallback, setSchemaCallback, onComplete, onClose }) => {
+const AttributeTransformer: FC<AttributeTransformerProps> = ({ id, wal, tableId, leftId, rightId, columns, schema, dimensions, setHeaderCallback, setSchemaCallback, onComplete, onClose }) => {
   const dispatch = useAppDispatch()
 
   const concepts = useAppSelector(selectConceptMap)
@@ -52,6 +52,8 @@ const AttributeTransformer: FC<AttributeTransformerProps> = ({ id, wal, tableId,
 
   const { dataFusion } = useDataFusionContext()
 
+  const columnNames: [string, string][] = useMemo(() => Object.entries(columns).map(([id, concept]) => [id, concept.name]), [ columns ])
+
   // Rebuild state
   useEffect(() => {
     if (tableId && startup && wal && wal.transactions.length > 0) {
@@ -64,7 +66,7 @@ const AttributeTransformer: FC<AttributeTransformerProps> = ({ id, wal, tableId,
       for (const id of Object.values(wal.identifiers)) {
         if (id.type === "column") {
           if (id.action === "drop") {
-            dropC.push([id.id, columnNames[id.id]])
+            dropC.push([id.id, columns[id.id]?.name])
           }
 
           if (id.action === "add") {
@@ -97,7 +99,7 @@ const AttributeTransformer: FC<AttributeTransformerProps> = ({ id, wal, tableId,
       setReplay(true)
       setIsLocked(true)
     }
-  }, [ tableId, startup, wal, columnNames, concepts, dataSpace ])
+  }, [ tableId, startup, wal, columns, concepts, dataSpace ])
 
   const execute = React.useCallback(async () => {
     const dropIds = dropColumns.filter((x): x is [string, string] => !!x).map(d => d[0])
@@ -291,7 +293,7 @@ const AttributeTransformer: FC<AttributeTransformerProps> = ({ id, wal, tableId,
       return (
         <div key={"column" + i} className="field has-addons is-horizontal pb-0">
           <Dropdown
-            items={Object.entries(columnNames)}
+            items={columnNames}
             maxWidth={200}
             onClick={(item) => addDropColumn(dropColumns.map((x, j) => i === j ? item : x))}
             selected={drop}
@@ -371,13 +373,13 @@ const AttributeTransformer: FC<AttributeTransformerProps> = ({ id, wal, tableId,
   }, [ setAlterModalIsActive, setHeaderCallback ])
 
   const addAlterColumnCb = useCallback((id: string) => {
-    const columnName = columnNames[id]
+    const columnName = columns[id]?.name
 
     if (columnName) {
       addAlterColumn([...alterColumns, [id, columnName]])
       addAlterType([...alterTypes, "String"])
     }
-  }, [ columnNames, alterColumns, alterTypes ])
+  }, [ columns, alterColumns, alterTypes ])
 
   const handleAlterModal = () => {
     setAlterModalIsActive(true)

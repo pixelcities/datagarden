@@ -1,4 +1,4 @@
-import React, { FC, useEffect, useState } from 'react'
+import React, { FC, useMemo, useEffect, useState } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPlus } from '@fortawesome/free-solid-svg-icons'
 
@@ -7,7 +7,7 @@ import { selectConceptMap, selectActiveDataSpace } from 'state/selectors'
 import { updateTransformerWAL } from 'state/actions'
 
 import Dropdown from 'components/Dropdown'
-import { Schema, WAL } from 'types'
+import { Schema, WAL, ConceptA } from 'types'
 import { getIdentifiers } from 'utils/query'
 
 import { useDataFusionContext } from 'contexts'
@@ -20,7 +20,7 @@ interface AggregateTransformerProps {
   tableId: string | null,
   leftId: string | null,
   rightId: string | null,
-  columnNames: {[key: string]: string},
+  columns: {[key: string]: ConceptA},
   schema: Schema,
   dimensions: {height: number, width: number},
   setHeaderCallback: any,
@@ -28,13 +28,13 @@ interface AggregateTransformerProps {
   onClose: any
 }
 
-const AggregateTransformer: FC<AggregateTransformerProps> = ({ id, wal, tableId, leftId, rightId, columnNames, schema, dimensions, setHeaderCallback, onComplete, onClose }) => {
+const AggregateTransformer: FC<AggregateTransformerProps> = ({ id, wal, tableId, leftId, rightId, columns, schema, dimensions, setHeaderCallback, onComplete, onClose }) => {
   const dispatch = useAppDispatch()
 
   const concepts = useAppSelector(selectConceptMap)
   const dataSpace = useAppSelector(selectActiveDataSpace)
 
-  const [columns, addColumn] = useState<([string, string] | null)[]>([null])
+  const [selects, addSelect] = useState<([string, string] | null)[]>([null])
   const [aggregateFns, addAggregateFn] = useState<string[]>(["SUM"])
   const [groupClauses, addGroupClause] = useState<([string, string] | null)[]>([])
   const [log, setLog] = useState<WAL>(wal ?? {identifiers: {}, values: {}, transactions: [], artifacts: []})
@@ -43,6 +43,8 @@ const AggregateTransformer: FC<AggregateTransformerProps> = ({ id, wal, tableId,
   const [replay, setReplay] = useState(false)
 
   const { dataFusion } = useDataFusionContext()
+
+  const columnNames: [string, string][] = useMemo(() => Object.entries(columns).map(([id, concept]) => [id, concept.name]), [ columns ])
 
   // Rebuild state
   useEffect(() => {
@@ -57,7 +59,7 @@ const AggregateTransformer: FC<AggregateTransformerProps> = ({ id, wal, tableId,
         if (match[1] && match[2]) {
           const id = Number(match[2].match(/%([0-9]+)\$I/)![1])
           const columnId = wal.identifiers[id]?.id
-          const columnName = columnNames[columnId]
+          const columnName = columns[columnId]?.name
 
           if (columnName) {
             aggregates.push(match[1])
@@ -69,7 +71,7 @@ const AggregateTransformer: FC<AggregateTransformerProps> = ({ id, wal, tableId,
       for (const match of wal.transactions[0].split("GROUP BY")[1].matchAll(/ *%([0-9]+)\$I/g)) {
         if (match[1]) {
           const columnId = wal.identifiers[Number(match[1])]?.id
-          const columnName = columnNames[columnId]
+          const columnName = columns[columnId]?.name
 
           if (columnName) {
             groupClauses.push([columnId, columnName])
@@ -78,16 +80,16 @@ const AggregateTransformer: FC<AggregateTransformerProps> = ({ id, wal, tableId,
       }
 
       addAggregateFn(aggregates)
-      addColumn(selectNames)
+      addSelect(selectNames)
       addGroupClause(groupClauses)
 
       setStartup(false)
       setReplay(true)
     }
-  }, [ tableId, startup, wal, columnNames ])
+  }, [ tableId, startup, wal, columns ])
 
   const execute = React.useCallback(async () => {
-    const columnIds = columns.filter((x): x is [string, string] => !!x).map(x => x[0])
+    const columnIds = selects.filter((x): x is [string, string] => !!x).map(x => x[0])
     const groupIds = groupClauses.filter((x): x is [string, string] => !!x).map(x => x[0])
 
     // Datafusion does not like having the group clause as an aggregate
@@ -166,18 +168,18 @@ const AggregateTransformer: FC<AggregateTransformerProps> = ({ id, wal, tableId,
     } else {
       throw new Error("Cannot build query: missing identifier")
     }
-  }, [ tableId, schema, columns, log, onComplete, dataFusion, dataSpace, concepts, aggregateFns, groupClauses ])
+  }, [ tableId, schema, selects, log, onComplete, dataFusion, dataSpace, concepts, aggregateFns, groupClauses ])
 
   // Replay if old state was loaded
   useEffect(() => {
-    if (tableId && replay && columns.length > 1 && aggregateFns.length > 1) {
+    if (tableId && replay && selects.length > 1 && aggregateFns.length > 1) {
       setReplay(false)
 
       dataFusion?.clone_table(leftId, tableId)
       execute()
         .catch((e) => console.log(e))
     }
-  }, [ leftId, tableId, replay, columns, aggregateFns, groupClauses, execute, dataFusion ])
+  }, [ leftId, tableId, replay, selects, aggregateFns, groupClauses, execute, dataFusion ])
 
   const handleAggregate = React.useCallback((e: any) => {
     e.preventDefault()
@@ -202,7 +204,7 @@ const AggregateTransformer: FC<AggregateTransformerProps> = ({ id, wal, tableId,
   }
 
   const columnSelection = React.useMemo(() => {
-    return columns.map((column, i) => {
+    return selects.map((column, i) => {
       return (
         <div key={"column" + column} className="field has-addons is-horizontal pb-0">
           <Dropdown
@@ -214,21 +216,21 @@ const AggregateTransformer: FC<AggregateTransformerProps> = ({ id, wal, tableId,
 
           <span className="is-size-4 has-text-weight-bold px-2"> ( </span>
           <Dropdown
-            items={Object.entries(columnNames)}
+            items={columnNames}
             maxWidth={150}
-            onClick={item => addColumn(columns.map((x, j) => i === j ? item : x))}
+            onClick={item => addSelect(selects.map((x, j) => i === j ? item : x))}
             selected={column}
           />
           <span className="is-size-4 has-text-weight-bold px-2"> ) </span>
         </div>
       )
     })
-  }, [ columns, columnNames, aggregateFns, addAggregateFn, addColumn ])
+  }, [ selects, columnNames, aggregateFns, addAggregateFn, addSelect ])
 
   const handleAddColumn = (e: any) => {
     e.preventDefault()
 
-    addColumn([...columns, null])
+    addSelect([...selects, null])
     addAggregateFn([...aggregateFns, "SUM"])
   }
 
@@ -237,7 +239,7 @@ const AggregateTransformer: FC<AggregateTransformerProps> = ({ id, wal, tableId,
       return (
         <div key={"column" + i} className="field has-addons is-horizontal pb-0">
           <Dropdown
-            items={Object.entries(columnNames)}
+            items={columnNames}
             maxWidth={200}
             onClick={item => addGroupClause(groupClauses.map((x, j) => i === j ? item : x))}
             selected={group}

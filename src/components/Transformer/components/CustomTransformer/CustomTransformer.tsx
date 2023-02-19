@@ -8,7 +8,7 @@ import { useAppDispatch, useAppSelector } from 'hooks'
 import { selectColumnConceptMap, selectMetadataMap, selectActiveDataSpace } from 'state/selectors'
 import { createMetadata, updateTransformerWAL } from 'state/actions'
 
-import { Schema, WAL } from 'types'
+import { Schema, WAL, ConceptA } from 'types'
 
 import { useDataFusionContext } from 'contexts'
 import { useKeyStoreContext } from 'contexts'
@@ -20,7 +20,7 @@ interface CustomTransformerProps {
   id: string,
   wal?: WAL,
   tableId: string | null,
-  columnNames: {[key: string]: string},
+  columns: {[key: string]: ConceptA},
   schema?: Schema,
   dimensions: {height: number, width: number},
   setHeaderCallback: any,
@@ -44,7 +44,7 @@ const renderLongText = (text: string | null, width: number) => {
   )
 }
 
-const CustomTransformer: FC<CustomTransformerProps> = ({ id, wal, tableId, columnNames, schema, dimensions, setHeaderCallback, onComplete, onClose }) => {
+const CustomTransformer: FC<CustomTransformerProps> = ({ id, wal, tableId, columns, schema, dimensions, setHeaderCallback, onComplete, onClose }) => {
   const dispatch = useAppDispatch()
 
   const [idModalIsActive, setIdModalIsActive] = useState(false)

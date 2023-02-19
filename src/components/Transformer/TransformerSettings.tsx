@@ -1,6 +1,6 @@
 import React, { FC } from 'react';
 
-import { Schema, WAL } from 'types'
+import { Schema, WAL, ConceptA } from 'types'
 import CustomTransformer from './components/CustomTransformer'
 import MergeTransformer from './components/MergeTransformer'
 import FilterTransformer from './components/FilterTransformer'
@@ -17,7 +17,7 @@ interface TransformerSettingsProps {
   tableId: string | null,
   leftId: string | null,
   rightId: string | null,
-  columnNames: {[key: string]: string},
+  columns: {[key: string]: ConceptA},
   schemas: Schema[],
   dimensions: {height: number, width: number},
   setHeaderCallback: any,

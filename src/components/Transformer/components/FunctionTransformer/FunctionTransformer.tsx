@@ -1,11 +1,11 @@
-import React, { FC, useCallback, useEffect, useState } from 'react'
+import React, { FC, useMemo, useCallback, useEffect, useState } from 'react'
 
 import { useAppDispatch } from 'hooks'
 import { updateTransformerWAL, sendLocalMessage } from 'state/actions'
 
 import FormulaBuilder from 'components/FormulaBuilder'
 import Dropdown from 'components/Dropdown'
-import { Schema, WAL } from 'types'
+import { Schema, WAL, ConceptA } from 'types'
 import { getIdentifiers, buildQuery } from 'utils/query'
 
 import { useDataFusionContext } from 'contexts'
@@ -17,7 +17,7 @@ interface FunctionTransformerProps {
   tableId: string | null,
   leftId: string | null,
   rightId: string | null,
-  columnNames: {[key: string]: string},
+  columns: {[key: string]: ConceptA},
   schema: Schema,
   dimensions: {height: number, width: number},
   setHeaderCallback: any,
@@ -25,7 +25,7 @@ interface FunctionTransformerProps {
   onClose: any
 }
 
-const FunctionTransformer: FC<FunctionTransformerProps> = ({ id, wal, tableId, leftId, rightId, columnNames, schema, dimensions, setHeaderCallback, onComplete, onClose }) => {
+const FunctionTransformer: FC<FunctionTransformerProps> = ({ id, wal, tableId, leftId, rightId, columns, schema, dimensions, setHeaderCallback, onComplete, onClose }) => {
   const dispatch = useAppDispatch()
 
   const [column, setColumn] = useState<[string, string]| null>(null)
@@ -37,6 +37,8 @@ const FunctionTransformer: FC<FunctionTransformerProps> = ({ id, wal, tableId, l
   const [isReplayed, setIsReplayed] = useState(false)
 
   const { dataFusion } = useDataFusionContext()
+
+  const columnNames: [string, string][] = useMemo(() => Object.entries(columns).map(([id, concept]) => [id, concept.name]), [ columns ])
 
   const onError = useCallback((error: string) => {
     console.log(error)
@@ -56,7 +58,7 @@ const FunctionTransformer: FC<FunctionTransformerProps> = ({ id, wal, tableId, l
         if (match[1] && match[2]) {
           const id = Number(match[2].match(/%([0-9]+)\$I/)![1])
           const columnId = wal.identifiers[id]?.id
-          const columnName = columnNames[columnId]
+          const columnName = columns[columnId]?.name
 
           const query = buildQuery(match[1], wal, undefined, undefined, undefined)
 
@@ -72,7 +74,7 @@ const FunctionTransformer: FC<FunctionTransformerProps> = ({ id, wal, tableId, l
       setStartup(false)
       setReplay(true)
     }
-  }, [ tableId, startup, wal, columnNames ])
+  }, [ tableId, startup, wal, columns ])
 
   const execute = React.useCallback(async () => {
     if (tableId && column) {
@@ -177,7 +179,7 @@ const FunctionTransformer: FC<FunctionTransformerProps> = ({ id, wal, tableId, l
           <div className="field has-addons is-horizontal pb-0">
             <Dropdown
               key={"dropdown-col-" + (column !== null).toString()}
-              items={Object.entries(columnNames)}
+              items={columnNames}
               maxWidth={50}
               onClick={item => setColumn(item)}
               selected={column}

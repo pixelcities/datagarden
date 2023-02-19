@@ -5,7 +5,7 @@ import { selectActiveDataSpace, selectMetadataMap } from 'state/selectors'
 import { createMetadata, updateTransformerWAL } from 'state/actions'
 
 import Dropdown from 'components/Dropdown'
-import { Schema, WAL } from 'types'
+import { Schema, WAL, ConceptA } from 'types'
 import { getIdentifiers } from 'utils/query'
 
 import { useDataFusionContext } from 'contexts'
@@ -18,7 +18,7 @@ interface FilterTransformerProps {
   tableId: string | null,
   leftId: string | null,
   rightId: string | null,
-  columnNames: {[key: string]: string},
+  columns: {[key: string]: ConceptA},
   schema: Schema,
   dimensions: {height: number, width: number},
   setHeaderCallback: any,
@@ -26,7 +26,7 @@ interface FilterTransformerProps {
   onClose: any
 }
 
-const FilterTransformer: FC<FilterTransformerProps> = ({ id, wal, tableId, leftId, rightId, columnNames, schema, dimensions, setHeaderCallback, onComplete, onClose }) => {
+const FilterTransformer: FC<FilterTransformerProps> = ({ id, wal, tableId, leftId, rightId, columns, schema, dimensions, setHeaderCallback, onComplete, onClose }) => {
   const dispatch = useAppDispatch()
 
   const dataSpace = useAppSelector(selectActiveDataSpace)
@@ -44,6 +44,8 @@ const FilterTransformer: FC<FilterTransformerProps> = ({ id, wal, tableId, leftI
   const { dataFusion } = useDataFusionContext()
   const { keyStore } = useKeyStoreContext()
 
+  const columnNames: [string, string][] = useMemo(() => Object.entries(columns).map(([id, concept]) => [id, concept.name]), [ columns ])
+
   // Rebuild state
   useEffect(() => {
     if (tableId && startup && wal && wal.transactions.length > 0) {
@@ -56,7 +58,7 @@ const FilterTransformer: FC<FilterTransformerProps> = ({ id, wal, tableId, leftI
       for (const match of wal.transactions[0].split("WHERE")[1].matchAll(/ *%([0-9]+)\$I/g)) {
         if (match[1]) {
           const columnId = wal.identifiers[Number(match[1])]?.id
-          const columnName = columnNames[columnId]
+          const columnName = columns[columnId]?.name
 
           if (columnName) {
             setColumn([columnId, columnName])
@@ -74,7 +76,7 @@ const FilterTransformer: FC<FilterTransformerProps> = ({ id, wal, tableId, leftI
       setReplay(true)
       setValueIsLocked(true)
     }
-  }, [ tableId, startup, wal, columnNames, metadata, keyStore, dataSpace?.key_id ])
+  }, [ tableId, startup, wal, columns, metadata, keyStore, dataSpace?.key_id ])
 
   const execute = React.useCallback(async () => {
     if (tableId && column) {
@@ -187,7 +189,7 @@ const FilterTransformer: FC<FilterTransformerProps> = ({ id, wal, tableId, leftI
       <div className="field has-addons is-horizontal pb-0">
         <Dropdown
           key={"dropdown-col-" + (column !== null).toString()}
-          items={Object.entries(columnNames)}
+          items={columnNames}
           maxWidth={150}
           onClick={(item) => setColumn(item)}
           selected={column}

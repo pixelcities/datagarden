@@ -6,7 +6,7 @@ import { useAppDispatch } from 'hooks'
 import { updateTransformerWAL } from 'state/actions'
 
 import Dropdown from 'components/Dropdown'
-import { Schema, WAL } from 'types'
+import { Schema, WAL, ConceptA } from 'types'
 import { getIdentifiers } from 'utils/query'
 
 import { useDataFusionContext } from 'contexts'
@@ -18,7 +18,7 @@ interface MergeTransformerProps {
   tableId: string | null,
   leftId: string | null,
   rightId: string | null,
-  columnNames: {[key: string]: string},
+  columns: {[key: string]: ConceptA},
   leftSchema: Schema,
   rightSchema: Schema,
   dimensions: {height: number, width: number},
@@ -27,7 +27,7 @@ interface MergeTransformerProps {
   onClose: any
 }
 
-const MergeTransformer: FC<MergeTransformerProps> = ({ id, wal, tableId, leftId, rightId, columnNames, leftSchema, rightSchema, dimensions, setHeaderCallback, onComplete, onClose }) => {
+const MergeTransformer: FC<MergeTransformerProps> = ({ id, wal, tableId, leftId, rightId, columns, leftSchema, rightSchema, dimensions, setHeaderCallback, onComplete, onClose }) => {
   const dispatch = useAppDispatch()
 
   const [joinType, setJoinType] = useState("LEFT JOIN")
@@ -41,12 +41,12 @@ const MergeTransformer: FC<MergeTransformerProps> = ({ id, wal, tableId, leftId,
   const { dataFusion } = useDataFusionContext();
 
   const leftColumns: [string, string][] = React.useMemo(() => {
-    return leftSchema.columns.map(column => [column.id, columnNames[column.id]])
-  }, [ leftSchema, columnNames ])
+    return leftSchema.columns.map(column => [column.id, columns[column.id]?.name])
+  }, [ leftSchema, columns ])
 
   const rightColumns: [string, string][] = React.useMemo(() => {
-    return rightSchema.columns.map(column => [column.id, columnNames[column.id]])
-  }, [ rightSchema, columnNames ])
+    return rightSchema.columns.map(column => [column.id, columns[column.id]?.name])
+  }, [ rightSchema, columns ])
 
   // Rebuild state
   useEffect(() => {
@@ -55,11 +55,11 @@ const MergeTransformer: FC<MergeTransformerProps> = ({ id, wal, tableId, leftId,
         if (match[1] && match[2] && match[3]) {
           const maybeLeftId = Number(match[2].match(/%([0-9]+)\$I/)![1])
           const leftColumnId = wal.identifiers[maybeLeftId]?.id
-          const leftColumnName = columnNames[leftColumnId]
+          const leftColumnName = columns[leftColumnId]?.name
 
-          const maybeRightId = Number(match[3].match(/%([0-9]+)\$I/)![1])
+          const maybeRightId: number = Number(match[3].match(/%([0-9]+)\$I/)![1])
           const rightColumnId = wal.identifiers[maybeRightId]?.id
-          const rightColumnName = columnNames[rightColumnId]
+          const rightColumnName = columns[rightColumnId]?.name
 
           if (leftColumnName && rightColumnName) {
             setJoinType(match[1])
@@ -72,7 +72,7 @@ const MergeTransformer: FC<MergeTransformerProps> = ({ id, wal, tableId, leftId,
       setStartup(false)
       setReplay(true)
     }
-  }, [ leftId, rightId, startup, wal, columnNames ])
+  }, [ leftId, rightId, startup, wal, columns ])
 
   const execute = React.useCallback(async () => {
     if (leftId && rightId && leftColumn && rightColumn) {

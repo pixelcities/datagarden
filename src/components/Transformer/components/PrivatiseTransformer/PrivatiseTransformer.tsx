@@ -3,7 +3,7 @@ import React, { FC } from 'react'
 import { useAppDispatch } from 'hooks'
 import { updateTransformerWAL } from 'state/actions'
 
-import { Schema, Identifier, WAL } from 'types'
+import { Schema, Identifier, WAL, ConceptA } from 'types'
 
 import { useDataFusionContext } from 'contexts'
 
@@ -14,7 +14,7 @@ interface PrivatiseTransformerProps {
   tableId: string | null,
   leftId: string | null,
   rightId: string | null,
-  columnNames: {[key: string]: string},
+  columns: {[key: string]: ConceptA},
   schema: Schema,
   dimensions: {height: number, width: number},
   setHeaderCallback: any,
@@ -22,7 +22,7 @@ interface PrivatiseTransformerProps {
   onClose: any
 }
 
-const PrivatiseTransformer: FC<PrivatiseTransformerProps> = ({ id, wal, tableId, leftId, rightId, columnNames, schema, dimensions, setHeaderCallback, onComplete, onClose }) => {
+const PrivatiseTransformer: FC<PrivatiseTransformerProps> = ({ id, wal, tableId, leftId, rightId, columns, schema, dimensions, setHeaderCallback, onComplete, onClose }) => {
   const dispatch = useAppDispatch()
 
   const { dataFusion } = useDataFusionContext()

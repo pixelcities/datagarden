@@ -6,7 +6,7 @@ import { useAppDispatch, useAppSelector } from 'hooks'
 import { selectMetadataMap, selectConceptMap, selectTransformerById, selectCollectionsByIds, selectActiveDataSpace } from 'state/selectors'
 import { updateMetadata } from 'state/actions'
 
-import { Schema, WAL } from 'types'
+import { Schema, WAL, ConceptA } from 'types'
 
 import DataTable from 'components/DataTable'
 import TransformerSettings from './TransformerSettings'
@@ -128,15 +128,18 @@ const Transformer: FC<TransformerProps> = ({id, collections, transformers, wal, 
     return name
   }, [ id, dataSpace, keyStore, metadata ])
 
-  const columnNames = React.useMemo(() => {
-    let attributes: {[key: string]: string} = {};
+  const columns = React.useMemo(() => {
+    let attributes: {[key: string]: ConceptA} = {};
 
     inputCollections.forEach(collection => {
       collection.schema.columns.forEach(column => {
         const maybe_concept = emptyTaxonomy(dataSpace?.key_id).deserialize(concepts[column.concept_id])
-        const name = maybe_concept ? maybe_concept.name : column.id
 
-        attributes[column.id] = name
+        if (maybe_concept) {
+          attributes[column.id] = maybe_concept
+        } else {
+          console.log(`Cannot find concept for column "${column.id}"`)
+        }
       })
     })
 
@@ -233,7 +236,7 @@ const Transformer: FC<TransformerProps> = ({id, collections, transformers, wal, 
               tableId={previewId}
               leftId={leftInputId}
               rightId={rightInputId}
-              columnNames={columnNames}
+              columns={columns}
               schemas={inputCollections.map(collection => collection.schema)}
               dimensions={dimensions}
               setHeaderCallback={handleHeaderCallback}
