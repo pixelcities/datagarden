@@ -97,6 +97,15 @@ const MergeTransformer: FC<MergeTransformerProps> = ({ id, wal, tableId, leftId,
         throw new Error(`Cannot compare types "${leftDataType}" and "${rightDataType}"`)
       }
 
+      const isList = dataFusion?.get_schema(tableId).fields
+        .filter((field: any) => field.name === leftColumnId || field.name === rightColumnId)
+        .filter((field: any) => field.type.name === "list")
+        .length > 0
+
+      if (isList) {
+        throw new Error("Cannot join on a column with multiple values")
+      }
+
       const { identifiers, ids } = getIdentifiers(log.identifiers, [leftId, rightId], [leftColumnId, rightColumnId])
 
       // Build a proper transaction to be saved, and a query for the preview
