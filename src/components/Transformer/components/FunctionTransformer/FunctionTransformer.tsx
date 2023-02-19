@@ -1,7 +1,7 @@
-import React, { FC, useEffect, useState } from 'react'
+import React, { FC, useCallback, useEffect, useState } from 'react'
 
 import { useAppDispatch } from 'hooks'
-import { updateTransformerWAL } from 'state/actions'
+import { updateTransformerWAL, sendLocalMessage } from 'state/actions'
 
 import FormulaBuilder from 'components/FormulaBuilder'
 import Dropdown from 'components/Dropdown'
@@ -37,6 +37,17 @@ const FunctionTransformer: FC<FunctionTransformerProps> = ({ id, wal, tableId, l
   const [isReplayed, setIsReplayed] = useState(false)
 
   const { dataFusion } = useDataFusionContext()
+
+  const onError = useCallback((error: string) => {
+    console.log(error)
+
+    dispatch(sendLocalMessage({
+      id: crypto.randomUUID(),
+      type: "error",
+      message: error,
+      is_urgent: true
+    }))
+  }, [ dispatch ])
 
   // Rebuild state
   useEffect(() => {
@@ -123,9 +134,9 @@ const FunctionTransformer: FC<FunctionTransformerProps> = ({ id, wal, tableId, l
 
       dataFusion?.clone_table(leftId, tableId)
       execute()
-        .catch((e) => console.log(e))
+        .catch((e) => onError(e ? e.message : "Error executing query"))
     }
-  }, [ leftId, tableId, replay, column, formula, execute, dataFusion ])
+  }, [ leftId, tableId, replay, column, formula, execute, dataFusion, onError ])
 
   const handleFunction = React.useCallback((e: any) => {
     e.preventDefault()
@@ -135,8 +146,8 @@ const FunctionTransformer: FC<FunctionTransformerProps> = ({ id, wal, tableId, l
       .then((result) => {
         setLog(result)
       })
-      .catch((e) => console.log(e))
-  }, [ leftId, tableId, execute, setLog, dataFusion ])
+      .catch((e) => onError(e ? e.message : "Error executing query"))
+  }, [ leftId, tableId, execute, setLog, dataFusion, onError ])
 
   const handleCommit = () => {
     dispatch(updateTransformerWAL({

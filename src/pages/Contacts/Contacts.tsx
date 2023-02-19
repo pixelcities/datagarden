@@ -8,6 +8,7 @@ import { selectUsers } from 'state/selectors'
 import { altAsSvg, toColor } from 'utils/helpers'
 
 import Navbar from 'components/Navbar'
+import Notifications from 'components/Notifications'
 import Section from 'components/Section'
 
 import { useAuthContext } from 'contexts'
@@ -21,6 +22,7 @@ class ContactsRoute extends Component<RouteComponentProps> {
     return (
       <div>
         <Navbar />
+        <Notifications />
 
         <Route path={this.parentPath} component={Contacts} />
       </div>

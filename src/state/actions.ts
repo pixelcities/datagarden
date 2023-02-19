@@ -106,6 +106,14 @@ import {
   contentDeleted
 } from './slices/content'
 
+import {
+  sendLocalMessage,
+  deleteLocalMessage,
+
+  messageRead,
+  messageDeleted
+} from './slices/messages'
+
 
 const recreateAction = <T extends ActionCreatorWithPayload<any,string>>(type: string): T => {
   return createAction(type, (action) => {
@@ -168,6 +176,8 @@ const createContent = recreateAction<typeof contentCreated>("CreateContent")
 const updateContent = recreateAction<typeof contentUpdated>("UpdateContent")
 const updateContentDraft = recreateAction<typeof contentDraftUpdated>("UpdateContentDraft")
 const deleteContent = recreateAction<typeof contentDeleted>("DeleteContent")
+const readMessage = recreateAction<typeof messageRead>("ReadMessage")
+const deleteMessage = recreateAction<typeof messageDeleted>("DeleteMessage")
 
 const events: {[key: string]: ActionCreatorWithPayload<any, string>} = {
   "CollectionCreated": collectionCreated,
@@ -215,7 +225,9 @@ const events: {[key: string]: ActionCreatorWithPayload<any, string>} = {
   "ContentCreated": contentCreated,
   "ContentUpdated": contentUpdated,
   "ContentDraftUpdated": contentDraftUpdated,
-  "ContentDeleted": contentDeleted
+  "ContentDeleted": contentDeleted,
+  "MessageRead": messageRead,
+  "MessageDeleted": messageDeleted
 }
 
 export {
@@ -269,6 +281,8 @@ export {
   updateContent,
   updateContentDraft,
   deleteContent,
+  readMessage,
+  deleteMessage,
 
   addWorkspace,
   setWorkspacePosition,
@@ -277,5 +291,7 @@ export {
   setOffset,
   setCoords,
   setWindowDimensions,
-  setComponentDimensions
+  setComponentDimensions,
+  sendLocalMessage,
+  deleteLocalMessage
 }

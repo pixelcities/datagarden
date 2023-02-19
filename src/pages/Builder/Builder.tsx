@@ -4,6 +4,7 @@ import { Route } from "react-router-dom"
 
 import InfinityBoard from 'components/InfinityBoard'
 import Navbar from 'components/Navbar'
+import Notifications from 'components/Notifications'
 import ControlPanel from 'components/ControlPanel'
 import Sidebar from 'components/Sidebar'
 import Onboarding from './Onboarding'
@@ -17,6 +18,7 @@ class BuilderRoute extends Component<RouteComponentProps> {
     return (
       <div>
         <Navbar />
+        <Notifications />
         <Onboarding />
 
         <Sidebar page="builder" isMini={true}>

@@ -28,7 +28,8 @@ export type {
   Task,
   DataSpace,
   Page,
-  Content
+  Content,
+  Message
 } from './interfaces'
 
 export {

@@ -14,6 +14,7 @@ import { wrapChartContent } from 'utils/charts'
 
 import Navbar from 'components/Navbar'
 import Sidebar from 'components/Sidebar'
+import Notifications from 'components/Notifications'
 import ReportCard from 'components/ReportCard'
 import Content from 'components/Content'
 import Dropdown from 'components/Dropdown'
@@ -37,6 +38,7 @@ class ReportsRoute extends Component<RouteComponentProps> {
     return (
       <div>
         <Navbar />
+        <Notifications />
 
         <Sidebar page="reports" isMini={false}>
           <Switch>

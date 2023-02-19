@@ -102,6 +102,12 @@ import {
   selectContentByWidgetId
 } from './slices/content'
 
+import {
+  selectMessages,
+  selectUrgentMessages
+} from './slices/messages'
+
+
 
 // union views
 export const selectComponents = createCachedSelector(
@@ -211,5 +217,7 @@ export {
   selectContentHeightById,
   selectContentByPageId,
   selectContentIdsByPageId,
-  selectContentByWidgetId
+  selectContentByWidgetId,
+  selectMessages,
+  selectUrgentMessages
 }

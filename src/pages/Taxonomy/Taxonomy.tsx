@@ -4,6 +4,7 @@ import { Route } from "react-router-dom"
 
 import Navbar from 'components/Navbar'
 import Sidebar from 'components/Sidebar'
+import Notifications from 'components/Notifications'
 import Accordion from 'components/Accordion'
 import Dropdown from 'components/Dropdown'
 
@@ -22,6 +23,7 @@ class TaxonomyRoute extends Component<RouteComponentProps> {
     return (
       <div>
         <Navbar />
+        <Notifications />
 
         <Sidebar page="taxonomy" isMini={false}>
           <Route path={this.parentPath} component={Taxonomy} />

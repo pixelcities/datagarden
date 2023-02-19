@@ -18,6 +18,7 @@ import secretReducer from './slices/secrets'
 import taskReducer from './slices/tasks'
 import contentReducer from './slices/content'
 import pageReducer from './slices/pages'
+import messageReducer from './slices/messages'
 
 
 const rootReducer = combineReducers({
@@ -36,7 +37,8 @@ const rootReducer = combineReducers({
   secrets: secretReducer,
   tasks: taskReducer,
   content: contentReducer,
-  pages: pageReducer
+  pages: pageReducer,
+  messages: messageReducer
 })
 
 const store = configureStore({
