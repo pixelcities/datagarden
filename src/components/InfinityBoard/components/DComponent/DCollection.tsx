@@ -83,7 +83,7 @@ const DCollection = forwardRef<{[id: string]: any}, DCollectionProps>((props, _r
       deleteComponent={deleteComponent}
       onClick={onClick}
     >
-      <div className="data-box" style={{position: "relative", backgroundColor: (collection.is_ready ? collection.color : "#aaaaaa")}}>
+      <div className={"data-box" + (collection?.is_ready ? "" : " is-loading")} style={{position: "relative", backgroundColor: collection.color}}>
         <h1 className="data-header">
           <span>
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
