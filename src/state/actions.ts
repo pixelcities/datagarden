@@ -89,7 +89,8 @@ import {
 
 import {
   taskAssigned,
-  taskCompleted
+  taskCompleted,
+  deleteLocalTask
 } from './slices/tasks'
 
 import {
@@ -293,5 +294,6 @@ export {
   setWindowDimensions,
   setComponentDimensions,
   sendLocalMessage,
-  deleteLocalMessage
+  deleteLocalMessage,
+  deleteLocalTask
 }

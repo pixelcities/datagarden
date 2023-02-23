@@ -1,4 +1,4 @@
-import React, { FC, useState } from 'react'
+import React, { FC, useState, useEffect } from 'react'
 import { useHistory, Link } from "react-router-dom"
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faEnvelope, faLock } from '@fortawesome/free-solid-svg-icons'
@@ -14,7 +14,7 @@ const Login: FC = () => {
   const [password, setPassword] = useState("")
   const [error, setError] = useState(false)
 
-  const { isAuthenticated, handleLogin, path, user } = useAuthContext();
+  const { isAuthenticated, handleLogin, path } = useAuthContext();
   const { keyStore, protocol, __setIsReady__ } = useKeyStoreContext();
 
   const history = useHistory();
@@ -62,6 +62,12 @@ const Login: FC = () => {
     setEmail("")
     setPassword("")
   }
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      history.push("/")
+    }
+  }, [ history, isAuthenticated ])
 
   return (
     <Section>
@@ -120,7 +126,7 @@ const Login: FC = () => {
             </p>
 
           </>
-        : JSON.stringify(user) }
+        : null }
 
       </div>
     </Section>

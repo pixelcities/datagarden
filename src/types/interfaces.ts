@@ -183,7 +183,10 @@ export interface Task {
   worker?: string,
   fragments: string[],
   metadata: {[key: string]: any},
-  is_completed?: boolean
+  ttl: number,
+  expires_at?: number,
+  is_completed?: boolean,
+  date?: string
 }
 
 export interface DataSpace {
