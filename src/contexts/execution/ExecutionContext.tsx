@@ -47,6 +47,10 @@ export const ExecutionProvider: FC<ExecutionProviderI> = ({ store, children }) =
         // Verify that this task is not nearing the task deadline
         if (task.expires_at && task.expires_at > Date.now() + TASK_TTL_BUFFER) {
           mutex.runExclusive(async () => {
+            if (taskCache.current.has(task.id)) {
+              return
+            }
+
             const result = (() => {
               if (task.type === "protocol") {
                 return handleProtocolTask(task, protocol)
@@ -59,7 +63,7 @@ export const ExecutionProvider: FC<ExecutionProviderI> = ({ store, children }) =
               }
             })
 
-            result()
+            return result()
               .then(({actions, metadata}) => {
                 actions.forEach(action => dispatch(action))
 
@@ -126,7 +130,7 @@ export const ExecutionProvider: FC<ExecutionProviderI> = ({ store, children }) =
   }, [ tasks, taskDispatcher ])
 
   useEffect(() => {
-    const interval = setInterval(taskDispatcher, 3000)
+    const interval = setInterval(taskDispatcher, 10000)
 
     return () => clearInterval(interval)
   }, [ taskDispatcher ])
