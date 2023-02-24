@@ -24,6 +24,12 @@ const transformersSlice = createSlice({
         transformer.is_ready = action.payload.is_ready
       }
     },
+    transformerErrorSet(state, action: PayloadAction<{id: string, workspace: string, error: string | undefined}>) {
+      const transformer = state.entities[action.payload.id]
+      if (transformer) {
+        transformer.error = action.payload.error
+      }
+    },
     transformerTargetAdded(state, action: PayloadAction<{id: string, workspace: string, target: string}>) {
       const transformer = state.entities[action.payload.id]
       const exists = transformer?.targets.includes(action.payload.target)
@@ -65,6 +71,7 @@ export const {
   transformerUpdated,
   transformerPositionSet,
   transformerIsReadySet,
+  transformerErrorSet,
   transformerTargetAdded,
   transformerInputAdded,
   transformerWALUpdated,

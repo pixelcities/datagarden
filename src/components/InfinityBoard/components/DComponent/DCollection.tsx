@@ -91,7 +91,7 @@ const DCollection = forwardRef<{[id: string]: any}, DCollectionProps>((props, _r
             </svg>
           </span>
 
-          { title }
+          { collection?.is_ready ? title : "Loading..." }
         </h1>
 
         <div className="bottom-elipse">

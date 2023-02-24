@@ -68,7 +68,8 @@ export interface Collection extends Component {
 export interface Transformer extends Component {
   collections: string[],
   transformers: string[],
-  wal?: WAL
+  wal?: WAL,
+  error?: string
 }
 
 export interface WidgetSettings {

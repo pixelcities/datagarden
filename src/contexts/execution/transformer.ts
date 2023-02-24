@@ -22,7 +22,7 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
     const concepts = Object.values(store.getState().concepts.entities).filter((x): x is Concept => !!x).reduce((a: {[key: string]: Concept}, b) => ({...a, [b.id]: b}), {})
 
     if (!transformer) {
-      reject(ExecutionError.Retry)
+      reject([ExecutionError.Retry, undefined])
       return
     }
 
@@ -54,7 +54,7 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
             // Verify schema before doing anything
             verifySchema(collection.schema, keyStore.get_key(collection.schema.key_id)).then(schemaIsValid => {
               if (!schemaIsValid) {
-                reject(ExecutionError.Integrity)
+                reject([ExecutionError.Integrity, "Cannot validate schema integrity"])
                 return
               }
 
@@ -151,7 +151,7 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
                       metadata: meta
                     })
                   }).catch(() => {
-                    reject(ExecutionError.Failure)
+                    reject([ExecutionError.Failure, "Error saving table"])
                     return
                   })
                 })
@@ -169,7 +169,7 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
             verifySchema(leftCollection.schema, keyStore.get_key(leftCollection.schema.key_id)).then(leftSchemaIsValid => {
               verifySchema(rightCollection.schema, keyStore.get_key(rightCollection.schema.key_id)).then(rightSchemaIsValid => {
                 if (!leftSchemaIsValid || !rightSchemaIsValid) {
-                  reject(ExecutionError.Integrity)
+                  reject([ExecutionError.Integrity, "Cannot validate schema integrity"])
                   return
                 }
 
@@ -246,7 +246,7 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
           if (collection && target) {
             verifySchema(collection.schema, keyStore.get_key(collection.schema.key_id)).then(schemaIsValid => {
               if (!schemaIsValid) {
-                reject(ExecutionError.Integrity)
+                reject([ExecutionError.Integrity, "Cannot validate schema integrity"])
                 return
               }
 
@@ -263,7 +263,7 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
                       metadata: meta
                     })
                   }).catch(() => {
-                    reject(ExecutionError.Failure)
+                    reject([ExecutionError.Failure, "Error saving table"])
                     return
                   })
                 })

@@ -5,7 +5,7 @@ import { RootState } from 'state/store'
 import { ExecutionError } from 'types'
 import { useAppSelector, useAppDispatch } from 'hooks'
 import { selectTasks, selectActiveDataSpace } from 'state/selectors'
-import { completeTask, deleteLocalTask } from 'state/actions'
+import { completeTask, failTask, deleteLocalTask } from 'state/actions'
 
 import { useAuthContext } from 'contexts'
 import { useKeyStoreContext } from 'contexts'
@@ -34,6 +34,8 @@ export const ExecutionProvider: FC<ExecutionProviderI> = ({ store, children }) =
   const dataSpace = useAppSelector(selectActiveDataSpace)
 
   const taskCache = useRef<any>(new Set())
+  const taskRetries = useRef<{[key: string]: number}>({})
+
   const taskDispatcher = useCallback(() => {
     if (keyStoreIsReady && user) {
       // Filter out any previously completed tasks, in case we raced the event roundtrip
@@ -69,8 +71,46 @@ export const ExecutionProvider: FC<ExecutionProviderI> = ({ store, children }) =
                   is_completed: true
                 }))
               })
-              .catch((e: ExecutionError) => {
-                console.log(e)
+              .catch((e: unknown) => {
+                let error, message
+
+                // Expected error
+                if (Array.isArray(e)) {
+                  [error, message] = (e as [ExecutionError, string])
+
+                // But perhaps something unexpected threw an error?
+                } else if (e instanceof Error) {
+                  error = ExecutionError.Failure
+                  message = e.message
+                }
+
+                // Failed with a retry request, we will retry up to 3 times
+                if (error === ExecutionError.Retry) {
+                  if (task.id in taskRetries.current) {
+                    const errorCount = taskRetries.current[task.id]
+
+                    if (errorCount < 3) {
+                      taskRetries.current[task.id] = errorCount + 1
+                    } else {
+                      taskCache.current.add(task.id)
+                      delete taskRetries.current[task.id]
+                      dispatch(failTask({
+                        id: task.id,
+                        error: message || "Too many failures"
+                      }))
+                    }
+
+                  } else { // First retry
+                    taskRetries.current[task.id] = 0
+                  }
+
+                } else {
+                  taskCache.current.add(task.id)
+                  dispatch(failTask({
+                    id: task.id,
+                    error: message || "Unknown error"
+                  }))
+                }
               })
           })
 

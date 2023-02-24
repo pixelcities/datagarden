@@ -26,6 +26,9 @@ const tasksSlice = createSlice({
 
       state.ids = ids
       delete state.entities[action.payload.id]
+    },
+    taskFailed(state, action: PayloadAction<{id: string, error: string}>) {
+      tasksAdapter.removeOne(state, action.payload.id)
     }
   }
 })
@@ -37,6 +40,7 @@ export default tasksSlice.reducer
 export const {
   taskAssigned,
   taskCompleted,
+  taskFailed,
   deleteLocalTask
 } = tasksSlice.actions
 

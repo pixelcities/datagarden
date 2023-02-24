@@ -1,4 +1,7 @@
 import React, { forwardRef } from 'react'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faExclamationTriangle } from '@fortawesome/free-solid-svg-icons'
+
 import { useAppSelector, useAppDispatch } from 'hooks'
 import { selectTransformerById } from 'state/selectors'
 import { Coords, WindowDimensions, Component } from 'types'
@@ -46,10 +49,20 @@ const DTransformer = forwardRef<{[id: string]: any}, DTransformerProps>((props, 
       deleteComponent={deleteComponent}
       onClick={onClick}
     >
-      <svg xmlns="http://www.w3.org/2000/svg" width={40} height={40}>
-        <circle cx="20" cy="20" r="20" fill="#363636" />
-        <use href={sprites + "#" + myTransformer?.type} style={{color: "white"}} transform="scale(0.5)" x="50%" y="50%" />
-      </svg>
+      <>
+        { myTransformer?.error &&
+          <div style={{position: "absolute", top: 0, right: 0, marginTop: -7.5, marginRight: -2.5, zIndex: 1}}>
+            <span className="icon is-small has-tooltip-danger" data-tooltip={myTransformer?.error}>
+              <FontAwesomeIcon icon={faExclamationTriangle} size="sm" color="#f03158"/>
+            </span>
+          </div>
+        }
+
+        <svg xmlns="http://www.w3.org/2000/svg" width={40} height={40}>
+          <circle cx="20" cy="20" r="20" fill="#363636" />
+          <use href={sprites + "#" + myTransformer?.type} style={{color: "white"}} transform="scale(0.5)" x="50%" y="50%" />
+        </svg>
+      </>
     </DComponent>
   )
 })

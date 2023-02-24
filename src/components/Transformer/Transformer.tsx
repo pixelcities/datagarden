@@ -4,7 +4,7 @@ import { faCheck } from '@fortawesome/free-solid-svg-icons'
 
 import { useAppDispatch, useAppSelector } from 'hooks'
 import { selectMetadataMap, selectConceptMap, selectTransformerById, selectCollectionsByIds, selectActiveDataSpace } from 'state/selectors'
-import { updateMetadata } from 'state/actions'
+import { updateMetadata, sendLocalMessage } from 'state/actions'
 
 import { Schema, WAL, ConceptA } from 'types'
 
@@ -45,6 +45,7 @@ const Transformer: FC<TransformerProps> = ({id, collections, transformers, wal, 
   const [onHeaderClick, setOnHeaderClick] = useState<any>(undefined)
   const [isEditingTitle, setIsEditingTitle] = useState(false)
   const [newTitle, setNewTitle] = useState("")
+  const [error, setError] = useState("")
 
   const { user } = useAuthContext();
   const { keyStore } = useKeyStoreContext();
@@ -107,6 +108,22 @@ const Transformer: FC<TransformerProps> = ({id, collections, transformers, wal, 
       setPreviewId(dataFusion?.clone_table(leftInputId, id))
     }
   }, [ id, leftInputId, rightInputId, inputCollections, dataFusion ])
+
+  useEffect(() => {
+    if (transformer?.error) {
+      setError(transformer?.error)
+    }
+  }, [ transformer ])
+  useEffect(() => {
+    if (error !== "") {
+      dispatch(sendLocalMessage({
+        id: crypto.randomUUID(),
+        type: "error",
+        message: error,
+        is_urgent: true
+      }))
+    }
+  }, [ error, dispatch ])
 
   useLayoutEffect(() => {
     if (settingsRef.current) {

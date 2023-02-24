@@ -17,6 +17,7 @@ import {
   transformerUpdated,
   transformerPositionSet,
   transformerIsReadySet,
+  transformerErrorSet,
   transformerTargetAdded,
   transformerInputAdded,
   transformerWALUpdated,
@@ -90,6 +91,7 @@ import {
 import {
   taskAssigned,
   taskCompleted,
+  taskFailed,
   deleteLocalTask
 } from './slices/tasks'
 
@@ -169,6 +171,7 @@ const createUser = recreateAction<typeof userCreated>("CreateUser")
 const updateUser = recreateAction<typeof userUpdated>("UpdateUser")
 const shareSecret = recreateAction<typeof secretShared>("ShareSecret")
 const completeTask = recreateAction<typeof taskCompleted>("CompleteTask")
+const failTask = recreateAction<typeof taskFailed>("FailTask")
 const createPage = recreateAction<typeof pageCreated>("CreatePage")
 const updatePage = recreateAction<typeof pageUpdated>("UpdatePage")
 const setPageOrder = recreateAction<typeof pageOrderSet>("SetPageOrder")
@@ -194,6 +197,7 @@ const events: {[key: string]: ActionCreatorWithPayload<any, string>} = {
   "TransformerUpdated": transformerUpdated,
   "TransformerPositionSet": transformerPositionSet,
   "TransformerIsReadySet": transformerIsReadySet,
+  "TransformerErrorSet": transformerErrorSet,
   "TransformerTargetAdded": transformerTargetAdded,
   "TransformerInputAdded": transformerInputAdded,
   "TransformerWALUpdated": transformerWALUpdated,
@@ -219,6 +223,7 @@ const events: {[key: string]: ActionCreatorWithPayload<any, string>} = {
   "SecretShared": secretShared,
   "TaskAssigned": taskAssigned,
   "TaskCompleted": taskCompleted,
+  "TaskFailed": taskFailed,
   "PageCreated": pageCreated,
   "PageUpdated": pageUpdated,
   "PageOrderSet": pageOrderSet,
@@ -274,6 +279,7 @@ export {
   publishWidget,
   deleteWidget,
   completeTask,
+  failTask,
   createPage,
   updatePage,
   setPageOrder,
