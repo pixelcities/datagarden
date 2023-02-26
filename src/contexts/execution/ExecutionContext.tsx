@@ -88,6 +88,11 @@ export const ExecutionProvider: FC<ExecutionProviderI> = ({ store, children }) =
                   message = e.message
                 }
 
+                // Guard against unexpected throws
+                if (typeof message !== "string") {
+                  message = undefined
+                }
+
                 // Failed with a retry request, we will retry up to 3 times
                 if (error === ExecutionError.Retry) {
                   if (task.id in taskRetries.current) {

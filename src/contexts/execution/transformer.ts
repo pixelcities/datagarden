@@ -38,12 +38,37 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
       // Load all the input collections in memory
       Promise.all(collections.map((collection) => {
         return new Promise<void>((resolve, reject) => {
-          if (dataFusion?.table_exists(collection?.id)) {
-            resolve()
-
-          } else if (collection?.id && collection?.uri) {
-            loadRemoteTable(collection.id, collection.uri, collection.schema, user, arrow, dataFusion, keyStore, fragments).then(() => resolve())
+          if (!collection || !collection.id || !collection.uri) {
+            reject("Failed to load data")
+            return
           }
+
+          if (dataFusion?.table_exists(collection.id)) {
+            // If the table is already loaded, we still need to validate if it has the right columns
+            // in memory. If this table was loaded a long time ago, it could have fewer columns than
+            // the current transformer is expecting.
+            const fields = dataFusion?.get_schema(collection.id).fields.map((field: any) => field.name)
+
+            // Filter the fragments for this particular table
+            const requestedFragments = fragments.filter(f => collection.schema.column_order.indexOf(f) !== -1)
+
+            // Nothing to do
+            if (requestedFragments.length === 0) {
+              resolve()
+              return
+            }
+
+            // Check if all the expected fragements are encountered for
+            if (requestedFragments.filter(f => fields.indexOf(f) === -1).length === 0) {
+              resolve()
+              return
+            }
+
+            // If not, drop this version of the table and fallback to loading a fresh copy
+            dataFusion?.drop_table(collection.id)
+          }
+
+          loadRemoteTable(collection.id, collection.uri, collection.schema, user, arrow, dataFusion, keyStore, fragments).then(() => resolve()).catch(() => reject("Error loading remote table"))
         })
       })).then(() => {
         // Handle transformer tasks with just one input collection
@@ -61,6 +86,18 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
               // Create a copy, in case the user was looking at this collection
               const id = dataFusion?.clone_table(collection.id, transformer_id)
               const oldSchema: Schema = JSON.parse(JSON.stringify(collection.schema))
+
+              // Validate that the working table has *exactly* the expected amount of columns. It is possible
+              // to have more columns loaded when it was already loaded in memory and this transformer task
+              // is executing with a set of fragments that is a subset of the table columns. We can safely drop
+              // these columns from the clone.
+              const extraFields = dataFusion?.get_schema(id).fields
+                .map((field: any) => field.name)
+                .filter((columnId: string) => fragments.indexOf(columnId) === -1)
+
+              if (extraFields.length > 0) {
+                dataFusion?.drop_columns(id, extraFields)
+              }
 
               // Optionally drop a column from the schema
               const dropIds = Object.values(wal.identifiers).filter(id => id.type === "column" && id.action === "drop").map(id => id.id)
@@ -181,6 +218,15 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
                 if (leftFragments.length > 0) {
                   const leftId = dataFusion?.clone_table(leftCollection.id, "")
 
+                  // If there are extra fields, drop them
+                  const extraLeftFields = dataFusion?.get_schema(leftId).fields
+                    .map((field: any) => field.name)
+                    .filter((columnId: string) => leftFragments.indexOf(columnId) === -1)
+
+                  if (extraLeftFields.length > 0) {
+                    dataFusion?.drop_columns(leftId, extraLeftFields)
+                  }
+
                   rebuildSchema(leftId, target, leftCollection.id, leftCollection.schema, rightCollection.schema.shares, leftFragments, task_meta, user, metadata, dataSpace, keyStore, protocol).then(({actions, schema, renames, meta}) => {
                     execute(leftId, wal, fragments, true, true, dataFusion, metadata, dataSpace, keyStore).then(() => {
                       updateSchema(leftId, leftFragments, renames, dataFusion)
@@ -198,6 +244,14 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
                         // updated metadata and be sure to merge the resulting actions.
                         } else {
                           const rightId = dataFusion?.clone_table(rightCollection.id, "")
+                          const extraRightFields = dataFusion?.get_schema(rightId).fields
+                            .map((field: any) => field.name)
+                            .filter((columnId: string) => rightFragments.indexOf(columnId) === -1)
+
+                          if (extraRightFields.length > 0) {
+                            dataFusion?.drop_columns(rightId, extraRightFields)
+                          }
+
                           const leftActions = actions
                           const leftMeta = meta
 
@@ -221,6 +275,13 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
                 // Apply the right artifacts (if there were no left fragments)
                 } else {
                   const rightId = dataFusion?.clone_table(rightCollection.id, "")
+                  const extraRightFields = dataFusion?.get_schema(rightId).fields
+                    .map((field: any) => field.name)
+                    .filter((columnId: string) => rightFragments.indexOf(columnId) === -1)
+
+                  if (extraRightFields.length > 0) {
+                    dataFusion?.drop_columns(rightId, extraRightFields)
+                  }
 
                   rebuildSchema(rightId, target, rightCollection.id, rightCollection.schema, leftCollection.schema.shares, rightFragments, task_meta, user, metadata, dataSpace, keyStore, protocol).then(({actions, schema, renames, meta}) => {
                     execute(rightId, wal, fragments, true, false, dataFusion, metadata, dataSpace, keyStore).then(() => {
@@ -272,6 +333,8 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
           }
 
         }
+      }).catch((e: string) => {
+        reject([ExecutionError.Retry, e])
       })
 
     // When one or more input collections have been updated, the artifacts in the WAL may no longer be valid. This task will

@@ -35,6 +35,8 @@ export const loadRemoteTable = (tableId: string, uri: string, schema: Schema, us
               }
             }
 
+            console.log("Loading table with column:", column.id)
+
             if (!!column.shares.find((share: Share) => share.principal === user?.id && (share.type === "owner" || share.type === "full") )) {
               keymap.push(column.id)
               keymap.push(column.key_id)
