@@ -2,6 +2,20 @@
 
 $colors: indigo, darkviolet, magenta, mediumvioletred, deeppink, crimson, red, orangered, darkorange, orange, darkgoldenrod, olive, olivedrab, limegreen, mediumseagreen, teal, lightseagreen, deepskyblue, dodgerblue, blue
 
+.section-primary
+  @extend .section
+  background-color: $primary
+
+.section-primary-light
+  @extend .section
+  background-color: $primary-light
+
+.footer-no-padding
+  @extend .footer
+  background-color: transparent
+  padding: 0
+  margin-top: -86px
+
 .div
   display: inherit
   &.is-vcentered

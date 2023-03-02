@@ -70,7 +70,7 @@ const Login: FC = () => {
   }, [ history, isAuthenticated ])
 
   return (
-    <Section>
+    <Section backdrop={true}>
       <div className="container">
 
         { error ?

@@ -1,8 +1,10 @@
-import React, { Component } from 'react';
-import { RouteComponentProps } from 'react-router';
-import { Route } from "react-router-dom";
+import React, { Component } from 'react'
+import { RouteComponentProps } from 'react-router'
+import { Route } from "react-router-dom"
 
-import Navbar from 'components/Navbar';
+import Navbar from 'components/Navbar'
+import Footer from 'components/Footer'
+
 import Login from './Login'
 import Register from './Register'
 import Logout from './Logout'
@@ -18,6 +20,7 @@ class ProfileRoutes extends Component<RouteComponentProps> {
         <div>
           <Navbar />
           <Route path={parentPath} component={Login} />
+          <Footer />
         </div>
       )
 
@@ -26,6 +29,7 @@ class ProfileRoutes extends Component<RouteComponentProps> {
         <div>
           <Navbar />
           <Route path={parentPath} component={Register} />
+          <Footer />
         </div>
       )
 

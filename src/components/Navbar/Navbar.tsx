@@ -1,44 +1,54 @@
-import React, { Component } from 'react';
-import { Link } from 'react-router-dom';
+import React, { FC } from 'react'
+import { Link } from 'react-router-dom'
 
 import logo from 'assets/logo-white.svg'
 import notifications from 'assets/notifications.svg'
 import help from 'assets/help.svg'
 
+import { useAuthContext } from 'contexts'
+
 import AvatarMenu from 'components/AvatarMenu'
 
-class Navbar extends Component {
-  render() {
-    return (
-      <nav className="navbar is-primary is-fixed-top" role="navigation" aria-label="main navigation">
-        <div className="navbar-brand">
-          <Link className="navbar-item" to="/">
-            <img src={logo} alt="logo" width="40" height="35"/>
-            <h1 className="header-label label-size-4 is-white pl-2">
-              DataGarden
-            </h1>
-          </Link>
+
+const Navbar: FC = () => {
+  const { isAuthenticated } = useAuthContext();
+
+  return (
+    <nav className="navbar is-primary is-fixed-top" role="navigation" aria-label="main navigation">
+      <div className="navbar-brand">
+        <Link className="navbar-item" to="/">
+          <img src={logo} alt="logo" width="40" height="35"/>
+          <h1 className="header-label label-size-4 is-white pl-2">
+            DataGarden
+          </h1>
+        </Link>
+      </div>
+
+      <div className="navbar-end">
+        { isAuthenticated ?
+          <>
+            <div className="navbar-item">
+              <img src={help} alt="help" width="20" height="20"/>
+            </div>
+
+            <div className="navbar-item">
+              <img src={notifications} alt="notifications" width="20" height="20"/>
+            </div>
+          </>
+        :
+          <>
+          </>
+        }
+
+        <div className="navbar-item">
+          <AvatarMenu />
         </div>
 
-        <div className="navbar-end">
-          <div className="navbar-item">
-            <img src={help} alt="help" width="20" height="20"/>
-          </div>
 
-          <div className="navbar-item">
-            <img src={notifications} alt="notifications" width="20" height="20"/>
-          </div>
+      </div>
 
-          <div className="navbar-item">
-            <AvatarMenu />
-          </div>
-
-
-        </div>
-
-      </nav>
-    )
-  }
+    </nav>
+  )
 }
 
 export default Navbar

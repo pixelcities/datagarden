@@ -1,6 +1,6 @@
 import React, { FC, useState } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faEnvelope, faLock, faHandshake } from '@fortawesome/free-solid-svg-icons'
+import { faEnvelope, faLock } from '@fortawesome/free-solid-svg-icons'
 
 import Section from 'components/Section'
 
@@ -11,7 +11,7 @@ import { genCSRFToken } from 'utils/getCSRFToken'
 const Register: FC = () => {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [invite, setInvite] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
   const [confirmPrompt, setConfirmPrompt] = useState(false)
   const [error, setError] = useState("")
 
@@ -23,6 +23,11 @@ const Register: FC = () => {
 
     if (password.length < 8) {
       setError("Password must be at least 8 characters")
+      return
+    }
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match")
       return
     }
 
@@ -39,7 +44,6 @@ const Register: FC = () => {
         "user": {
           "email": email,
           "password": hashedPassword,
-          "invite": invite,
           "remember_me": "true"
         },
       })
@@ -70,7 +74,7 @@ const Register: FC = () => {
   }
 
   return (
-    <Section>
+    <Section backdrop={true}>
       <div className="container">
 
         { error !== "" &&
@@ -112,9 +116,9 @@ const Register: FC = () => {
                     </div>
                     <div className="field">
                       <p className="control has-icons-left">
-                        <input className="input" type="password" placeholder="Invite code" value={invite} onChange={(e: any) => setInvite(e.target.value)} />
+                        <input className="input" type="password" placeholder="Confirm password" value={confirmPassword} onChange={(e: any) => setConfirmPassword(e.target.value)} />
                         <span className="icon is-small is-left">
-                          <FontAwesomeIcon icon={faHandshake} size="xs"/>
+                          <FontAwesomeIcon icon={faLock} size="xs"/>
                         </span>
                       </p>
                     </div>
