@@ -71,6 +71,7 @@ const Register: FC = () => {
 
     setEmail("")
     setPassword("")
+    setConfirmPassword("")
   }
 
   return (
