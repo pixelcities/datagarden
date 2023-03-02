@@ -86,7 +86,9 @@ export const {
 export const selectCollectionsByIds = createSelector(
   selectCollections,
   (_: RootState, ids: string[]) => ids,
-  (collections, ids): Collection[] => collections.filter(collection => ids.indexOf(collection.id) !== -1)
+  (collections, ids): Collection[] => collections
+    .filter(collection => ids.indexOf(collection.id) !== -1)
+    .sort((a, b) => a.position[1] > b.position[1] ? 1 : -1) // Sorted by y position
 )
 
 export const selectCollectionIds = createSelector(

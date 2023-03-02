@@ -17,7 +17,7 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
     const wal: WAL = task.task["wal"]
 
     const transformer = store.getState().transformers.entities[transformer_id]
-    const collections = transformer?.collections.map(id => store.getState().collections.entities[id]) ?? []
+    const collections = Object.values(wal.identifiers).filter(x => x.type === "table" && transformer?.collections.indexOf(x.id) !== -1).map(x => store.getState().collections.entities[x.id])
     const metadata = Object.values(store.getState().metadata.entities).reduce((a, b) => ({...a, [b?.id ?? ""]: b?.metadata}), {})
     const concepts = Object.values(store.getState().concepts.entities).filter((x): x is Concept => !!x).reduce((a: {[key: string]: Concept}, b) => ({...a, [b.id]: b}), {})
 
