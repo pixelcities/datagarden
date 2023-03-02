@@ -17,7 +17,7 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
     const wal: WAL = task.task["wal"]
 
     const transformer = store.getState().transformers.entities[transformer_id]
-    const collections = Object.values(wal.identifiers).filter(x => x.type === "table" && transformer?.collections.indexOf(x.id) !== -1).map(x => store.getState().collections.entities[x.id])
+    const collections = transformer?.collections.map(id => store.getState().collections.entities[id]) ?? []
     const metadata = Object.values(store.getState().metadata.entities).reduce((a, b) => ({...a, [b?.id ?? ""]: b?.metadata}), {})
     const concepts = Object.values(store.getState().concepts.entities).filter((x): x is Concept => !!x).reduce((a: {[key: string]: Concept}, b) => ({...a, [b.id]: b}), {})
 
@@ -199,8 +199,14 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
         // Handle merge transformers by simply creating up to two tables
         } else if (transformer.type === "merge") {
           const uri = task.task["uri"]
-          const leftCollection = collections[0]
-          const rightCollection = collections[1]
+
+          // Ensure the input collections are sorted based on the wal identifiers
+          let ids: {[key: string]: string} = {}
+          Object.entries(wal.identifiers).forEach(([i, id]) => ids[id.id] = i)
+          const sortedCollections = collections.sort((a, b) => ids[a!.id] > ids[b!.id] ? 1 : -1)
+
+          const leftCollection = sortedCollections[0]
+          const rightCollection = sortedCollections[1]
 
           if (leftCollection && rightCollection && target) {
             verifySchema(leftCollection.schema, keyStore.get_key(leftCollection.schema.key_id)).then(leftSchemaIsValid => {
