@@ -37,7 +37,7 @@ export const ExecutionProvider: FC<ExecutionProviderI> = ({ store, children }) =
   const taskRetries = useRef<{[key: string]: number}>({})
 
   const taskDispatcher = useCallback(() => {
-    if (keyStoreIsReady && user) {
+    if (keyStoreIsReady && user && arrow && dataFusion) {
       // Filter out any previously completed tasks, in case we raced the event roundtrip
       const newTasks = tasks.filter(t => !taskCache.current.has(t.id))
 
