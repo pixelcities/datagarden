@@ -132,7 +132,7 @@ export const websocketMiddleware: Middleware<{}, any> = storeApi => {
     // "Commands" are routed to the backend
     //
     // See also: src/state/actions.ts
-    } else if ("command" in action.payload) {
+    } else if (action.payload instanceof Object && "command" in action.payload) {
       socket.ds?.push("action", action.payload.command);
 
     // anything else
