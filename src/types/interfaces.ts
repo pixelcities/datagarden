@@ -219,12 +219,13 @@ export interface Content {
   date?: string
 }
 
-export interface Message {
+export interface NotificationMsg {
   id: string,
   type: "info" | "error",
   message: string,
   receiver?: string,
   is_urgent?: boolean,
-  is_read?: boolean
+  is_read?: boolean,
+  is_local?: boolean
 }
 

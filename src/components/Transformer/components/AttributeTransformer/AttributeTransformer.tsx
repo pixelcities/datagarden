@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPlus } from '@fortawesome/free-solid-svg-icons'
 
 import { useAppDispatch, useAppSelector } from 'hooks'
-import { createConcept, updateTransformerWAL, sendLocalMessage } from 'state/actions'
+import { createConcept, updateTransformerWAL, sendLocalNotification } from 'state/actions'
 import { selectConceptMap, selectActiveDataSpace } from 'state/selectors'
 
 import Dropdown from 'components/Dropdown'
@@ -57,11 +57,12 @@ const AttributeTransformer: FC<AttributeTransformerProps> = ({ id, wal, tableId,
   const onError = useCallback((error: string) => {
     console.log(error)
 
-    dispatch(sendLocalMessage({
+    dispatch(sendLocalNotification({
       id: crypto.randomUUID(),
       type: "error",
       message: error,
-      is_urgent: true
+      is_urgent: true,
+      is_local: true
     }))
   }, [ dispatch ])
 

@@ -103,9 +103,9 @@ import {
 } from './slices/content'
 
 import {
-  selectMessages,
-  selectUrgentMessages
-} from './slices/messages'
+  selectNotifications,
+  selectUrgentNotifications
+} from './slices/notifications'
 
 
 
@@ -218,6 +218,6 @@ export {
   selectContentByPageId,
   selectContentIdsByPageId,
   selectContentByWidgetId,
-  selectMessages,
-  selectUrgentMessages
+  selectNotifications,
+  selectUrgentNotifications
 }

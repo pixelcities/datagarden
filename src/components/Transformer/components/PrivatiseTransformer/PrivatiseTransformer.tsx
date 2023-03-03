@@ -1,7 +1,7 @@
 import React, { FC, useCallback } from 'react'
 
 import { useAppDispatch } from 'hooks'
-import { updateTransformerWAL, sendLocalMessage } from 'state/actions'
+import { updateTransformerWAL, sendLocalNotification } from 'state/actions'
 
 import { Schema, Identifier, WAL, ConceptA } from 'types'
 
@@ -30,11 +30,12 @@ const PrivatiseTransformer: FC<PrivatiseTransformerProps> = ({ id, wal, tableId,
   const onError = useCallback((error: string) => {
     console.log(error)
 
-    dispatch(sendLocalMessage({
+    dispatch(sendLocalNotification({
       id: crypto.randomUUID(),
       type: "error",
       message: error,
-      is_urgent: true
+      is_urgent: true,
+      is_local: true
     }))
   }, [ dispatch ])
 

@@ -4,7 +4,7 @@ import { faCheck } from '@fortawesome/free-solid-svg-icons'
 
 import { useAppDispatch, useAppSelector } from 'hooks'
 import { selectMetadataMap, selectConceptMap, selectTransformerById, selectCollectionsByIds, selectActiveDataSpace } from 'state/selectors'
-import { updateMetadata, sendLocalMessage } from 'state/actions'
+import { updateMetadata, sendLocalNotification } from 'state/actions'
 
 import { Schema, WAL, ConceptA } from 'types'
 
@@ -116,11 +116,12 @@ const Transformer: FC<TransformerProps> = ({id, collections, transformers, wal, 
   }, [ transformer ])
   useEffect(() => {
     if (error !== "") {
-      dispatch(sendLocalMessage({
+      dispatch(sendLocalNotification({
         id: crypto.randomUUID(),
         type: "error",
         message: error,
-        is_urgent: true
+        is_urgent: true,
+        is_local: true
       }))
     }
   }, [ error, dispatch ])

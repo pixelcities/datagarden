@@ -4,7 +4,7 @@ import { faPlus } from '@fortawesome/free-solid-svg-icons'
 
 import { useAppDispatch, useAppSelector } from 'hooks'
 import { selectConceptMap, selectActiveDataSpace } from 'state/selectors'
-import { updateTransformerWAL, sendLocalMessage } from 'state/actions'
+import { updateTransformerWAL, sendLocalNotification } from 'state/actions'
 
 import Dropdown from 'components/Dropdown'
 import { Schema, WAL, ConceptA } from 'types'
@@ -49,11 +49,12 @@ const AggregateTransformer: FC<AggregateTransformerProps> = ({ id, wal, tableId,
   const onError = useCallback((error: string) => {
     console.log(error)
 
-    dispatch(sendLocalMessage({
+    dispatch(sendLocalNotification({
       id: crypto.randomUUID(),
       type: "error",
       message: error,
-      is_urgent: true
+      is_urgent: true,
+      is_local: true
     }))
   }, [ dispatch ])
 

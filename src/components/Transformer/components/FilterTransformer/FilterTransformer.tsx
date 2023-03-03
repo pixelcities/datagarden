@@ -2,7 +2,7 @@ import React, { FC, useCallback, useEffect, useMemo, useState } from 'react'
 
 import { useAppDispatch, useAppSelector } from 'hooks'
 import { selectActiveDataSpace, selectMetadataMap } from 'state/selectors'
-import { createMetadata, updateTransformerWAL, sendLocalMessage } from 'state/actions'
+import { createMetadata, updateTransformerWAL, sendLocalNotification } from 'state/actions'
 
 import Dropdown from 'components/Dropdown'
 import { Schema, WAL, ConceptA } from 'types'
@@ -49,11 +49,12 @@ const FilterTransformer: FC<FilterTransformerProps> = ({ id, wal, tableId, leftI
   const onError = useCallback((error: string) => {
     console.log(error)
 
-    dispatch(sendLocalMessage({
+    dispatch(sendLocalNotification({
       id: crypto.randomUUID(),
       type: "error",
       message: error,
-      is_urgent: true
+      is_urgent: true,
+      is_local: true
     }))
   }, [ dispatch ])
 

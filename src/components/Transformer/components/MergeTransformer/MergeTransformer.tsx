@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faEquals } from '@fortawesome/free-solid-svg-icons'
 
 import { useAppDispatch } from 'hooks'
-import { updateTransformerWAL, sendLocalMessage } from 'state/actions'
+import { updateTransformerWAL, sendLocalNotification } from 'state/actions'
 
 import Dropdown from 'components/Dropdown'
 import { Schema, WAL, ConceptA, SqlTypeMap } from 'types'
@@ -51,11 +51,12 @@ const MergeTransformer: FC<MergeTransformerProps> = ({ id, wal, tableId, leftId,
   const onError = useCallback((error: string) => {
     console.log(error)
 
-    dispatch(sendLocalMessage({
+    dispatch(sendLocalNotification({
       id: crypto.randomUUID(),
       type: "error",
       message: error,
-      is_urgent: true
+      is_urgent: true,
+      is_local: true
     }))
   }, [ dispatch ])
 

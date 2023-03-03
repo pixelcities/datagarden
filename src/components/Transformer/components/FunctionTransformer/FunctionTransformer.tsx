@@ -1,7 +1,7 @@
 import React, { FC, useMemo, useCallback, useEffect, useState } from 'react'
 
 import { useAppDispatch } from 'hooks'
-import { updateTransformerWAL, sendLocalMessage } from 'state/actions'
+import { updateTransformerWAL, sendLocalNotification } from 'state/actions'
 
 import FormulaBuilder from 'components/FormulaBuilder'
 import Dropdown from 'components/Dropdown'
@@ -43,11 +43,12 @@ const FunctionTransformer: FC<FunctionTransformerProps> = ({ id, wal, tableId, l
   const onError = useCallback((error: string) => {
     console.log(error)
 
-    dispatch(sendLocalMessage({
+    dispatch(sendLocalNotification({
       id: crypto.randomUUID(),
       type: "error",
       message: error,
-      is_urgent: true
+      is_urgent: true,
+      is_local: true
     }))
   }, [ dispatch ])
 

@@ -110,12 +110,12 @@ import {
 } from './slices/content'
 
 import {
-  sendLocalMessage,
-  deleteLocalMessage,
+  sendLocalNotification,
+  deleteLocalNotification,
 
-  messageRead,
-  messageDeleted
-} from './slices/messages'
+  userNotificationSent,
+  notificationRead
+} from './slices/notifications'
 
 
 const recreateAction = <T extends ActionCreatorWithPayload<any,string>>(type: string): T => {
@@ -180,8 +180,7 @@ const createContent = recreateAction<typeof contentCreated>("CreateContent")
 const updateContent = recreateAction<typeof contentUpdated>("UpdateContent")
 const updateContentDraft = recreateAction<typeof contentDraftUpdated>("UpdateContentDraft")
 const deleteContent = recreateAction<typeof contentDeleted>("DeleteContent")
-const readMessage = recreateAction<typeof messageRead>("ReadMessage")
-const deleteMessage = recreateAction<typeof messageDeleted>("DeleteMessage")
+const markNotificationRead = recreateAction<typeof notificationRead>("MarkNotificationRead")
 
 const events: {[key: string]: ActionCreatorWithPayload<any, string>} = {
   "CollectionCreated": collectionCreated,
@@ -232,8 +231,8 @@ const events: {[key: string]: ActionCreatorWithPayload<any, string>} = {
   "ContentUpdated": contentUpdated,
   "ContentDraftUpdated": contentDraftUpdated,
   "ContentDeleted": contentDeleted,
-  "MessageRead": messageRead,
-  "MessageDeleted": messageDeleted
+  "UserNotificationSent": userNotificationSent,
+  "NotificationRead": notificationRead
 }
 
 export {
@@ -288,8 +287,7 @@ export {
   updateContent,
   updateContentDraft,
   deleteContent,
-  readMessage,
-  deleteMessage,
+  markNotificationRead,
 
   addWorkspace,
   setWorkspacePosition,
@@ -299,7 +297,7 @@ export {
   setCoords,
   setWindowDimensions,
   setComponentDimensions,
-  sendLocalMessage,
-  deleteLocalMessage,
+  sendLocalNotification,
+  deleteLocalNotification,
   deleteLocalTask
 }

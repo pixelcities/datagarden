@@ -54,6 +54,7 @@ class WebSocket {
 
             this.ds?.push("init", {"type": "secrets"})
             this.ds?.push("init", {"type": "tasks"})
+            this.ds?.push("init", {"type": "notifications"})
           })
           .receive("error", () => {
             console.log("Error when requesting subscriptions")

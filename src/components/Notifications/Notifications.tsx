@@ -3,8 +3,8 @@ import ReactDOM from 'react-dom'
 import { gsap } from 'gsap'
 
 import { useAppDispatch, useAppSelector } from 'hooks'
-import { selectUrgentMessages } from 'state/selectors'
-import { deleteLocalMessage } from 'state/actions'
+import { selectUrgentNotifications } from 'state/selectors'
+import { markNotificationRead, deleteLocalNotification } from 'state/actions'
 
 import './Notifications.sass'
 
@@ -12,18 +12,25 @@ import './Notifications.sass'
 const Notifications: FC = ({ children }) => {
   const dispatch = useAppDispatch()
 
-  const messages = useAppSelector(selectUrgentMessages)
+  const messages = useAppSelector(selectUrgentNotifications)
 
   const refs = useRef<{[id: string]: [boolean, React.MutableRefObject<HTMLDivElement | null>]}>({})
 
-  const handleClose = useCallback((id: string) => {
+  const handleClose = useCallback((id: string, receiver: string | undefined, isLocal: boolean | undefined) => {
     if (refs.current && refs.current[id]) {
       delete refs.current[id]
     }
 
-    dispatch(deleteLocalMessage({
-      id: id
-    }))
+    if (isLocal) {
+      dispatch(deleteLocalNotification({
+        id: id
+      }))
+    } else if (receiver) {
+      dispatch(markNotificationRead({
+        id: id,
+        read_by: receiver
+      }))
+    }
   }, [ dispatch ])
 
   const notifications = useMemo(() => {
@@ -33,8 +40,8 @@ const Notifications: FC = ({ children }) => {
       }
 
       return (
-        <div ref={refs.current[message.id][1]} key={message.id} className={"notification is-light " + (message.type === "info" ? "is-info" : "is-danger")}>
-          <button className="delete" onClick={() => handleClose(message.id)} />
+        <div ref={refs.current[message.id][1]} key={message.id} className={"notification is-light " + (message.type === "info" ? "is-link" : "is-danger")}>
+          <button className="delete" onClick={() => handleClose(message.id, message.receiver, message.is_local)} />
           { message.message }
         </div>
       )

@@ -29,7 +29,7 @@ export type {
   DataSpace,
   Page,
   Content,
-  Message
+  NotificationMsg
 } from './interfaces'
 
 export {
