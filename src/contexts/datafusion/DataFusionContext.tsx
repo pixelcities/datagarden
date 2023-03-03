@@ -15,21 +15,6 @@ export const DataFusionProvider: FC = ({ children }) => {
   const [arrow, setArrow] = useState<any>(null)
   const [dataFusion,setDataFusion]=useState<any>(null)
 
-  const init = async () => {
-    // Load all the heavy wasm stuff
-    const { DataFusion } = await import("@pixelcities/datafusion-wasm")
-    const { Arrow } = await import("@pixelcities/arrow-wasm")
-
-    const _arrow = await Arrow()
-    const _datafusion = new DataFusion()
-
-    setArrow(_arrow)
-    setDataFusion(_datafusion)
-
-    // Ready
-    setLoading(false)
-  }
-
   // Components that wish to use this context can call these load functions within a useEffect to
   // ensure that all the wasm has loaded. It rarely happens that the first page requires datafusion
   // but it is not impossible. By toggling the loading state, the pageloader will overlay
@@ -47,7 +32,28 @@ export const DataFusionProvider: FC = ({ children }) => {
   }
 
   useEffect(()=> {
+    let isCancelled = false
+
+    const init = async () => {
+      // Load all the heavy wasm stuff
+      const { DataFusion } = await import("@pixelcities/datafusion-wasm")
+      const { Arrow } = await import("@pixelcities/arrow-wasm")
+
+      const _arrow = await Arrow()
+      const _datafusion = new DataFusion()
+
+      if (!isCancelled) {
+        setArrow(_arrow)
+        setDataFusion(_datafusion)
+
+        // Ready
+        setLoading(false)
+      }
+    }
+
     init()
+
+    return () => { isCancelled = true }
   },[])
 
   return (
