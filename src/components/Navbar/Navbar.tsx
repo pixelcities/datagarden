@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom'
 
 import logo from 'assets/logo-white.svg'
 import notifications from 'assets/notifications.svg'
-import help from 'assets/help.svg'
 
 import { useAuthContext } from 'contexts'
 
@@ -27,10 +26,6 @@ const Navbar: FC = () => {
       <div className="navbar-end">
         { isAuthenticated ?
           <>
-            <div className="navbar-item">
-              <img src={help} alt="help" width="20" height="20"/>
-            </div>
-
             <div className="navbar-item">
               <img src={notifications} alt="notifications" width="20" height="20"/>
             </div>

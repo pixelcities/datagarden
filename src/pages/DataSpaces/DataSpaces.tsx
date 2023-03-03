@@ -29,20 +29,33 @@ const DataSpacesRoute: FC = ({ children }) => {
 const VerifyHandle: FC = ({ children }) => {
   const { handle } = useParams<{handle: string}>()
 
+  const dispatch = useAppDispatch()
   const activeHandle = useAppSelector(selectActiveDataSpace)
 
-  if (activeHandle?.handle === handle) {
-    return (
-      <Switch>
-        { children }
-      </Switch>
-    )
+  if (activeHandle?.handle !== handle) {
+    const data = sessionStorage.getItem("spaces")
+    const dataSpaces: DataSpace[] = data ? JSON.parse(data) : []
+    const dataSpace = dataSpaces?.find(ds => ds.handle === handle)
 
-  } else {
-    return (
-      <Redirect to="/" />
-    )
+    if (dataSpace) {
+      if (activeHandle) {
+        dispatch(leaveDataSpace())
+      }
+
+      dispatch(setActiveDataSpace(dataSpace))
+
+    } else {
+      return (
+        <Redirect to="/" />
+      )
+    }
   }
+
+  return (
+    <Switch>
+      { children }
+    </Switch>
+  )
 }
 
 
@@ -69,6 +82,7 @@ const DataSpaces: FC = (props) => {
         return response.json()
       }
     }).then((data) => {
+      sessionStorage.setItem("spaces", JSON.stringify(data))
       setDataSpaces(data)
 
     }).catch((e) => {

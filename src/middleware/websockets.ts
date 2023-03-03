@@ -12,6 +12,7 @@ class WebSocket {
   socket?: Socket
   user?: Channel
   ds?: Channel
+  chain?: () => void
 
   constructor(endpoint: string, callback: (event: any) => void) {
     this.endpoint = endpoint
@@ -27,6 +28,10 @@ class WebSocket {
     if (this.socket) {
       this.user = this.socket.channel(`user:${user_id}`, {})
       this.user.join()
+
+      if (this.chain) {
+        this.chain()
+      }
     }
   }
 
@@ -55,7 +60,17 @@ class WebSocket {
             resetState(handle)
             window.location.reload()
           })
+
+        this.chain = undefined
+        return
       }
+    }
+
+    // If we fell through the above checks, we raced the socket init
+    this.chain = this.handleDsChannel.bind(this, handle, eventId)
+
+    if (this.socket && this.user && !this.ds) { // Unreachable-ish
+      window.location.href = "/"
     }
   }
 
