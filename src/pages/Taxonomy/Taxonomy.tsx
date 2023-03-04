@@ -11,7 +11,7 @@ import Dropdown from 'components/Dropdown'
 import { useAppSelector, useAppDispatch } from 'hooks'
 import { selectActiveDataSpace, selectConcepts } from 'state/selectors'
 import { createConcept, updateConcept } from 'state/actions'
-import { ConceptA, DataType } from 'types'
+import { ConceptA } from 'types'
 
 import { emptyTaxonomy, loadTaxonomy } from 'utils/taxonomy'
 
@@ -101,11 +101,9 @@ const ConceptDetail: FC<ConceptDetailI> = ({ concept }) => {
 
         <div className="field pb-0">
           <label className="label">Data Type</label>
-          <Dropdown<[string, DataType]>
-            items={Object.entries(DataType)}
-            onClick={item => setDataType(item[1])}
-            selected={dataType && [(dataType as DataType), dataType]}
-          />
+          <p className="fineprint-label label-size-3 is-black is-left pt-1">
+            { dataType }
+          </p>
         </div>
 
         <div className="field is-grouped is-grouped-right">
