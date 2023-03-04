@@ -6,10 +6,10 @@ import { useAppDispatch, useAppSelector } from 'hooks'
 import { selectUrgentNotifications } from 'state/selectors'
 import { markNotificationRead, deleteLocalNotification } from 'state/actions'
 
-import './Notifications.sass'
+import './NotificationsBar.sass'
 
 
-const Notifications: FC = ({ children }) => {
+const NotificationsBar: FC = ({ children }) => {
   const dispatch = useAppDispatch()
 
   const messages = useAppSelector(selectUrgentNotifications)
@@ -84,4 +84,4 @@ const Portal: FC = ({ children }) => {
 }
 
 
-export default Notifications
+export default NotificationsBar

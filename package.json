@@ -61,6 +61,7 @@
   },
   "devDependencies": {
     "@craco/craco": "^7.0.0-alpha.0",
+    "@creativebulma/bulma-badge": "^1.0.1",
     "@creativebulma/bulma-divider": "^1.1.0",
     "@creativebulma/bulma-tooltip": "^1.2.0",
     "@deckar01/bulma-pageloader": "^2.2.1",

@@ -2,11 +2,11 @@ import React, { FC } from 'react'
 import { Link } from 'react-router-dom'
 
 import logo from 'assets/logo-white.svg'
-import notifications from 'assets/notifications.svg'
 
 import { useAuthContext } from 'contexts'
 
 import AvatarMenu from 'components/AvatarMenu'
+import NotificationsMenu from 'components/NotificationsMenu'
 
 
 const Navbar: FC = () => {
@@ -27,7 +27,7 @@ const Navbar: FC = () => {
         { isAuthenticated ?
           <>
             <div className="navbar-item">
-              <img src={notifications} alt="notifications" width="20" height="20"/>
+              <NotificationsMenu />
             </div>
           </>
         :

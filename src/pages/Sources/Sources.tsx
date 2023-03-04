@@ -4,7 +4,7 @@ import { Route } from "react-router-dom"
 
 import Navbar from 'components/Navbar'
 import Sidebar from 'components/Sidebar'
-import Notifications from 'components/Notifications'
+import NotificationsBar from 'components/NotificationsBar'
 import SourceTable from 'components/SourceTable'
 import SourceCard from 'components/SourceCard'
 import SourceCreator from 'components/SourceCreator'
@@ -30,7 +30,7 @@ class SourcesRoute extends Component<RouteComponentProps> {
     return (
       <div>
         <Navbar />
-        <Notifications />
+        <NotificationsBar />
         <Onboarding />
 
         <Sidebar page="sources" isMini={false}>

@@ -4,7 +4,7 @@ import { Route } from "react-router-dom"
 
 import Navbar from 'components/Navbar'
 import Sidebar from 'components/Sidebar'
-import Notifications from 'components/Notifications'
+import NotificationsBar from 'components/NotificationsBar'
 import Widget from 'components/Widget'
 
 import { useKeyStoreContext } from 'contexts'
@@ -19,7 +19,7 @@ class WidgetsRoute extends Component<RouteComponentProps> {
     return (
       <div>
         <Navbar />
-        <Notifications />
+        <NotificationsBar />
 
         <Sidebar page="widgets" isMini={false}>
           <Route path={this.parentPath} component={Widgets} />

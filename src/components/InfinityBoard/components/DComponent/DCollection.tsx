@@ -26,7 +26,7 @@ const DCollection = forwardRef<{[id: string]: any}, DCollectionProps>((props, _r
   const { collection, offset, zoom, parentCoords, dimensions, onClick } = props
 
   const dispatch = useAppDispatch()
-  const { keyStore } = useKeyStoreContext()
+  const { keyStore, keyStoreIsReady } = useKeyStoreContext()
   const { dataFusion } = useDataFusionContext()
 
   const [title, setTitle] = useState("")
@@ -52,10 +52,10 @@ const DCollection = forwardRef<{[id: string]: any}, DCollectionProps>((props, _r
 
   useEffect(() => {
     const maybe_name = metadata[collection.id]
-    const name = maybe_name ? keyStore?.decrypt_metadata(dataSpace?.key_id, maybe_name) : collection.id;
+    const name = maybe_name && keyStoreIsReady ? keyStore?.decrypt_metadata(dataSpace?.key_id, maybe_name) : collection.id;
 
     setTitle(name)
-  }, [ metadata, collection.id, keyStore, dataSpace ])
+  }, [ metadata, collection.id, keyStore, keyStoreIsReady, dataSpace ])
 
   useEffect(() => {
     // Monitor changes from !ready -> ready
