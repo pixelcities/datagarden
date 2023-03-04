@@ -18,6 +18,7 @@ import Profile from 'pages/Profile'
 import KeyStore from 'pages/KeyStore'
 import Reports from 'pages/Reports'
 import Contacts from 'pages/Contacts'
+import Home from 'pages/Home'
 
 import PrivateRoute from 'utils/PrivateRoute'
 import { AuthProvider } from 'contexts'
@@ -37,38 +38,46 @@ function App() {
         <DndProvider backend={HTML5Backend}>
           <AuthProvider>
             <KeyStoreProvider>
-              <DataFusionProvider>
-                <ExecutionProvider store={store}>
-                  <div className="App">
-                    <Switch>
-                      { /* Profile */ }
-                      <Route path="/register" component={Profile} />
-                      <Route path="/login" component={Profile} />
-                      <Route path="/logout" component={Profile} />
-                      <PrivateRoute path="/profile" component={Profile} />
+              <div className="App">
+                { /* Toggles between public or authenticated landing */ }
+                <Home>
 
-                      { /* Passthrough */ }
-                      <PrivateRoute path="/auth/local/confirm/:token" component={Profile} />
-                      <PrivateRoute path="/users/profile/confirm_email/:token" component={Profile} />
+                  { /* Application routes */ }
+                  <DataFusionProvider>
+                    <ExecutionProvider store={store}>
+                      <Switch>
 
-                      { /* Public pages */ }
-                      <Route path="/pages/:handle/:id" component={Reports} />
+                        { /* Profile */ }
+                        <Route path="/register" component={Profile} />
+                        <Route path="/login" component={Profile} />
+                        <Route path="/logout" component={Profile} />
+                        <PrivateRoute path="/profile" component={Profile} />
 
-                      { /* Main */ }
-                      <DataSpaces>
-                        <PrivateRoute path="/:handle/keys" component={KeyStore} />
-                        <PrivateRoute path="/:handle/contacts" component={Contacts} />
-                        <PrivateRoute path="/:handle/sources" component={Sources} />
-                        <PrivateRoute path="/:handle/taxonomy" component={Taxonomy} />
-                        <PrivateRoute path="/:handle/widgets" component={Widgets} />
-                        <PrivateRoute path="/:handle/reports" component={Reports} />
-                        <PrivateRoute path="/:handle/" component={Builder} />
-                      </DataSpaces>
+                        { /* Passthrough */ }
+                        <PrivateRoute path="/auth/local/confirm/:token" component={Profile} />
+                        <PrivateRoute path="/users/profile/confirm_email/:token" component={Profile} />
 
-                    </Switch>
-                  </div>
-                </ExecutionProvider>
-              </DataFusionProvider>
+                        { /* Public pages */ }
+                        <Route path="/pages/:handle/:id" component={Reports} />
+
+                        { /* Main */ }
+                        <DataSpaces>
+                          <PrivateRoute path="/:handle/keys" component={KeyStore} />
+                          <PrivateRoute path="/:handle/contacts" component={Contacts} />
+                          <PrivateRoute path="/:handle/sources" component={Sources} />
+                          <PrivateRoute path="/:handle/taxonomy" component={Taxonomy} />
+                          <PrivateRoute path="/:handle/widgets" component={Widgets} />
+                          <PrivateRoute path="/:handle/reports" component={Reports} />
+                          <PrivateRoute path="/:handle/" component={Builder} />
+                        </DataSpaces>
+
+                      </Switch>
+                    </ExecutionProvider>
+                  </DataFusionProvider>
+
+                </Home>
+              </div>
+
             </KeyStoreProvider>
           </AuthProvider>
         </DndProvider>
