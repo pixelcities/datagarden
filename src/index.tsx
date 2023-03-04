@@ -17,6 +17,7 @@ import Widgets from 'pages/Widgets'
 import Profile from 'pages/Profile'
 import KeyStore from 'pages/KeyStore'
 import Reports from 'pages/Reports'
+import Settings from 'pages/Settings'
 import Contacts from 'pages/Contacts'
 import Home from 'pages/Home'
 
@@ -68,6 +69,7 @@ function App() {
                           <PrivateRoute path="/:handle/taxonomy" component={Taxonomy} />
                           <PrivateRoute path="/:handle/widgets" component={Widgets} />
                           <PrivateRoute path="/:handle/reports" component={Reports} />
+                          <PrivateRoute path="/:handle/settings" component={Settings} />
                           <PrivateRoute path="/:handle/" component={Builder} />
                         </DataSpaces>
 

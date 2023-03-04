@@ -80,10 +80,10 @@ const Sidebar: FC<SidebarProps> = (props) => {
                   <img src={flippedCollapseIcon} alt="" />
                 </div>
                 <ul className="menu-list">
-                  <li><Link className="button-label" style={{cursor: "default", color: "#a2a2a2"}} to={basepath}>Team Management</Link></li>
+                  <li><Link className={"button-label" + (props.page === "settings" ? " is-active" : "")} to={basepath + "/settings"}>Team Management</Link></li>
                 </ul>
                 <ul className="menu-list">
-                  <li><Link className={"button-label" + (["sources", "taxonomy", "builder", "widgets"].includes(props.page) ? " is-active" : "")} to="/">Data Ecosystem</Link></li>
+                  <li><Link className={"button-label" + (["sources", "taxonomy", "builder", "widgets"].includes(props.page) ? " is-active" : "")} to={basepath}>Data Ecosystem</Link></li>
                   <li>
                     <ul>
                       <li><Link className={"button-label" + (props.page === "sources" ? " is-active" : "")} to={basepath + "/sources"}>Data Sources</Link></li>

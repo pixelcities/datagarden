@@ -101,7 +101,7 @@ const ConceptDetail: FC<ConceptDetailI> = ({ concept }) => {
 
         <div className="field pb-0">
           <label className="label">Data Type</label>
-          <p className="fineprint-label label-size-3 is-black is-left pt-1">
+          <p className="fineprint-label label-size-3 is-left pt-1">
             { dataType }
           </p>
         </div>
