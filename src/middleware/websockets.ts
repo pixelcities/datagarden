@@ -48,7 +48,7 @@ class WebSocket {
           .receive("ok", () => {
 
             // TODO: small moment where no messages are handled
-            this.ds?.off("history", ref)
+            this.user?.off("history", ref)
             this.ds?.on("event", this.callback)
             this.user?.on("event", this.callback)
 
