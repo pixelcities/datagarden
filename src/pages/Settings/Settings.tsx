@@ -8,7 +8,6 @@ import NotificationsBar from 'components/NotificationsBar'
 
 import { useAppSelector } from 'hooks'
 import { selectUsers } from 'state/selectors'
-import { useAuthContext } from 'contexts'
 import { altAsSvg, toColor } from 'utils/helpers'
 
 
@@ -30,7 +29,6 @@ class SettingsRoute extends Component<RouteComponentProps> {
 }
 
 const Settings: FC = (props) => {
-  const { user } = useAuthContext()
   const users = useAppSelector(selectUsers)
 
   const renderUsers = useMemo(() => {
