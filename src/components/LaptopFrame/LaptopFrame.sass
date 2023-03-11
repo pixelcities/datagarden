@@ -1,0 +1,78 @@
+@import 'styles'
+
+$background: #2fac66
+$base: #e6e8e7
+$screen: #89c9e5
+$frame: #3f3f41
+$open: #bcbdc1
+$base2: #d1d2d4
+
+@mixin align-horizontal
+  position: absolute
+  left: 50%
+  transform: translateX(-50%)
+
+@mixin laptop($z)
+  position: relative
+  margin: auto
+  background: $screen
+  border: calc(#{$z} / 6.6) solid $frame // 15
+  border-top: calc(#{$z} / 5) solid $frame // 20
+  border-radius: calc(#{$z} / 7.14) calc(#{$z} / 7.14) 0 0 // 14
+  box-shadow: 0 0 0 1px $base2
+  width: calc(#{$z} * 5.5)
+  height: calc(#{$z} * 3.4)
+  &:before
+    content: ""
+    bottom: calc(#{$z} / -2.85) // -35
+    background: $base
+    height: calc(#{$z} / 5) // 20
+    width: calc(#{$z} * 7) // 700
+    border-radius: 0 0 calc(#{$z} / 10) calc(#{$z} / 10) // 10
+    @include align-horizontal
+  &:after
+    content: ""
+    top: calc(#{$z} / -8.33) // 12
+    width: calc(#{$z} / 33.3) // 3
+    height: calc(#{$z} / 33.3) // 3
+    background: $base
+    border-radius: 50%
+    @include align-horizontal
+
+@mixin base($z)
+  bottom: calc(#{$z} / -4) // -25
+  background: $base2
+  height: calc(#{$z} / 10) // 10
+  width: calc(#{$z} * 7) // 700
+  @include align-horizontal
+  &:before
+    content: ""
+    border-radius: 0 0 calc(#{$z} / 10) calc(#{$z} / 10) // 10
+    height: calc(#{$z} / 10) // 10
+    width: calc(#{$z} / 1.25) // 80
+    background: $open
+    @include align-horizontal
+  &:after
+    content: ""
+    position: absolute
+    height: calc(#{$z} / 5) // 20
+    width: calc(#{$z} * 7) // 700
+    border-radius: 0 0 calc(#{$z} / 10) calc(#{$z} / 10) // 10
+    box-shadow: 0px calc(#{$z} / 10) calc(#{$z} / 2.77) calc(#{$z} / -50) rgba(0,0,0,0.4) // 0 10 36 -2
+
+.laptop
+  +mobile
+    @include laptop($z: 50px)
+  +tablet-only
+    @include laptop($z: 75px)
+  +from($desktop)
+    @include laptop($z: 100px)
+
+.base
+  +mobile
+    @include base($z: 50px)
+  +tablet-only
+    @include base($z: 75px)
+  +from($desktop)
+    @include base($z: 100px)
+
