@@ -9,7 +9,8 @@ import Login from './Login'
 import Register from './Register'
 import Logout from './Logout'
 import Profile from './Profile'
-import Confirm from './Confirm'
+import ConfirmRegistration from './ConfirmRegistration'
+import ConfirmChange from './ConfirmChange'
 
 class ProfileRoutes extends Component<RouteComponentProps> {
   render() {
@@ -40,12 +41,12 @@ class ProfileRoutes extends Component<RouteComponentProps> {
 
     } else if (parentPath === "/auth/local/confirm/:token") {
       return (
-        <Route path={parentPath} component={Confirm} />
+        <Route path={parentPath} component={ConfirmRegistration} />
       )
 
-    } else if (parentPath === "/users/profile/confirm_email/:token") {
+    } else if (parentPath === "/users/profile/confirm_email/:token/:rotation_token") {
       return (
-        <Route path={parentPath} component={Confirm} />
+        <Route path={parentPath} component={ConfirmChange} />
       )
 
     } else  {

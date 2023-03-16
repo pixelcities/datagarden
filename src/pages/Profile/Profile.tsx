@@ -74,7 +74,8 @@ const Profile: FC = () => {
           "action": "update_email",
           "current_password": hashedPassphrase,
           "user": {
-            "email": email
+            "email": email,
+            "password": rotation.hashed_passphrase
           },
           "rotation_token": rotation.token
         })

@@ -5,12 +5,11 @@ import { useHistory } from "react-router-dom"
 import { useAuthContext } from 'contexts'
 import { getCSRFToken } from 'utils/getCSRFToken'
 
-// TODO: add rotation token
-interface ConfirmProps {
+interface ConfirmRegistrationProps {
   token: string
 }
 
-const Confirm: FC <RouteComponentProps<ConfirmProps>> = (props) => {
+const ConfirmRegistration: FC <RouteComponentProps<ConfirmRegistrationProps>> = (props) => {
   const url = props.match.url
   const params = props.match.params
   const token = params?.token
@@ -42,4 +41,4 @@ const Confirm: FC <RouteComponentProps<ConfirmProps>> = (props) => {
   )
 }
 
-export default Confirm;
+export default ConfirmRegistration;
