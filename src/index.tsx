@@ -6,6 +6,7 @@ import { DndProvider } from 'react-dnd'
 import { HTML5Backend } from 'react-dnd-html5-backend'
 import { gsap } from "gsap"
 import { Draggable } from "gsap/Draggable"
+import { config } from '@fortawesome/fontawesome-svg-core'
 
 import store from 'state/store'
 
@@ -30,7 +31,8 @@ import { ExecutionProvider } from 'contexts'
 import 'styles/style.css'
 import 'styles/style.sass'
 
-gsap.registerPlugin(Draggable);
+gsap.registerPlugin(Draggable)
+config.autoAddCss = false
 
 function App() {
   return (
