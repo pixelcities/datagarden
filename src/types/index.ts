@@ -20,6 +20,7 @@ export type {
   Identifier,
   WAL,
   User,
+  UserInvite,
   Metadata,
   Concept,
   ConceptA,

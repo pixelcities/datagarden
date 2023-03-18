@@ -59,6 +59,11 @@ import {
 } from './slices/users'
 
 import {
+  selectUserInvites,
+  selectUserInviteByEmail
+} from './slices/invites'
+
+import {
   selectActiveDataSpace
 } from './slices/dataspaces'
 
@@ -198,6 +203,8 @@ export {
   selectUserById,
   selectUserByEmail,
   selectSelf,
+  selectUserInvites,
+  selectUserInviteByEmail,
   selectActiveDataSpace,
   selectMetadata,
   selectMetadataById,

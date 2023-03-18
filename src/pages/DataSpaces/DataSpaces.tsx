@@ -2,15 +2,20 @@ import React, { FC, useEffect, useState, useMemo } from 'react'
 import { Route, Redirect, Switch, Link, useParams } from "react-router-dom"
 import PrivateRoute from 'utils/PrivateRoute'
 
+import Contacts from 'pages/Contacts'
+
 import Section from 'components/Section'
 import Navbar from 'components/Navbar'
 import Onboarding from './Onboarding'
 
 import { DataSpace } from 'types'
 
+import { useKeyStoreContext } from 'contexts'
 import { useAppDispatch, useAppSelector } from 'hooks'
 import { selectActiveDataSpace } from 'state/selectors'
 import { leaveDataSpace, setActiveDataSpace } from 'state/actions'
+
+import benchImg from 'assets/bench.png'
 
 
 const DataSpacesRoute: FC = ({ children }) => {
@@ -28,6 +33,7 @@ const DataSpacesRoute: FC = ({ children }) => {
 
 const VerifyHandle: FC = ({ children }) => {
   const { handle } = useParams<{handle: string}>()
+  const { keyStore, keyStoreIsReady } = useKeyStoreContext()
 
   const dispatch = useAppDispatch()
   const activeHandle = useAppSelector(selectActiveDataSpace)
@@ -49,6 +55,20 @@ const VerifyHandle: FC = ({ children }) => {
         <Redirect to="/" />
       )
     }
+  }
+
+  if (keyStoreIsReady && !keyStore?.has_key(activeHandle.key_id)) {
+    // When the user does not have the metadata key, show a simple waiting room.
+    // The contacts page is hardcoded to work, because the fingerprints should be
+    // verifiable beforehand.
+    return (
+      <Switch>
+        <PrivateRoute path="/:handle/contacts" component={Contacts} />
+        <Route path="/:handle">
+          <WaitingRoom />
+        </Route>
+      </Switch>
+    )
   }
 
   return (
@@ -138,5 +158,32 @@ const DataSpaces: FC = (props) => {
     </>
   )
 }
+
+const WaitingRoom: FC = (props) => {
+  return (
+    <>
+      <Navbar />
+      <Section>
+        <div className="container pt-6">
+          <h1 className="title is-size-5 has-text-centered py-5">
+            Waiting room
+          </h1>
+
+          <div className="has-text-centered">
+            <figure className="image is-256x256 is-inline-block">
+              <img src={benchImg} alt="" />
+            </figure>
+          </div>
+
+          <h1 className="subtitle is-size-5 has-text-centered py-5">
+            Almost there.. One of your soon to be collaborators can let you in.
+          </h1>
+
+        </div>
+      </Section>
+    </>
+  )
+}
+
 
 export default DataSpacesRoute;

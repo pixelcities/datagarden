@@ -11,6 +11,8 @@ import Logout from './Logout'
 import Profile from './Profile'
 import ConfirmRegistration from './ConfirmRegistration'
 import ConfirmChange from './ConfirmChange'
+import ConfirmInvite from './ConfirmInvite'
+
 
 class ProfileRoutes extends Component<RouteComponentProps> {
   render() {
@@ -47,6 +49,11 @@ class ProfileRoutes extends Component<RouteComponentProps> {
     } else if (parentPath === "/users/profile/confirm_email/:token/:rotation_token") {
       return (
         <Route path={parentPath} component={ConfirmChange} />
+      )
+
+    } else if (parentPath === "/spaces/accept_invite/:token") {
+      return (
+        <Route path={parentPath} component={ConfirmInvite} />
       )
 
     } else  {

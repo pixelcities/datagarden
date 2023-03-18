@@ -42,10 +42,17 @@ export const KeyStoreProvider: FC = ({ children }) => {
       secrets.forEach(secret => {
         if (! keyCache.current.has(secret.key_id)) {
           protocol?.decrypt(secret.owner, secret.ciphertext).then((key: string) => {
-            keyStore?.add_key(secret.key_id, key).then((key_id: string) => {
-              console.log("Received new key: ", key_id)
-              keyCache.current.add(key_id)
-            })
+            // Special hello message
+            if (secret.key_id === secret.owner) {
+              keyCache.current.add(secret.key_id)
+
+            // Key shares
+            } else {
+              keyStore?.add_key(secret.key_id, key).then((key_id: string) => {
+                console.log("Received new key: ", key_id)
+                keyCache.current.add(key_id)
+              })
+            }
           })
         }
       })

@@ -65,6 +65,13 @@ import {
 } from './slices/users'
 
 import {
+  userInvited,
+  inviteAccepted,
+  inviteConfirmed,
+  inviteCancelled
+} from './slices/invites'
+
+import {
   setActiveDataSpace,
   leaveDataSpace,
   loadDataSpace
@@ -219,6 +226,10 @@ const events: {[key: string]: ActionCreatorWithPayload<any, string>} = {
   "ConceptUpdated": conceptUpdated,
   "UserCreated": userCreated,
   "UserUpdated": userUpdated,
+  "UserInvited": userInvited,
+  "InviteAccepted": inviteAccepted,
+  "InviteConfirmed": inviteConfirmed,
+  "InviteCancelled": inviteCancelled,
   "SecretShared": secretShared,
   "TaskAssigned": taskAssigned,
   "TaskCompleted": taskCompleted,

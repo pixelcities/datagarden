@@ -1,4 +1,4 @@
-import { createSelector, createAction, createSlice, createEntityAdapter } from '@reduxjs/toolkit'
+import { createSelector, createAction, createSlice, createEntityAdapter, PayloadAction } from '@reduxjs/toolkit'
 import { RootState } from 'state/store'
 import { User } from 'types'
 
@@ -11,7 +11,13 @@ const usersSlice = createSlice({
   initialState: initialState,
   reducers: {
     userCreated: usersAdapter.addOne,
-    userUpdated: usersAdapter.upsertOne
+    userUpdated: usersAdapter.upsertOne,
+    userActivitySet(state, action: PayloadAction<{id: string, last_active_at: string}>) {
+      const user = state.entities[action.payload.id]
+      if (user) {
+        user.last_active_at = action.payload.last_active_at
+      }
+    }
   }
 })
 

@@ -7,9 +7,9 @@ const PrivateRoute: FC<RouteProps> = ({component: Component, ...rest}) => {
 
   useEffect(() => {
     if (!isAuthenticated) {
-      setPath(rest.path)
+      setPath(rest.location?.pathname)
     }
-  }, [isAuthenticated, setPath, rest.path])
+  }, [isAuthenticated, setPath, rest.location?.pathname])
 
   if (!Component) return null
 

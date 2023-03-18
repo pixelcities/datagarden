@@ -72,7 +72,7 @@ const Contacts: FC = () => {
       const displayFingerprint = fingerprint.match(/.{6}/g)?.join(" ") ?? fingerprint
 
       return (
-        <div key={id} className="box columns">
+        <div key={id} className="box columns mt-2">
           <div className="column is-1 has-text-centered">
             <span className="icon is-medium mt-2">
               <img src={contact?.picture || altAsSvg(contact?.email[0]?.toUpperCase())} className={(!contact.picture ? " default-icon is-medium bg-" + toColor(contact?.id) : "")} alt={contact?.email[0]?.toUpperCase()} />

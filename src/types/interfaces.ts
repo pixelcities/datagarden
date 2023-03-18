@@ -136,9 +136,18 @@ export interface Source {
 export interface User {
   id: string,
   email: string,
+  role: string,
   name: string,
   picture: string,
+  last_active_at: string,
   relation?: string
+}
+
+export interface UserInvite {
+  email: string,
+  role: string,
+  date: string,
+  id?: string
 }
 
 export interface Metadata {

@@ -1,4 +1,5 @@
 import React, { FC, useState } from 'react'
+import { useHistory } from "react-router-dom"
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faEnvelope, faLock } from '@fortawesome/free-solid-svg-icons'
 
@@ -15,8 +16,10 @@ const Register: FC = () => {
   const [confirmPrompt, setConfirmPrompt] = useState(false)
   const [error, setError] = useState("")
 
-  const { isAuthenticated, handleLogin } = useAuthContext();
-  const { keyStore, protocol } = useKeyStoreContext();
+  const { isAuthenticated, handleLogin, path } = useAuthContext()
+  const { keyStore, protocol, __setIsReady__ } = useKeyStoreContext()
+
+  const history = useHistory()
 
   const handleSubmit = (e: any) => {
     e.preventDefault();
@@ -33,6 +36,20 @@ const Register: FC = () => {
 
     const hashedPassword = keyStore.open_sesame(email, password)
 
+    let userBody: {[key: string]: string} = {
+      "email": email,
+      "password": hashedPassword,
+      "remember_me": "true"
+    }
+
+    if (path) {
+      const match = path.match(/accept_invite\/([a-zA-Z0-9_-]+)/)
+
+      if (match?.length === 2) {
+        userBody.invite = match[1]
+      }
+    }
+
     fetch(process.env.REACT_APP_API_BASE_PATH + "/auth/local/register", {
       method: "POST",
       credentials: "include",
@@ -41,11 +58,7 @@ const Register: FC = () => {
         "X-CSRF-Token": genCSRFToken()
       },
       body: JSON.stringify({
-        "user": {
-          "email": email,
-          "password": hashedPassword,
-          "remember_me": "true"
-        },
+        "user": userBody
       })
     }).then((response) => {
       if (!response.ok) {
@@ -54,7 +67,9 @@ const Register: FC = () => {
         return response.json()
       }
     }).then((data) => {
-      setConfirmPrompt(true)
+      if (!userBody.invite) {
+        setConfirmPrompt(true)
+      }
 
       // Ensure we start fresh
       localStorage.clear()
@@ -62,7 +77,13 @@ const Register: FC = () => {
       keyStore.create_named_key("protocol", 32).then((key_id: string) => {
         protocol.register(keyStore.get_key(key_id)).then((pub_key: string) => {
           handleLogin(data)
-          keyStore.init()
+          keyStore.init().then(() => {
+            __setIsReady__(true)
+
+            if (userBody.invite) {
+              history.push("/")
+            }
+          })
         })
       })
     }).catch((e) => {
