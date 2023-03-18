@@ -6,9 +6,10 @@ import { useLocation } from "react-router-dom"
 import { useAppSelector } from 'hooks'
 import { selectSecrets } from 'state/selectors'
 
-import { useAuthContext } from 'contexts';
+import { useAuthContext } from 'contexts'
 
-import type { KeyStore, Protocol } from '@pixelcities/key-x-wasm';
+import init, { KeyStore, Protocol } from '@pixelcities/key-x-wasm'
+import type { KeyStore as KeyStoreT, Protocol as ProtocolT } from '@pixelcities/key-x-wasm'
 
 interface KeyStoreContextI {
   keyStore?: any
@@ -25,8 +26,8 @@ export const KeyStoreProvider: FC = ({ children }) => {
   const location = useLocation()
 
   const [loading, setLoading] = useState<boolean>(false);
-  const [keyStore, setKeyStore] = useState<KeyStore | undefined>();
-  const [protocol, setProtocol] = useState<Protocol | undefined>();
+  const [keyStore, setKeyStore] = useState<KeyStoreT | undefined>();
+  const [protocol, setProtocol] = useState<ProtocolT | undefined>();
   const [password, setPassword] = useState("")
   const [isLocked, setIsLocked] = useState(true)
   const [isReady, setIsReady] = useState(false)
@@ -52,11 +53,13 @@ export const KeyStoreProvider: FC = ({ children }) => {
     }
   }, [ isReady, keyCache, secrets, keyStore, protocol ])
 
-  const init = async () => {
+  const loadWasm = async () => {
     setLoading(true)
     setIsReady(false)
 
-    const { KeyStore, Protocol } = await import("@pixelcities/key-x-wasm")
+    await init(fetch("/static/js/key_x_wasm_bg.wasm", {
+      integrity: "sha384-QnZMk6bidI8lSALoryKfelDUFFQHNwI82J6anGKykxGEx3wxTWj0FpBKqp2a7+9K"
+    }))
 
     keyStoreRef = new KeyStore()
     setKeyStore(keyStoreRef)
@@ -67,7 +70,7 @@ export const KeyStoreProvider: FC = ({ children }) => {
   }
 
   useEffect(()=> {
-    init();
+    loadWasm();
   },[])
 
 

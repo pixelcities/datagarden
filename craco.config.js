@@ -2,6 +2,7 @@ const { addBeforeLoader, loaderByName, addPlugins } = require('@craco/craco');
 
 const webpack = require('webpack');
 const CopyPlugin = require("copy-webpack-plugin");
+const { SubresourceIntegrityPlugin } = require('webpack-subresource-integrity');
 
 module.exports = {
   webpack: {
@@ -12,6 +13,12 @@ module.exports = {
           syncWebAssembly: true,
           topLevelAwait: true,
       };
+
+      webpackConfig.output.crossOriginLoading = "anonymous";
+
+      addPlugins(webpackConfig, [
+        new SubresourceIntegrityPlugin()
+      ]);
 
       // https://github.com/rust-random/getrandom/issues/224
       addPlugins(webpackConfig, [
@@ -31,7 +38,8 @@ module.exports = {
       addPlugins(webpackConfig, [
         new CopyPlugin({
           patterns: [
-            { from: "node_modules/@pixelcities/arrow-wasm/arrow_wasm.wasm", to: "static/js/" }
+            { from: "node_modules/@pixelcities/arrow-wasm/arrow_wasm.wasm", to: "static/js/" },
+            { from: "node_modules/@pixelcities/key-x-wasm/key_x_wasm_bg.wasm", to: "static/js/" }
           ]
         })
       ]);
