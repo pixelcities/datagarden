@@ -86,11 +86,11 @@ export const KeyStoreProvider: FC = ({ children }) => {
       if (password.length >= 8) {
         keyStore?.open_sesame(user.email, password)
 
-        keyStore?.init().then(() => {
+        keyStore?.init(process.env.REACT_APP_API_BASE_PATH).then(() => {
           setIsLocked(false)
 
           const secret_key = keyStore?.get_named_key("protocol")
-          protocol?.init(secret_key).then(() => {
+          protocol?.init(secret_key, process.env.REACT_APP_API_BASE_PATH).then(() => {
             setIsReady(true)
           })
         }).catch(() => {
