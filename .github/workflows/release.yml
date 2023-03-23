@@ -26,9 +26,9 @@ jobs:
           npm run build
           tar czf datagarden-$GITHUB_REF_NAME.tar.gz -C build .
         env:
-          REACT_APP_API_BASEPATH: ${{ vars.API_BASEPATH }}
+          REACT_APP_API_BASE_PATH: ${{ vars.API_BASEPATH }}
           REACT_APP_CONTENT_HOST: ${{ vars.CONTENT_BASEPATH }}
-          REACT_APP_WS_BASEPATH: ${{ vars.WS_BASEPATH }}
+          REACT_APP_WS_BASE_PATH: ${{ vars.WS_BASEPATH }}
       - name: Archive build artifacts
         uses: actions/upload-artifact@v3
         with:
