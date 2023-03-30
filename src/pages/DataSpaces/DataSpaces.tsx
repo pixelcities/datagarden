@@ -1,5 +1,5 @@
 import React, { FC, useEffect, useState, useMemo } from 'react'
-import { Route, Redirect, Switch, Link, useParams } from "react-router-dom"
+import { Route, Redirect, Switch, Link, useHistory, useParams } from "react-router-dom"
 import PrivateRoute from 'utils/PrivateRoute'
 
 import Contacts from 'pages/Contacts'
@@ -32,6 +32,7 @@ const DataSpacesRoute: FC = ({ children }) => {
 }
 
 const VerifyHandle: FC = ({ children }) => {
+  const history = useHistory()
   const { handle } = useParams<{handle: string}>()
   const { keyStore, keyStoreIsReady } = useKeyStoreContext()
 
@@ -58,6 +59,14 @@ const VerifyHandle: FC = ({ children }) => {
   }
 
   if (keyStoreIsReady && !keyStore?.has_key(activeHandle.key_id)) {
+    if (activeHandle?.handle === "trial") {
+      // The trial space key is received almost immediatly. Just "refresh" after a short
+      // period.
+      setTimeout(() => {
+        history.push("/trial")
+      }, 1000)
+    }
+
     // When the user does not have the metadata key, show a simple waiting room.
     // The contacts page is hardcoded to work, because the fingerprints should be
     // verifiable beforehand.
@@ -113,7 +122,7 @@ const DataSpaces: FC = (props) => {
   const renderDataSpaces = useMemo(() => {
     return dataSpaces.map((dataSpace) => {
       return (
-        <div id={dataSpace.handle === "ds1" ? "trial-space" : ""} key={dataSpace.id} className="column is-narrow">
+        <div id={dataSpace.handle === "trial" ? "trial-space" : ""} key={dataSpace.id} className="column is-narrow">
 
           <Link to={"/" + dataSpace.handle + "/sources"} onClick={() => dispatch(setActiveDataSpace(dataSpace))}>
             <div className="card">

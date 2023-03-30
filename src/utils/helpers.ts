@@ -48,6 +48,12 @@ export const isAuthorized = (user: User | undefined, schema: Schema): boolean =>
   return !!schema.shares.find(s => s.principal === user?.id)
 }
 
+export const getColumnIds = (user: User | undefined, schema: Schema): string[] => {
+  return schema.columns.filter(column => {
+    return !!column.shares.find(s => s.principal === user?.id)
+  }).map(x => x.id)
+}
+
 export const toRelativeTime = (datetime: string | undefined): string | undefined => {
   if (datetime) {
     const rtf = new Intl.RelativeTimeFormat("en", {

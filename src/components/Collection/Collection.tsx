@@ -6,7 +6,7 @@ import SourceTable from 'components/SourceTable'
 
 interface CollectionProps {
   id: string,
-  uri?: string,
+  uri?: [string, string],
   schema: Schema,
   onClose: () => void
 }

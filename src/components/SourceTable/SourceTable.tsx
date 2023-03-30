@@ -16,7 +16,7 @@ import Onboarding from './Onboarding'
 import { useDataFusionContext } from 'contexts'
 import { useKeyStoreContext } from 'contexts'
 import { useAuthContext } from 'contexts'
-import { toRelativeTime } from 'utils/helpers'
+import { getColumnIds, toRelativeTime } from 'utils/helpers'
 import { loadRemoteTable } from 'utils/loadRemoteTable'
 import { signSchema, verifySchema } from 'utils/integrity'
 
@@ -25,7 +25,7 @@ import './SourceTable.sass'
 
 interface SourceTableProps {
   id: string,
-  uri?: string,
+  uri?: [string, string],
   schema: Schema,
   onClose: () => void,
   isCollection?: boolean
@@ -51,15 +51,21 @@ const SourceTable: FC<SourceTableProps> = (props) => {
   useEffect(() => loadDataFusion(), [ loadDataFusion ])
 
   useEffect(() => {
-    // If the table had been loaded before we can just skip ahead
-    if (props.id && !tableId && dataFusion?.table_exists(props.id)) {
-      setTableId(props.id)
+    if (getColumnIds(user, schema).length > 0) {
+      // If the table had been loaded before we can just skip ahead
+      if (props.id && !tableId && dataFusion?.table_exists(props.id)) {
+        setTableId(props.id)
 
-    // Pull it in instead
-    } else if (props.id && props.uri && !tableId) {
-      loadRemoteTable(props.id, props.uri, schema, user, arrow, dataFusion, keyStore)
-        .then(() => setTableId(props.id))
-        .catch(() => {}) // probably already loaded
+      // Pull it in instead
+      } else if (props.id && props.uri && !tableId) {
+        loadRemoteTable(props.id, props.uri, schema, user, arrow, dataFusion, keyStore)
+          .then(() => setTableId(props.id))
+          .catch(() => {}) // probably already loaded
+      }
+
+    // Special case: nothing to load / see
+    } else {
+      setTableId(props.id)
     }
   }, [props, schema, user, arrow, dataFusion, keyStore, tableId])
 

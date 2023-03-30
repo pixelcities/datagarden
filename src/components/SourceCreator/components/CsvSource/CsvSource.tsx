@@ -81,9 +81,10 @@ const CsvSource: FC<CsvSourceProps> = ({onComplete}) => {
       const { csv, attributes } = parsed
       const path = `/${name}`
       const uri = dataURI?.uri ?? ""
+      const tag = dataURI?.tag ?? ""
 
       // Get fresh session tokens
-      getDataTokens(uri + `/${tableId}.parquet`, "write").then(tokens => {
+      getDataTokens(uri + `/${tableId}.parquet`, tag, "write").then(tokens => {
         const s3_path = uri.split("s3://")[1] + `/${tableId}.parquet`
 
         // Load the csv and transform it to an arrow table
@@ -177,7 +178,7 @@ const CsvSource: FC<CsvSourceProps> = ({onComplete}) => {
                     id: tableId,
                     workspace: "default",
                     type: "csv",
-                    uri: uri,
+                    uri: [uri, tag] as [string, string],
                     schema: signedSchema,
                     is_published: false
                   }
@@ -191,6 +192,8 @@ const CsvSource: FC<CsvSourceProps> = ({onComplete}) => {
             })
           })
         })
+      }).catch(() => {
+        console.log("Error getting data tokens")
       })
     }
     reader.readAsText(f)
@@ -221,7 +224,8 @@ const CsvSource: FC<CsvSourceProps> = ({onComplete}) => {
   useEffect(() => {
     dispatch(createDataURI({
       id: tableId,
-      workspace: "default"
+      workspace: "default",
+      type: "source"
     }))
   }, [tableId, dispatch])
 

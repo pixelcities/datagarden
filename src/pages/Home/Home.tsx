@@ -4,6 +4,7 @@ import { Route, Switch, Link } from "react-router-dom"
 import Navbar from 'components/Navbar'
 import LaptopFrame from 'components/LaptopFrame'
 import Footer from 'components/Footer'
+import Section from 'components/Section'
 
 import screenshotBuilder from 'assets/screenshot-builder.png'
 
@@ -36,9 +37,9 @@ const LandingPage: FC = () => {
     <>
       <Navbar />
 
-      <div className="pb-6">
+      <Section backdrop={true}>
         <Hero />
-      </div>
+      </Section>
 
       <Footer />
     </>

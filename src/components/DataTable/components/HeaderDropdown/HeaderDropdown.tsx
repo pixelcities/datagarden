@@ -175,7 +175,7 @@ const ShareOptions: FC<ShareOptionsI> = ({ me, columnId, source, collection }) =
         }
       })
 
-      if (column) {
+      if (column && !!column.shares.find(s => s.principal === me?.id)) {
         columns.push({
           id: column.id,
           concept_id: column.concept_id,
@@ -229,7 +229,7 @@ const ShareOptions: FC<ShareOptionsI> = ({ me, columnId, source, collection }) =
         }
       })
 
-      if (column) {
+      if (column && !!column.shares.find(s => s.principal === me?.id)) {
         columns.push({
           id: column.id,
           concept_id: column.concept_id,

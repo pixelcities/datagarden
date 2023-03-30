@@ -1,6 +1,6 @@
 import { getCSRFToken } from './getCSRFToken'
 
-export const getDataTokens = async (uri: string, mode: string) => {
+export const getDataTokens = async (uri: string, tag: string, mode: string) => {
   return fetch(process.env.REACT_APP_API_BASE_PATH + "/users/datatokens", {
     method: "POST",
     credentials: "include",
@@ -10,6 +10,7 @@ export const getDataTokens = async (uri: string, mode: string) => {
     },
     body: JSON.stringify({
       "uri": uri,
+      "tag": tag,
       "mode": mode
     })
   }).then((response) => {
@@ -21,7 +22,5 @@ export const getDataTokens = async (uri: string, mode: string) => {
   }).then((data) => {
     return data
 
-  }).catch((e) => {
-    console.log(e);
   });
 }

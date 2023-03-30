@@ -4,7 +4,7 @@ import { getDataTokens } from 'utils/getDataTokens'
 
 const mutex = new Mutex()
 
-export const loadRemoteTable = (tableId: string, uri: string, schema: Schema, user: User | undefined, arrow: any, dataFusion: any, keyStore: any, fragments?: string[]) => {
+export const loadRemoteTable = (tableId: string, uri: [string, string], schema: Schema, user: User | undefined, arrow: any, dataFusion: any, keyStore: any, fragments?: string[]) => {
   return new Promise<void>((resolve, reject) => {
     mutex
       .acquire()
@@ -20,8 +20,8 @@ export const loadRemoteTable = (tableId: string, uri: string, schema: Schema, us
         }
 
         // Get fresh session tokens
-        getDataTokens(uri, "read").then(tokens => {
-          const s3_path = uri.split("s3://")[1]
+        getDataTokens(uri[0], uri[1], "read").then(tokens => {
+          const s3_path = uri[0].split("s3://")[1]
 
           // Get and prepare the secret keys
           let keymap = [

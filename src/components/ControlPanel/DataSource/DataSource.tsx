@@ -58,13 +58,13 @@ const DataSource: FC<DataSourceProps> = ({ source, title, color }) => {
         const result: Coords = monitor.getDropResult() || {x: 0, y: 0}
 
         verifySchema(source.schema, keyStore?.get_key(source.schema.key_id)).then(isValid => {
-          if (isValid) {
+          if (isValid && source.uri) {
             signSchema({...JSON.parse(JSON.stringify(source.schema)), ...{id: crypto.randomUUID()}}, keyStore?.get_key(source.schema.key_id)).then(signedSchema => {
               const payload = {
                 id: source.id,
                 type: "source",
                 workspace: "default",
-                uri: source.uri ?? "",
+                uri: source.uri || ["",""],
                 schema: signedSchema,
                 targets: [],
                 position: [

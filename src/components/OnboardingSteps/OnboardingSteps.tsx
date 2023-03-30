@@ -54,7 +54,6 @@ const OnboardingSteps: FC<OnboardingStepsI> = ({name, steps}) => {
     }
   }, [ keyStoreIsReady, name ])
 
-
   return (
     <Joyride
       run={isActive}

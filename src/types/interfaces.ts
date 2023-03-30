@@ -60,7 +60,7 @@ export interface WAL {
 }
 
 export interface Collection extends Component {
-  uri: string,
+  uri: [string, string],
   schema: Schema,
   mergedColors?: string[]
 }
@@ -125,7 +125,7 @@ export interface Source {
   workspace: string,
   type: string,
   owner?: string,
-  uri?: string,
+  uri?: [string, string],
   date?: string,
   sizeHint?: string,
   accessHint?: string,
@@ -176,7 +176,9 @@ export interface Concept {
 export interface DataURI {
   id: string,
   workspace?: string,
-  uri?: string
+  type?: string,
+  uri?: string,
+  tag?: string
 }
 
 export interface Secret {

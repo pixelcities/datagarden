@@ -75,7 +75,7 @@ const Register: FC = () => {
       localStorage.clear()
 
       keyStore.create_named_key("protocol", 32).then((key_id: string) => {
-        protocol.register(keyStore.get_key(key_id)).then((pub_key: string) => {
+        protocol.register(keyStore.get_key(key_id), process.env.REACT_APP_API_BASE_PATH).then((pub_key: string) => {
           handleLogin(data)
           keyStore.init().then(() => {
             __setIsReady__(true)

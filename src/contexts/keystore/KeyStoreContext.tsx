@@ -65,7 +65,7 @@ export const KeyStoreProvider: FC = ({ children }) => {
 
     const { KeyStore, Protocol } = await import("@pixelcities/key-x-wasm")
 
-    keyStoreRef = new KeyStore()
+    keyStoreRef = new KeyStore(process.env.REACT_APP_API_BASE_PATH)
     setKeyStore(keyStoreRef)
     setProtocol(new Protocol())
     setIsLocked(true)
@@ -86,7 +86,7 @@ export const KeyStoreProvider: FC = ({ children }) => {
       if (password.length >= 8) {
         keyStore?.open_sesame(user.email, password)
 
-        keyStore?.init(process.env.REACT_APP_API_BASE_PATH).then(() => {
+        keyStore?.init().then(() => {
           setIsLocked(false)
 
           const secret_key = keyStore?.get_named_key("protocol")
