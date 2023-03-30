@@ -11,6 +11,7 @@ import { selectPages, selectPageById, selectContentIdsByPageId, selectMetadataMa
 import { createPage, setPageOrder, createContent, createMetadata, shareSecret } from 'state/actions'
 import { toASCII } from 'utils/helpers'
 import { wrapChartContent } from 'utils/charts'
+import { getCSRFToken } from 'utils/getCSRFToken'
 
 import Navbar from 'components/Navbar'
 import Sidebar from 'components/Sidebar'
@@ -57,6 +58,8 @@ const Public: FC = (props) => {
   const [height, setHeight] = useState(0)
 
   useEffect(() => {
+    let isCancelled = false
+
     fetch(`${process.env.REACT_APP_CONTENT_HOST}/info/${handle}/${id}`, {
       method: "GET",
     }).then((response) => {
@@ -66,10 +69,14 @@ const Public: FC = (props) => {
         return response.json()
       }
     }).then((data) => {
-      setHeight(data.height)
+      if (!isCancelled) {
+        setHeight(data.height)
+      }
     }).catch((e) => {
       console.log(e);
-    });
+    })
+
+    return () => { isCancelled = true }
   }, [ handle, id ])
 
   return (
@@ -90,6 +97,7 @@ const Report: FC = (props) => {
   const [addContentIsActive, setAddContentIsActive] = useState(false)
   const [addWidgetIsActive, setAddWidgetIsActive] = useState(false)
   const [title, setTitle] = useState(id)
+  const [pageToken, setPageToken] = useState<string | undefined>()
   const [selectedWidget, setSelectedWidget] = useState<string | undefined>()
   const [selectedSize, setSelectedSize] = useState<string>("Medium")
   const [sortedContent, setSortedContent] = useState<string[]>([])
@@ -106,6 +114,28 @@ const Report: FC = (props) => {
       setTitle(keyStore?.decrypt_metadata(dataSpace?.key_id, titleMetadata.metadata))
     }
   }, [ dataSpace, titleMetadata, keyStore ])
+
+  useEffect(() => {
+    let isCancelled = false
+
+    fetch(process.env.REACT_APP_API_BASE_PATH + "/users/pagetoken", {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "X-CSRF-Token": getCSRFToken()
+      }
+    }).then((response) => {
+      response.json().then((resp) => {
+        if (!isCancelled) {
+          setPageToken(resp.token)
+        }
+      })
+    }).catch((e) => {
+      console.log(e);
+    })
+
+    return () => { isCancelled = true }
+  }, [])
 
   const widgetTitleMap = useMemo(() => {
     let titleMap: {[key: string]: string} = {}
@@ -227,14 +257,16 @@ const Report: FC = (props) => {
   }, [ id, sortedContent, dispatch ])
 
   const renderContent = useMemo(() => {
-    return sortedContent.map((contentId, i) => {
-      return (
-        <div key={contentId} className="content-block">
-          <Content id={contentId} keyId={page?.key_id} index={i} moveContent={moveContent} />
-        </div>
-      )
-    })
-  }, [ sortedContent, page?.key_id, moveContent ])
+    if (pageToken) {
+      return sortedContent.map((contentId, i) => {
+        return (
+          <div key={contentId} className="content-block">
+            <Content id={contentId} pageToken={pageToken} keyId={page?.key_id} index={i} moveContent={moveContent} />
+          </div>
+        )
+      })
+    }
+  }, [ pageToken, sortedContent, page?.key_id, moveContent ])
 
   const renderAddContent = useMemo(() => {
     return (
@@ -333,7 +365,7 @@ const Report: FC = (props) => {
         { title }
 
         { !isInternal &&
-          <a className="button is-success is-outlined is-pulled-right" href={"/pages/ds1/" + id} target="_blank" rel="noreferrer">
+          <a className="button is-success is-outlined is-pulled-right" href={"/pages/" + dataSpace.handle + "/" + id} target="_blank" rel="noreferrer">
             Preview
           </a>
         }
@@ -380,7 +412,7 @@ const ReportOverview: FC = (props) => {
 
       return (
         <div key={page.id} className="column is-narrow">
-          <Link to={"/ds1/reports/" + page.id}>
+          <Link to={"/" + dataSpace.handle + "/reports/" + page.id}>
             <ReportCard
               id={page.id}
               title={name}
