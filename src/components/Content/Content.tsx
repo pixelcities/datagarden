@@ -112,7 +112,7 @@ const Content: FC<ContentProps> = ({ id, pageToken, keyId, index, moveContent })
   const dispatch = useAppDispatch()
   const content = useAppSelector(state => selectContentById(state, id))
   const dataSpace = useAppSelector(selectActiveDataSpace)
-  const { keyStore } = useKeyStoreContext()
+  const { keyStore, keyStoreIsReady } = useKeyStoreContext()
 
   const iframeRef = useRef<HTMLIFrameElement | null>(null)
 
@@ -183,9 +183,11 @@ const Content: FC<ContentProps> = ({ id, pageToken, keyId, index, moveContent })
             />
           }
 
-          <div className={"drag-content" + (!isEditing ? " is-active" : "")} style={isEditing ? {display: "none"} : {}}>
-            <iframe ref={iframeRef} title={id} src={process.env.REACT_APP_CONTENT_HOST + "/pages/content/" + dataSpace.handle + "/" + id + "?token=" + pageToken} sandbox="allow-scripts allow-same-origin" width="100%" height={content?.height ? content?.height : "100%"} scrolling="no" frameBorder="0" onLoad={onLoad} />
-          </div>
+          { (!keyId || keyStoreIsReady) &&
+            <div className={"drag-content" + (!isEditing ? " is-active" : "")} style={isEditing ? {display: "none"} : {}}>
+              <iframe ref={iframeRef} title={id} src={process.env.REACT_APP_CONTENT_HOST + "/pages/content/" + dataSpace.handle + "/" + id + "?token=" + pageToken} sandbox="allow-scripts allow-same-origin" width="100%" height={content?.height ? content?.height : "100%"} scrolling="no" frameBorder="0" onLoad={onLoad} />
+            </div>
+          }
 
         </div>
       </div>

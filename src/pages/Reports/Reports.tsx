@@ -92,7 +92,7 @@ const Report: FC = (props) => {
   const dispatch = useAppDispatch()
 
   const { id } = useParams<{ id: string }>()
-  const { keyStore } = useKeyStoreContext()
+  const { keyStore, keyStoreIsReady } = useKeyStoreContext()
 
   const [addContentIsActive, setAddContentIsActive] = useState(false)
   const [addWidgetIsActive, setAddWidgetIsActive] = useState(false)
@@ -110,10 +110,10 @@ const Report: FC = (props) => {
   const widgets = useAppSelector(selectPublishedWidgets)
 
   useEffect(() => {
-    if (titleMetadata) {
+    if (titleMetadata && keyStoreIsReady) {
       setTitle(keyStore?.decrypt_metadata(dataSpace?.key_id, titleMetadata.metadata))
     }
-  }, [ dataSpace, titleMetadata, keyStore ])
+  }, [ dataSpace, titleMetadata, keyStore, keyStoreIsReady ])
 
   useEffect(() => {
     let isCancelled = false
@@ -140,18 +140,20 @@ const Report: FC = (props) => {
   const widgetTitleMap = useMemo(() => {
     let titleMap: {[key: string]: string} = {}
 
-    widgets.forEach(widget => {
-      const maybe_name = metadata[widget.id]
-      const name = maybe_name ? keyStore?.decrypt_metadata(dataSpace?.key_id, maybe_name) : widget.id;
+    if (keyStoreIsReady) {
+      widgets.forEach(widget => {
+        const maybe_name = metadata[widget.id]
+        const name = maybe_name ? keyStore?.decrypt_metadata(dataSpace?.key_id, maybe_name) : widget.id;
 
-      titleMap[name] = widget.id
-    })
+        titleMap[name] = widget.id
+      })
+    }
 
     return titleMap
-  }, [ widgets, keyStore, metadata, dataSpace?.key_id ])
+  }, [ widgets, keyStore, keyStoreIsReady, metadata, dataSpace?.key_id ])
 
   const handleAddStaticContent = useCallback(() => {
-    if (page) {
+    if (page && keyStoreIsReady) {
       let initialContent = btoa("<p></p>")
 
       if (page.access.filter(x => x.type === "internal").length > 0 && page.key_id) {
@@ -170,12 +172,12 @@ const Report: FC = (props) => {
     }
 
     setAddContentIsActive(false)
-  }, [ id, page, keyStore, dispatch ])
+  }, [ id, page, keyStore, keyStoreIsReady, dispatch ])
 
   const handleAddWidgetContent = useCallback((e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
-    if (page) {
+    if (page && keyStoreIsReady) {
       const widgetTitle = selectedWidget ? selectedWidget : Object.keys(widgetTitleMap)[0]
       const widgetId = widgetTitleMap[widgetTitle]
       const widget = widgets.find(widget => widget.id === widgetTitleMap[widgetTitle])
@@ -226,7 +228,7 @@ const Report: FC = (props) => {
 
     setAddContentIsActive(false)
     setAddWidgetIsActive(false)
-  }, [ id, page, widgets, selectedWidget, selectedSize, widgetTitleMap, keyStore, dataSpace?.key_id, dispatch ])
+  }, [ id, page, widgets, selectedWidget, selectedSize, widgetTitleMap, keyStore, keyStoreIsReady, dataSpace?.key_id, dispatch ])
 
   useEffect(() => {
     const contentOrder = page?.content_order ?? []
