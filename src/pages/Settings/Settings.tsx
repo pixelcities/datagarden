@@ -49,18 +49,20 @@ const Settings: FC = (props) => {
   }
 
   const cancelInvite = useCallback((email: string) => {
-    fetch(process.env.REACT_APP_API_BASE_PATH + `/spaces/${dataSpace.handle}/cancel_invite`, {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRF-Token": getCSRFToken()
-      },
-      body: JSON.stringify({
-        "email": email
+    if (dataSpace?.handle) {
+      fetch(process.env.REACT_APP_API_BASE_PATH + `/spaces/${dataSpace?.handle}/cancel_invite`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": getCSRFToken()
+        },
+        body: JSON.stringify({
+          "email": email
+        })
       })
-    })
-  }, [ dataSpace.handle ])
+    }
+  }, [ dataSpace?.handle ])
 
   const renderUsers = useMemo(() => {
     return users.map(u => {

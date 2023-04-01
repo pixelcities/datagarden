@@ -1,7 +1,11 @@
-import React, { FC, useRef, useState } from 'react'
+import React, { FC, useRef, useState, useMemo } from 'react'
 import { Link, useRouteMatch } from "react-router-dom";
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faCog } from '@fortawesome/free-solid-svg-icons'
 
 import { gsap } from 'gsap'
+
+import DSSettings from 'components/DSSettings'
 
 import builderIcon from 'assets/minibar-builder.svg'
 import collapseIcon from 'assets/minibar-collapse.svg'
@@ -11,6 +15,7 @@ import ecosystemIcon from 'assets/minibar-ecosystem.svg'
 import widgetsIcon from 'assets/minibar-widgets.svg'
 
 import './Sidebar.sass'
+
 
 const MINIBAR_WIDTH = "32px"
 const SIDEBAR_WIDTH = "18rem"
@@ -23,6 +28,7 @@ interface SidebarProps {
 
 const Sidebar: FC<SidebarProps> = ({ page, isMini, isDisabled = false, children }) => {
   const [ isMinified, setMini ] = useState(isMini)
+  const [ settingsIsActive, setSettingsIsActive ] = useState(false)
 
   const sidebarRef = useRef<HTMLDivElement | null>(null)
   const mainRef = useRef<HTMLDivElement | null>(null)
@@ -48,8 +54,27 @@ const Sidebar: FC<SidebarProps> = ({ page, isMini, isDisabled = false, children 
     }
   }
 
+  const renderSettings = useMemo(() => {
+    return (
+      <div className="bar-footer">
+        <div className={isMinified ? "has-text-centered pl-1" : "has-text-right pr-4"}>
+          <span className="icon" onClick={() => setSettingsIsActive(true)} style={{cursor: "pointer"}}>
+            <FontAwesomeIcon icon={faCog} size="xs" color="white"/>
+          </span>
+        </div>
+      </div>
+    )
+  }, [ isMinified ])
+
   return (
     <>
+      { settingsIsActive &&
+        <DSSettings
+          isActive={settingsIsActive}
+          onClose={() => setSettingsIsActive(false)}
+        />
+      }
+
       <div className="bar-wrapper" ref={sidebarRef} style={{width: isMinified ? MINIBAR_WIDTH : SIDEBAR_WIDTH}}>
         { isMinified ?
           (
@@ -73,6 +98,8 @@ const Sidebar: FC<SidebarProps> = ({ page, isMini, isDisabled = false, children 
                   </Link></li>
                 </ul>
               </aside>
+
+              { renderSettings }
             </div>
           ) : (
             <div className="sidebar-section">
@@ -103,6 +130,8 @@ const Sidebar: FC<SidebarProps> = ({ page, isMini, isDisabled = false, children 
                   <li><Link className={"button-label" + (page === "reports" ? " is-active": "")} to={basepath + "/reports"}>Reports</Link></li>
                 </ul>
               </aside>
+
+              { renderSettings }
             </div>
           )
         }
