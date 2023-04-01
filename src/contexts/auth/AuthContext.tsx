@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useContext, FC } from "react";
 
 import { useAppSelector, useAppDispatch } from 'hooks'
-import { selectUserByEmail } from 'state/selectors'
+import { selectUserById, selectActiveDataSpace } from 'state/selectors'
 import { login } from 'state/actions'
 import { User } from 'types'
 
@@ -25,13 +25,15 @@ export const AuthProvider: FC = ({ children }) => {
   const [path, setPath] = useState<string>("")
   const [user, setUser] = useState<any>(null)
 
+  const dataSpace = useAppSelector(selectActiveDataSpace)
+
   // Handle user update events, so that components using the auth context don't have to
-  const userState = useAppSelector(state => selectUserByEmail(state, user?.email))
+  const userState = useAppSelector(state => selectUserById(state, user?.id))
   useEffect(() => {
-    if (userState) {
+    if (userState && dataSpace?.handle !== "trial") {
       setUser(userState)
     }
-  }, [ userState ])
+  }, [ userState, dataSpace ])
 
   const handleLogin = useCallback((user?: User) => {
     if (user) {

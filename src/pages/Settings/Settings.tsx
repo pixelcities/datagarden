@@ -39,6 +39,8 @@ const Settings: FC = (props) => {
   const userInvites = useAppSelector(selectUserInvites)
   const dataSpace = useAppSelector(selectActiveDataSpace)
 
+  const { user } = useAuthContext()
+
   const [inviteUserIsActive, setInviteUserIsActive] = useState(false)
   const [confirmUser, setConfirmUser] = useState<UserInvite | undefined>()
 
@@ -66,7 +68,7 @@ const Settings: FC = (props) => {
         <tr key={u.id}>
           <td className="is-narrow">
             <span className="icon is-medium mt-2">
-              <img src={u?.picture || altAsSvg(u?.email[0]?.toUpperCase())} className={(!u.picture ? " default-icon is-medium bg-" + toColor(u?.id) : "")} alt={u?.email[0]?.toUpperCase()} />
+              <img src={u?.picture || altAsSvg((u?.name || u?.email)?.[0]?.toUpperCase())} className={(!u.picture ? " default-icon is-medium bg-" + toColor(u?.id) : "")} alt={(u?.name || u?.email)?.[0]?.toUpperCase()} />
             </span>
           </td>
 
@@ -149,7 +151,9 @@ const Settings: FC = (props) => {
       <div className="title">
         Team Management
 
-        <button className="button is-success is-outlined is-pulled-right" onClick={inviteUserHandler}> Invite new members </button>
+        { user?.role === "owner" &&
+          <button className="button is-success is-outlined is-pulled-right" onClick={inviteUserHandler}> Invite new members </button>
+        }
 
         <div className="border" />
       </div>

@@ -2,6 +2,7 @@ import React, { FC, useState } from 'react'
 import { useHistory } from "react-router-dom"
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faEnvelope, faLock } from '@fortawesome/free-solid-svg-icons'
+import { faQuestionCircle } from '@fortawesome/free-regular-svg-icons'
 
 import Section from 'components/Section'
 
@@ -9,11 +10,13 @@ import { useAuthContext } from 'contexts'
 import { useKeyStoreContext } from 'contexts'
 import { genCSRFToken } from 'utils/getCSRFToken'
 
+
 const Register: FC = () => {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [confirmPrompt, setConfirmPrompt] = useState(false)
+  const [joinTrial, setJoinTrial] = useState(true)
   const [error, setError] = useState("")
 
   const { isAuthenticated, handleLogin, path } = useAuthContext()
@@ -39,7 +42,8 @@ const Register: FC = () => {
     let userBody: {[key: string]: string} = {
       "email": email,
       "password": hashedPassword,
-      "remember_me": "true"
+      "remember_me": "true",
+      "join_trial": joinTrial.toString()
     }
 
     if (path) {
@@ -144,6 +148,31 @@ const Register: FC = () => {
                         </span>
                       </p>
                     </div>
+                    <div className="field is-grouped is-grouped-right">
+                      <p className="control">
+                        <label className="checkbox">
+                          <input type="checkbox" checked={joinTrial} onChange={(e: any) => setJoinTrial(e.target.checked)} />
+                          <span> Join trial data space </span>
+                        </label>
+
+                        <span
+                          className="has-tooltip-right has-tooltip-multiline"
+                          data-tooltip="
+                            The trial data space is open for every user and gives a brief demo into the platform.
+                            While your personal information is hidden in this public space, you and other users can
+                            still interact with eachother, which you may not want to participate in. You may uncheck
+                            this box to not receive an invite to the trial data space. &#10;
+
+                            You can leave a data space at any time.
+                          "
+                        >
+                          <sup className="icon is-small">
+                            <FontAwesomeIcon icon={faQuestionCircle} size="sm"/>
+                          </sup>
+                        </span>
+                      </p>
+                    </div>
+
                     <div className="field is-grouped is-grouped-right">
                       <p className="control">
                         <input type="submit" className="button is-primary" value="Register" />

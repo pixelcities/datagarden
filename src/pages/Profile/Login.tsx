@@ -48,7 +48,7 @@ const Login: FC = () => {
       handleLogin(data)
       keyStore?.init().then(() => {
         const secret_key = keyStore?.get_named_key("protocol")
-        protocol?.init(secret_key).then(() => {
+        protocol?.init(secret_key, process.env.REACT_APP_API_BASE_PATH).then(() => {
           __setIsReady__(true)
         })
       })

@@ -1,5 +1,5 @@
 import React, { FC, useEffect, useState, useMemo } from 'react'
-import { Route, Redirect, Switch, Link, useHistory, useParams } from "react-router-dom"
+import { Route, Switch, Link, useHistory, useParams } from "react-router-dom"
 import PrivateRoute from 'utils/PrivateRoute'
 
 import Contacts from 'pages/Contacts'
@@ -39,24 +39,24 @@ const VerifyHandle: FC = ({ children }) => {
   const dispatch = useAppDispatch()
   const activeHandle = useAppSelector(selectActiveDataSpace)
 
-  if (activeHandle?.handle !== handle) {
-    const data = sessionStorage.getItem("spaces")
-    const dataSpaces: DataSpace[] = data ? JSON.parse(data) : []
-    const dataSpace = dataSpaces?.find(ds => ds.handle === handle)
+  useEffect(() => {
+    if (activeHandle?.handle !== handle) {
+      const data = sessionStorage.getItem("spaces")
+      const dataSpaces: DataSpace[] = data ? JSON.parse(data) : []
+      const dataSpace = dataSpaces?.find(ds => ds.handle === handle)
 
-    if (dataSpace) {
-      if (activeHandle) {
-        dispatch(leaveDataSpace())
+      if (dataSpace) {
+        if (activeHandle) {
+          dispatch(leaveDataSpace())
+        }
+
+        dispatch(setActiveDataSpace(dataSpace))
+
+      } else {
+        history.push("/")
       }
-
-      dispatch(setActiveDataSpace(dataSpace))
-
-    } else {
-      return (
-        <Redirect to="/" />
-      )
     }
-  }
+  }, [ activeHandle, handle, dispatch, history ])
 
   if (keyStoreIsReady && !keyStore?.has_key(activeHandle.key_id)) {
     if (activeHandle?.handle === "trial") {

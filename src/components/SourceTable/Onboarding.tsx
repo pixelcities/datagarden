@@ -31,7 +31,7 @@ const Onboarding: FC = () => {
       content: (
         <>
           <p className="has-text-justified">
-            As an example, you may share this dataset with a user called <span className="is-italic"> alice@pixelcities.io </span>.
+            You can search for a fellow collaborator by name or email, and share this dataset with them.
           </p>
           <br />
           <p className="has-text-justified">

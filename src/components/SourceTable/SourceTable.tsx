@@ -204,11 +204,11 @@ const SourceTable: FC<SourceTableProps> = (props) => {
   }, [ source, collection, isCollection, schemaIsValid, user, keyStore, protocol, dispatch ])
 
   const renderUserDropdown = React.useMemo(() => {
-    const filteredUsers = userSearch !== "" ? users.filter(u => u.id !== user?.id && (u.email.indexOf(userSearch) !== -1 || (u.name?.indexOf(userSearch) ?? -1) !== -1)) : []
+    const filteredUsers = userSearch !== "" ? users.filter(u => u.id !== user?.id && (u.email.toLowerCase().indexOf(userSearch.toLowerCase()) !== -1 || (u.name?.toLowerCase().indexOf(userSearch.toLowerCase()) ?? -1) !== -1)) : []
     const userItems = filteredUsers.slice(0, 5).map(u => {
       return (
         <div className="dropdown-item" key={u.id} style={{cursor: "pointer"}} onClick={() => shareSchemaWithUser(u)}>
-          <p> {u.email} </p>
+          <p> {u.email === "[REDACTED]" ? u.name : u.email} </p>
         </div>
       )
     })
