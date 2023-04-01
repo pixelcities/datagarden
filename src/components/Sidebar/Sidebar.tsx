@@ -81,7 +81,11 @@ const Sidebar: FC<SidebarProps> = ({ page, isMini, isDisabled = false, children 
                   <img src={flippedCollapseIcon} alt="" />
                 </div>
                 <ul className="menu-list">
-                  <li><Link className={"button-label" + (page === "settings" ? " is-active" : "")} to={basepath + "/settings"}>Team Management</Link></li>
+                  { basepath.indexOf("trial") !== -1 ?
+                    <li><Link  className="button-label" style={{cursor: "default", color: "#a2a2a2"}} to={basepath}>Team Management</Link></li>
+                  :
+                    <li><Link className={"button-label" + (page === "settings" ? " is-active" : "")} to={basepath + "/settings"}>Team Management</Link></li>
+                  }
                 </ul>
                 <ul className="menu-list">
                   <li><Link className={"button-label" + (["sources", "taxonomy", "builder", "widgets"].includes(page) ? " is-active" : "")} to={basepath}>Data Ecosystem</Link></li>
