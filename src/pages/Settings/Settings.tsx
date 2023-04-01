@@ -11,7 +11,7 @@ import { useKeyStoreContext } from 'contexts'
 import { useAuthContext } from 'contexts'
 import { useAppSelector, useAppDispatch } from 'hooks'
 import { UserInvite } from 'types'
-import { selectUsers, selectUserInvites, selectActiveDataSpace } from 'state/selectors'
+import { selectUsers, selectUserInvites, selectActiveDataSpace, selectPages } from 'state/selectors'
 import { shareSecret } from 'state/actions'
 import { altAsSvg, toColor } from 'utils/helpers'
 import { getCSRFToken } from 'utils/getCSRFToken'
@@ -280,6 +280,7 @@ interface ConfirmModalProps {
 const ConfirmModal: FC<ConfirmModalProps> = ({ newMember, isActive, onClose }) => {
   const dispatch = useAppDispatch()
   const dataSpace = useAppSelector(selectActiveDataSpace)
+  const pages = useAppSelector(selectPages)
 
   const { user } = useAuthContext()
   const { keyStore, protocol, keyStoreIsReady } = useKeyStoreContext()
@@ -322,6 +323,20 @@ const ConfirmModal: FC<ConfirmModalProps> = ({ newMember, isActive, onClose }) =
         receiver: newMember.id,
         ciphertext: secret
       }))
+
+      // Also share internal page keys, if any
+      for (const page of pages) {
+        if (page.access.filter(x => x.type === "internal").length > 0 && page.key_id) {
+          const secret: string = await protocol?.encrypt(newMember.id, keyStore?.get_key(page.key_id))
+
+          dispatch(shareSecret({
+            key_id: page.key_id,
+            owner: user.id,
+            receiver: newMember.id,
+            ciphertext: secret
+          }))
+        }
+      }
 
       await fetch(process.env.REACT_APP_API_BASE_PATH + `/spaces/${dataSpace.handle}/confirm_member`, {
         method: "POST",

@@ -1,6 +1,6 @@
 import React, { FC, Component, useCallback, useEffect, useState, useMemo } from 'react'
 import { RouteComponentProps } from 'react-router'
-import { Switch, Route, Link, useParams } from "react-router-dom"
+import { Switch, Route, Link, useParams, useHistory } from "react-router-dom"
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faKey, faPlus, faAlignJustify, faChartBar } from '@fortawesome/free-solid-svg-icons'
 
@@ -8,7 +8,7 @@ import { useKeyStoreContext } from 'contexts'
 import { useAuthContext } from 'contexts'
 import { useAppSelector, useAppDispatch } from 'hooks'
 import { selectPages, selectPageById, selectContentIdsByPageId, selectMetadataMap, selectMetadataById, selectActiveDataSpace, selectUsers, selectPublishedWidgets } from 'state/selectors'
-import { createPage, setPageOrder, createContent, createMetadata, shareSecret } from 'state/actions'
+import { createPage, setPageOrder, createContent, createMetadata, shareSecret, sendLocalNotification } from 'state/actions'
 import { toASCII } from 'utils/helpers'
 import { wrapChartContent } from 'utils/charts'
 import { getCSRFToken } from 'utils/getCSRFToken'
@@ -90,6 +90,7 @@ const Public: FC = (props) => {
 
 const Report: FC = (props) => {
   const dispatch = useAppDispatch()
+  const history = useHistory()
 
   const { id } = useParams<{ id: string }>()
   const { keyStore, keyStoreIsReady } = useKeyStoreContext()
@@ -114,6 +115,20 @@ const Report: FC = (props) => {
       setTitle(keyStore?.decrypt_metadata(dataSpace?.key_id, titleMetadata.metadata))
     }
   }, [ dataSpace, titleMetadata, keyStore, keyStoreIsReady ])
+
+  useEffect(() => {
+    if (page?.key_id && keyStoreIsReady && !keyStore.has_key(page?.key_id)) {
+      dispatch(sendLocalNotification({
+        id: crypto.randomUUID(),
+        type: "error",
+        message: "Unauthorized",
+        is_urgent: true,
+        is_local: true
+      }))
+
+      history.goBack()
+    }
+  }, [ page, keyStore, keyStoreIsReady, history, dispatch ])
 
   useEffect(() => {
     let isCancelled = false
