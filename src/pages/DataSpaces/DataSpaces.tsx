@@ -22,7 +22,7 @@ const DataSpacesRoute: FC = ({ children }) => {
   return (
     <Switch>
       <PrivateRoute exact path="/" component={DataSpaces} />
-      <Route path="/:handle">
+      <Route path="/ds/:handle">
         <VerifyHandle>
           { children }
         </VerifyHandle>
@@ -58,12 +58,12 @@ const VerifyHandle: FC = ({ children }) => {
     }
   }, [ activeHandle, handle, dispatch, history ])
 
-  if (keyStoreIsReady && !keyStore?.has_key(activeHandle.key_id)) {
+  if (keyStoreIsReady && activeHandle && !keyStore?.has_key(activeHandle.key_id)) {
     if (activeHandle?.handle === "trial") {
       // The trial space key is received almost immediatly. Just "refresh" after a short
       // period.
       setTimeout(() => {
-        history.push("/trial")
+        history.push("/ds/trial")
       }, 1000)
     }
 
@@ -72,8 +72,8 @@ const VerifyHandle: FC = ({ children }) => {
     // verifiable beforehand.
     return (
       <Switch>
-        <PrivateRoute path="/:handle/contacts" component={Contacts} />
-        <Route path="/:handle">
+        <PrivateRoute path="/ds/:handle/contacts" component={Contacts} />
+        <Route path="/ds/:handle">
           <WaitingRoom />
         </Route>
       </Switch>
@@ -124,7 +124,7 @@ const DataSpaces: FC = (props) => {
       return (
         <div id={dataSpace.handle === "trial" ? "trial-space" : ""} key={dataSpace.id} className="column is-narrow">
 
-          <Link to={"/" + dataSpace.handle + "/sources"} onClick={() => dispatch(setActiveDataSpace(dataSpace))}>
+          <Link to={"/ds/" + dataSpace.handle + "/sources"} onClick={() => dispatch(setActiveDataSpace(dataSpace))}>
             <div className="card">
               <div className="card-content px-6 py-6">
                 <p className="subtitle">

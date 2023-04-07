@@ -196,3 +196,13 @@ $colors: indigo, darkviolet, magenta, mediumvioletred, deeppink, crimson, red, o
     border-radius: 4px
     box-shadow: 0 1px 5px rgba(0,0,0,0.2)
 
+.content
+  @extend .content
+  &.no-block
+    p
+      margin-bottom: 0rem !important
+  &.no-wrap
+    display: block
+    overflow: scroll
+    white-space: nowrap
+
