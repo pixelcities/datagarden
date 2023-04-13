@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useContext, FC } from "react"
 
+import { useAuthContext } from 'contexts'
+
+
 interface DataFusionContextI {
   arrow?: any
   dataFusion?: any
@@ -11,6 +14,7 @@ const DataFusionContext = React.createContext<DataFusionContextI>({loadArrow: ()
 
 export const DataFusionProvider: FC = ({ children }) => {
   const [loading, setLoading] = useState<boolean>(false)
+  const { isAuthenticated } = useAuthContext()
 
   const [arrow, setArrow] = useState<any>(null)
   const [dataFusion,setDataFusion]=useState<any>(null)
@@ -32,29 +36,31 @@ export const DataFusionProvider: FC = ({ children }) => {
   }
 
   useEffect(()=> {
-    let isCancelled = false
+    if (isAuthenticated) {
+      let isCancelled = false
 
-    const init = async () => {
-      // Load all the heavy wasm stuff
-      const { DataFusion } = await import("@pixelcities/datafusion-wasm")
-      const { Arrow } = await import("@pixelcities/arrow-wasm")
+      const init = async () => {
+        // Load all the heavy wasm stuff
+        const { DataFusion } = await import("@pixelcities/datafusion-wasm")
+        const { Arrow } = await import("@pixelcities/arrow-wasm")
 
-      const _arrow = await Arrow()
-      const _datafusion = new DataFusion()
+        const _arrow = await Arrow()
+        const _datafusion = new DataFusion()
 
-      if (!isCancelled) {
-        setArrow(_arrow)
-        setDataFusion(_datafusion)
+        if (!isCancelled) {
+          setArrow(_arrow)
+          setDataFusion(_datafusion)
 
-        // Ready
-        setLoading(false)
+          // Ready
+          setLoading(false)
+        }
       }
+
+      init()
+
+      return () => { isCancelled = true }
     }
-
-    init()
-
-    return () => { isCancelled = true }
-  },[])
+  }, [ isAuthenticated ])
 
   return (
     <DataFusionContext.Provider value={{arrow, dataFusion, loadArrow, loadDataFusion}} >
