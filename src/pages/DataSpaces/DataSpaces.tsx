@@ -6,6 +6,7 @@ import Contacts from 'pages/Contacts'
 
 import Section from 'components/Section'
 import Navbar from 'components/Navbar'
+import Footer from 'components/Footer'
 import Onboarding from './Onboarding'
 
 import { DataSpace } from 'types'
@@ -142,7 +143,7 @@ const DataSpaces: FC = (props) => {
   return (
     <>
       <Navbar />
-      <Section>
+      <Section backdrop={true}>
         <div className="columns is-centered">
           <div className="column is-half">
 
@@ -164,6 +165,7 @@ const DataSpaces: FC = (props) => {
           </div>
         </div>
       </Section>
+      <Footer />
     </>
   )
 }

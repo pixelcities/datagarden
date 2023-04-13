@@ -37,7 +37,7 @@ const Privacy: FC = () => {
     our use of external service providers, and what data is shared with them. </p>
 
     <p> Finally, you do not have to take our word for it, all of our code is open source <sup><a target="_blank"
-      rel="noopener noreferrer" href="https://github.com/pixelcities/datagarden">[1]</a></sup>. </p>
+    rel="noopener noreferrer" href="https://github.com/pixelcities/datagarden">[1]</a></sup>. </p>
 
     <h3 id="browsing-context"> 1. Browsing context </h3>
 
@@ -61,7 +61,7 @@ const Privacy: FC = () => {
       <li> Absolutely no information is ever shared with advertisers, or sold in any way </li>
     </ul>
 
-    <h4> 1.2 As a user.. </h4>
+    <h4> 1.2. As a user.. </h4>
     <p> We require some limited information to provide you with the best experience. The following information is
     collected / stored: </p>
 
@@ -159,8 +159,7 @@ const Privacy: FC = () => {
     <p> We will retain your information for as long as your account is active, or as long as is necessary to comply with
     our legal obligations. </p>
 
-    <p> You can delete your DataGarden account at any time <sup><a target="_blank" rel="noopener noreferrer"
-    href="https://datagarden.app/profile#delete">[5]</a></sup>. All your personal information will be permanently
+    <p> You can request to have your DataGarden account deleted at any time. All your personal information will be permanently
     deleted immediately. </p>
 
     <h3 id="changes"> 6. Changes </h3>
@@ -183,7 +182,6 @@ const Privacy: FC = () => {
       <p><sup>[2] </sup><a target="_blank" rel="noopener noreferrer" href="https://www.signal.org/docs">https://www.signal.org/docs</a></p>
       <p><sup>[3] </sup><a target="_blank" rel="noopener noreferrer" href="https://aws.amazon.com/compliance/iso-27018-faqs">https://aws.amazon.com/compliance/iso-27018-faqs</a></p>
       <p><sup>[4] </sup><a target="_blank" rel="noopener noreferrer" href="https://paddle.com/privacy-buyers">https://paddle.com/privacy-buyers</a></p>
-      <p><sup>[5] </sup><a target="_blank" rel="noopener noreferrer" href="https://datagarden.app/profile#delete">https://datagarden.app/profile#delete</a></p>
     </div>
   )
 

@@ -22,6 +22,7 @@ import Contacts from 'pages/Contacts'
 import Home from 'pages/Home'
 import Privacy from 'pages/Privacy'
 import Terms from 'pages/Terms'
+import ContactUs from 'pages/ContactUs'
 
 import PrivateRoute from 'utils/PrivateRoute'
 import { AuthProvider } from 'contexts'
@@ -44,6 +45,7 @@ function App() {
               <div className="App">
                 <Route path="/terms" component={Terms} />
                 <Route path="/privacy" component={Privacy} />
+                <Route path="/contact" component={ContactUs} />
 
                 { /* Toggles between public or authenticated landing */ }
                 <Home>
