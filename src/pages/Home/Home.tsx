@@ -1,4 +1,4 @@
-import React, { FC } from 'react'
+import React, { FC, useLayoutEffect } from 'react'
 import { Route, Switch, Link } from "react-router-dom"
 
 import Navbar from 'components/Navbar'
@@ -32,6 +32,7 @@ const HomeRoute: FC = ({ children }) => {
 }
 
 const LandingPage: FC = () => {
+  useLayoutEffect(() => window.scrollTo(0, 0))
 
   return (
     <>
@@ -68,10 +69,10 @@ const Hero: FC = (props) => {
 
               <div className="buttons is-left">
                 <Link to="/register">
-                  <button className="button is-medium is-outlined mr-3"> Register </button>
+                  <button className="button is-medium is-primary mr-3"> Get started </button>
                 </Link>
                 <Link to="/login">
-                  <button className="button is-medium is-primary"> Log in </button>
+                  <button className="button is-medium is-outlined"> Log in </button>
                 </Link>
               </div>
             </div>

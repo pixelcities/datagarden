@@ -1,4 +1,4 @@
-import React, { FC } from 'react'
+import React, { FC, useLayoutEffect } from 'react'
 import { RouteComponentProps } from 'react-router'
 import { Route, Switch } from "react-router-dom"
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -25,6 +25,8 @@ const ContactUsRoute: FC<RouteComponentProps> = ({ match }) => {
 
 
 const ContactUs: FC = () => {
+  useLayoutEffect(() => window.scrollTo(0, 0))
+
   return (
     <Section>
       <div className="container is-max-desktop" id="no-px-mobile">

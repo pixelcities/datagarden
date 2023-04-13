@@ -1,4 +1,4 @@
-import React, { FC } from 'react'
+import React, { FC, useLayoutEffect } from 'react'
 import { RouteComponentProps } from 'react-router'
 import { Route, Switch } from "react-router-dom"
 
@@ -23,6 +23,8 @@ const PrivacyRoute: FC<RouteComponentProps> = ({ match }) => {
 
 
 const Privacy: FC = () => {
+  useLayoutEffect(() => window.scrollTo(0, 0))
+
   const content = (
     <article>
     <h1 className="has-text-centered"> PIXELCITIES PRIVACY STATEMENT </h1>
