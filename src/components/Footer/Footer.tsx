@@ -55,6 +55,7 @@ const Footer: FC = () => {
         </div>
 
         <br />
+        <p className="fineprint-label has-text-centered is-white"> v{process.env.REACT_APP_VERSION} </p>
       </div>
     </footer>
   )
