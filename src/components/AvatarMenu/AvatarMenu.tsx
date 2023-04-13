@@ -42,7 +42,7 @@ const AvatarMenu: FC<AvatarMenuProps> = (props) => {
         <img ref={ref} src={userState?.picture || altAsSvg((userState?.name || userState?.email)?.[0]?.toUpperCase())} className={"avatar" + (!(userState?.picture) ? " default-icon bg-" + toColor(userState?.id) : "")} alt={userState?.email?.[0]?.toUpperCase()} width="40" height="35" onClick={() => setIsActive(!isActive)} />
       :
         <Link className="button is-medium is-light is-outlined" to="/login">
-          Log in
+          Get started
         </Link>
       }
 

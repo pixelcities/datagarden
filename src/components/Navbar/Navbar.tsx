@@ -32,6 +32,11 @@ const Navbar: FC = () => {
           </>
         :
           <>
+            <Link className="navbar-item" to="/pricing">
+              <h3 className="is-size-5 px-2">
+                Pricing
+              </h3>
+            </Link>
           </>
         }
 

@@ -23,6 +23,7 @@ import Home from 'pages/Home'
 import Privacy from 'pages/Privacy'
 import Terms from 'pages/Terms'
 import ContactUs from 'pages/ContactUs'
+import Pricing from 'pages/Pricing'
 
 import PrivateRoute from 'utils/PrivateRoute'
 import { AuthProvider } from 'contexts'
@@ -46,6 +47,7 @@ function App() {
                 <Route path="/terms" component={Terms} />
                 <Route path="/privacy" component={Privacy} />
                 <Route path="/contact" component={ContactUs} />
+                <Route path="/pricing" component={Pricing} />
 
                 { /* Toggles between public or authenticated landing */ }
                 <Home>

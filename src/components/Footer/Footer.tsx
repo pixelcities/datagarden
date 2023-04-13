@@ -36,6 +36,7 @@ const Footer: FC = () => {
                   </h1>
 
                   <a className="has-text-primary-light is-size-6 is-flex" target="_blank" rel="noopener noreferrer" href="https://docs.datagarden.app"> Documentation </a>
+                  <Link className="has-text-primary-light is-size-6 is-flex" to="/pricing"> Pricing </Link>
                 </div>
 
                 <div className="column is-half">

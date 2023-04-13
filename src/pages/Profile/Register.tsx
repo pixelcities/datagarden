@@ -1,5 +1,5 @@
 import React, { FC, useState } from 'react'
-import { useHistory } from "react-router-dom"
+import { useHistory, Link } from "react-router-dom"
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faEnvelope, faLock } from '@fortawesome/free-solid-svg-icons'
 import { faQuestionCircle } from '@fortawesome/free-regular-svg-icons'
@@ -115,7 +115,7 @@ const Register: FC = () => {
         { !isAuthenticated ?
           <>
             <p className="subtitle pt-3 is-size-5 has-text-centered is-italic">
-              Create an account
+              Create an account, or <Link className="is-underlined" to="/login">login</Link>.
             </p>
 
             <br /><br />
