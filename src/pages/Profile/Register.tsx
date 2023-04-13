@@ -148,7 +148,7 @@ const Register: FC = () => {
                         </span>
                       </p>
                     </div>
-                    <div className="field is-grouped is-grouped-right">
+                    <div className="field is-grouped is-grouped-right mb-0">
                       <p className="control">
                         <label className="checkbox">
                           <input type="checkbox" checked={joinTrial} onChange={(e: any) => setJoinTrial(e.target.checked)} />
@@ -181,6 +181,17 @@ const Register: FC = () => {
                   </form>
 
                 </div>
+
+                <div className="has-text-centered">
+                  <p className="is-size-7">
+                    By registering an account, you agree to our <span className="is-underlined"><a target="_blank" href="/terms">Terms of Service</a></span>.
+                  </p>
+
+                  <p className="is-size-7">
+                    Learn more about our <span className="is-underlined"><a target="_blank" href="/privacy">Privacy Statement</a></span>.
+                  </p>
+                </div>
+
               </div>
             </div>
           </>
