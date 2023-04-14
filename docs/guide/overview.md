@@ -21,7 +21,7 @@ top of that, the dataset is not shared with your data space members by default e
 
 > When you upload a dataset, each column is encrypted with its own seperate key. Only when you share a column with a
 > collaborator will they gain access to the key. The server never sees any of the keys. Learn more about data encryption
-> [here](/encryption.md).
+> [here](../encryption.md).
 
 Once you have uploaded a dataset, you will be greeted by a preview of your data. Note the use of the word *preview*: you
 will not be able to click on a cell and manually edit the data value. This would, once more, violate the principle of
