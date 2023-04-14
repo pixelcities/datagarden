@@ -1,0 +1,18 @@
+[book]
+authors = ["coinshot"]
+language = "en"
+multilingual = false
+src = "."
+title = "DataGarden"
+
+[build]
+build-dir = "../book"
+
+[preprocessor.links]
+
+[output.html]
+git-repository-url = "https://github.com/pixelcities/datagarden/docs"
+
+[output.html.print]
+enable = false
+
