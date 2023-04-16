@@ -1,4 +1,4 @@
-import React, { FC, useState } from 'react'
+import React, { FC, useState, useRef } from 'react'
 import { useHistory, Link } from "react-router-dom"
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faEnvelope, faLock } from '@fortawesome/free-solid-svg-icons'
@@ -6,18 +6,24 @@ import { faQuestionCircle } from '@fortawesome/free-regular-svg-icons'
 
 import Section from 'components/Section'
 
+import useMovement from 'hooks/useMovement'
 import { useAuthContext } from 'contexts'
 import { useKeyStoreContext } from 'contexts'
 import { genCSRFToken } from 'utils/getCSRFToken'
+import { toHex } from 'utils/helpers'
 
 
 const Register: FC = () => {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
+  const [honeypotPassword, setHoneypotPassword] = useState("")
   const [confirmPrompt, setConfirmPrompt] = useState(false)
   const [joinTrial, setJoinTrial] = useState(true)
   const [error, setError] = useState("")
+
+  const ref = useRef<HTMLDivElement | null>(null)
+  const isValidMovement = useMovement(ref)
 
   const { isAuthenticated, handleLogin, path } = useAuthContext()
   const { keyStore, protocol, __setIsReady__ } = useKeyStoreContext()
@@ -25,7 +31,7 @@ const Register: FC = () => {
   const history = useHistory()
 
   const handleSubmit = (e: any) => {
-    e.preventDefault();
+    e.preventDefault()
 
     if (password.length < 8) {
       setError("Password must be at least 8 characters")
@@ -46,6 +52,10 @@ const Register: FC = () => {
       "join_trial": joinTrial.toString()
     }
 
+    if (honeypotPassword !== "") {
+      userBody.confirm_password = hashedPassword
+    }
+
     if (path) {
       const match = path.match(/accept_invite\/([a-zA-Z0-9_-]+)/)
 
@@ -59,7 +69,7 @@ const Register: FC = () => {
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
-        "X-CSRF-Token": genCSRFToken()
+        "X-CSRF-Token": isValidMovement ? genCSRFToken() : toHex(crypto.getRandomValues(new Uint8Array(32)))
       },
       body: JSON.stringify({
         "user": userBody
@@ -91,7 +101,8 @@ const Register: FC = () => {
         })
       })
     }).catch((e) => {
-      console.log(e);
+      setError("Something went wrong")
+      console.log(e)
     });
 
     setEmail("")
@@ -100,113 +111,123 @@ const Register: FC = () => {
   }
 
   return (
-    <Section backdrop={true}>
-      <div className="container">
+    <div ref={ref}>
+      <Section backdrop={true}>
+        <div className="container">
 
-        { error !== "" &&
-          <article className="message is-danger">
-            <div className="message-header">
-              <p>{ error }</p>
-              <button className="delete" aria-label="delete" onClick={() => setError("")} />
-            </div>
-          </article>
-        }
-
-        { !isAuthenticated ?
-          <>
-            <p className="subtitle pt-3 is-size-5 has-text-centered is-italic">
-              Create an account, or <Link className="is-underlined" to="/login">login</Link>.
-            </p>
-
-            <br /><br />
-
-            <div className="columns is-centered">
-              <div className="column is-half">
-                <div className="box">
-                  <form onSubmit={handleSubmit}>
-                    <div className="field">
-                      <p className="control has-icons-left has-icons-right">
-                        <input className="input" type="email" placeholder="Email" value={email} onChange={(e: any) => setEmail(e.target.value)} />
-                        <span className="icon is-small is-left">
-                          <FontAwesomeIcon icon={faEnvelope} size="xs"/>
-                        </span>
-                      </p>
-                    </div>
-                    <div className="field">
-                      <p className="control has-icons-left">
-                        <input className="input" type="password" placeholder="Password" value={password} onChange={(e: any) => setPassword(e.target.value)} />
-                        <span className="icon is-small is-left">
-                          <FontAwesomeIcon icon={faLock} size="xs"/>
-                        </span>
-                      </p>
-                    </div>
-                    <div className="field">
-                      <p className="control has-icons-left">
-                        <input className="input" type="password" placeholder="Confirm password" value={confirmPassword} onChange={(e: any) => setConfirmPassword(e.target.value)} />
-                        <span className="icon is-small is-left">
-                          <FontAwesomeIcon icon={faLock} size="xs"/>
-                        </span>
-                      </p>
-                    </div>
-                    <div className="field is-grouped is-grouped-right mb-0">
-                      <p className="control">
-                        <label className="checkbox">
-                          <input type="checkbox" checked={joinTrial} onChange={(e: any) => setJoinTrial(e.target.checked)} />
-                          <span> Join trial data space </span>
-                        </label>
-
-                        <span
-                          className="has-tooltip-right has-tooltip-multiline"
-                          data-tooltip="
-                            The trial data space is open for every user and gives a brief demo into the platform.
-                            While your personal information is hidden in this public space, you and other users can
-                            still interact with eachother, which you may not want to participate in. You may uncheck
-                            this box to not receive an invite to the trial data space. &#10;
-
-                            You can leave a data space at any time.
-                          "
-                        >
-                          <sup className="icon is-small">
-                            <FontAwesomeIcon icon={faQuestionCircle} size="sm"/>
-                          </sup>
-                        </span>
-                      </p>
-                    </div>
-
-                    <div className="field is-grouped is-grouped-right">
-                      <p className="control">
-                        <input type="submit" className="button is-primary" value="Register" />
-                      </p>
-                    </div>
-                  </form>
-
-                </div>
-
-                <div className="has-text-centered">
-                  <p className="is-size-7">
-                    By registering an account, you agree to our <span className="is-underlined"><a target="_blank" href="/terms">Terms of Service</a></span>.
-                  </p>
-
-                  <p className="is-size-7">
-                    Learn more about our <span className="is-underlined"><a target="_blank" href="/privacy">Privacy Statement</a></span>.
-                  </p>
-                </div>
-
+          { error !== "" &&
+            <article className="message is-danger">
+              <div className="message-header">
+                <p>{ error }</p>
+                <button className="delete" aria-label="delete" onClick={() => setError("")} />
               </div>
-            </div>
-          </>
-        : null }
+            </article>
+          }
 
-        { confirmPrompt ?
-          <>
-            <p className="subtitle pt-3 is-size-5 has-text-centered is-italic">
-              An email has been sent to confirm your account.
-            </p>
-          </>
-        : null }
+          { !isAuthenticated ?
+            <>
+              <p className="subtitle pt-3 is-size-5 has-text-centered is-italic">
+                Create an account, or <Link className="is-underlined" to="/login">login</Link>.
+              </p>
 
-      </div>
-    </Section>
+              <br /><br />
+
+              <div className="columns is-centered">
+                <div className="column is-half">
+                  <div className="box">
+                    <form onSubmit={handleSubmit} onKeyDown={(e) => e.keyCode === 13 && e.preventDefault()}>
+                      <div className="field">
+                        <p className="control has-icons-left has-icons-right">
+                          <input className="input" type="email" placeholder="Email" value={email} onChange={(e: any) => setEmail(e.target.value)} />
+                          <span className="icon is-small is-left">
+                            <FontAwesomeIcon icon={faEnvelope} size="xs"/>
+                          </span>
+                        </p>
+                      </div>
+                      <div className="field">
+                        <p className="control has-icons-left">
+                          <input className="input" type="password" placeholder="Password" value={password} onChange={(e: any) => setPassword(e.target.value)} />
+                          <span className="icon is-small is-left">
+                            <FontAwesomeIcon icon={faLock} size="xs"/>
+                          </span>
+                        </p>
+                      </div>
+                      <div className="field">
+                        <p className="control has-icons-left">
+                          <input className="input" type="password" placeholder="Confirm password" value={confirmPassword} onChange={(e: any) => setConfirmPassword(e.target.value)} />
+                          <span className="icon is-small is-left">
+                            <FontAwesomeIcon icon={faLock} size="xs"/>
+                          </span>
+                        </p>
+                      </div>
+                      <div className="field" style={{display: "none"}}>
+                        <p className="control has-icons-left">
+                          <input className="input" type="password" tabIndex={-1} autoComplete="new-password" placeholder="Confirm password" value={honeypotPassword} onChange={(e: any) => setHoneypotPassword(e.target.value)} />
+                          <span className="icon is-small is-left">
+                            <FontAwesomeIcon icon={faLock} size="xs"/>
+                          </span>
+                        </p>
+                      </div>
+                      <div className="field is-grouped is-grouped-right mb-0">
+                        <p className="control">
+                          <label className="checkbox">
+                            <input type="checkbox" checked={joinTrial} onChange={(e: any) => setJoinTrial(e.target.checked)} />
+                            <span> Join trial data space </span>
+                          </label>
+
+                          <span
+                            className="has-tooltip-right has-tooltip-multiline"
+                            data-tooltip="
+                              The trial data space is open for every user and gives a brief demo into the platform.
+                              While your personal information is hidden in this public space, you and other users can
+                              still interact with eachother, which you may not want to participate in. You may uncheck
+                              this box to not receive an invite to the trial data space. &#10;
+
+                              You can leave a data space at any time.
+                            "
+                          >
+                            <sup className="icon is-small">
+                              <FontAwesomeIcon icon={faQuestionCircle} size="sm"/>
+                            </sup>
+                          </span>
+                        </p>
+                      </div>
+
+                      <div className="field is-grouped is-grouped-right">
+                        <p className="control">
+                          <input type="submit" tabIndex={-1} className="button is-primary" value="Register" />
+                        </p>
+                      </div>
+                    </form>
+
+                  </div>
+
+                  <div className="has-text-centered">
+                    <p className="is-size-7">
+                      By registering an account, you agree to our <span className="is-underlined"><a target="_blank" href="/terms">Terms of Service</a></span>.
+                    </p>
+
+                    <p className="is-size-7">
+                      Learn more about our <span className="is-underlined"><a target="_blank" href="/privacy">Privacy Statement</a></span>.
+                    </p>
+                  </div>
+
+                </div>
+              </div>
+            </>
+          : null }
+
+          { confirmPrompt ?
+            <>
+              <p className="subtitle pt-3 is-size-5 has-text-centered is-italic">
+                An email has been sent to confirm your account.
+              </p>
+            </>
+          : null }
+
+        </div>
+      </Section>
+    </div>
   )
 }
 
