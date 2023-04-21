@@ -9,10 +9,11 @@
 
 # Reference Manual
 
-- [Encryption](encryption.md)
 - [Sources](sources/README.md)
     - [CSV](sources/csv.md)
 - [Collections]()
 - [Transformers]()
 - [Widgets]()
 - [Reports]()
+- [Encryption](encryption.md)
+

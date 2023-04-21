@@ -72,12 +72,17 @@ can create a chart such as a histogram from your data and allow that chart to be
 
 ## Reports
 While building a data workflow is a lot of fun, at one point you want to start sharing any insights. The reports page
-allows you to create both internal and public reports. Public reports can be shared such that the viewer does not need a
+allows you to create both *internal* and *public* **reports**. Public reports can be shared such that the viewer does not need a
 DataGarden account.
 
-Building a report is very straightforward. It consists of *sections*, where each section can either be content through
+![x](../images/report_edit.png)
+*Img 3: Report builder*
+
+Building a report is very straightforward. A report consists of *sections*, where each section can either be content through
 the form of rich text, or a widget / chart. Sections can be easily rearranged by dragging them to their desired position, or
 removed alltogether. Text sections support common markup and alignment, and will show a live preview of what you are
-editing. Widgets cannot be edited from the report itself, as they are managed by the workflow builder, which also takes
-care of keeping the data up to date.
+editing.
+
+> **Note**: Widgets cannot be edited from the report itself, as they are managed by the workflow builder, which also takes
+> care of keeping the data up to date.
 
