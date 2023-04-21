@@ -40,6 +40,44 @@ Once shared, everyone that has access to a column retains this access even when 
 source. But we are getting ahead of ourselves, let's first build a simple workflow.
 
 ## Workflow builder
+The main view of DataGarden is the workflow builder (see image 2). From here, you will start working with your and your
+collaborators data. If this is a new data space, you will be presented with an empty canvas, but you can quickly make it
+your own!
+
+![x](../images/builder.png)
+*Img 2: Workflow builder*
+
+A **workflow** consists of data **collections** (the large colourful rectangles), that are modified, edited, filtered,
+aggregated, etc. by **transformers** (small black circles). Workflows are built from left to right, with the leftmost
+data collection being one of your data sources. You can drag them in from the *sources* tab in the workspace panel if
+they were ready to be published.
+
+Collections allow you to preview what the data looks like at that stage of the workflow, and to alter what data is
+shared with whom. To change, or *transform*, the data, you can drag in a transformer from the *workspace* tab, and
+connect it to the output of one of your collections.
+
+Some transformers, such as the merge transformer, need multiple inputs, but most are ready to be used after connecting
+just one source to it. Once you've connected it a collection, you can click on it to edit its functionality. For
+example, with the *filter transformer*, you can filter some rows based on a condition, and with the *function
+transformer* you are able to build a formula similar to spreadsheet editors.
+
+Every transformer will showcase the incoming data on the left, and a live preview of your changes on the right. If you
+are satisfied with the changes, you can save or *commit* them. This will save your changes, but also send them to any
+other collaborators to compute any columns that you maybe did not have access to. Ones everything is complete, a new
+collection is created with the results, and you can continue building your workflow.
+
+Finally, there is one more component called a **widget**, which does not produce any new collections and instead is the
+final stop in your *data pipeline*. Widgets can output result data in any number of ways. For example, a chart widget
+can create a chart such as a histogram from your data and allow that chart to be used in reports.
 
 ## Reports
+While building a data workflow is a lot of fun, at one point you want to start sharing any insights. The reports page
+allows you to create both internal and public reports. Public reports can be shared such that the viewer does not need a
+DataGarden account.
+
+Building a report is very straightforward. It consists of *sections*, where each section can either be content through
+the form of rich text, or a widget / chart. Sections can be easily rearranged by dragging them to their desired position, or
+removed alltogether. Text sections support common markup and alignment, and will show a live preview of what you are
+editing. Widgets cannot be edited from the report itself, as they are managed by the workflow builder, which also takes
+care of keeping the data up to date.
 

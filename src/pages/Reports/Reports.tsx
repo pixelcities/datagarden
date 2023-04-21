@@ -429,7 +429,7 @@ const ReportOverview: FC = (props) => {
 
       return (
         <div key={page.id} className="column is-narrow">
-          <Link to={"/" + dataSpace.handle + "/reports/" + page.id}>
+          <Link to={"/ds/" + dataSpace.handle + "/reports/" + page.id}>
             <ReportCard
               id={page.id}
               title={name}
