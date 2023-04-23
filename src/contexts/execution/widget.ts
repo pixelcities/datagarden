@@ -4,7 +4,7 @@ import { ExecutionError, DataSpace, User, Task, Content, Page, Share } from 'typ
 import { RootState } from 'state/store'
 import { publishWidget, updateContent } from 'state/actions'
 import { toASCII } from 'utils/helpers'
-import { renderDonut, renderHistogram, wrapChartContent } from 'utils/charts'
+import { renderDonut, renderHistogram, renderBar, wrapChartContent } from 'utils/charts'
 
 import { loadRemoteTable } from 'utils/loadRemoteTable'
 
@@ -49,9 +49,11 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
 
         let svg = ''
         if (settings.type === "Histogram") {
-          svg = renderHistogram(data, settings.columnId, settings.xLabel, settings.yLabel, parseInt(settings.nrBins)).outerHTML
+          svg = renderHistogram(data, settings.columnId, settings.xLabel, settings.yLabel, settings.color, parseInt(settings.nrBins)).outerHTML
         } else if (settings.type === "Donut") {
           svg = renderDonut(data, settings.nameColumnId, settings.valueColumnId).outerHTML
+        } else if (settings.type === "Bar") {
+          svg = renderBar(data, settings.nameColumnId, settings.valueColumnId, settings.xLabel, settings.yLabel, settings.yFormat, settings.color, settings.sort).outerHTML
         }
 
         if (content.length > 0) {

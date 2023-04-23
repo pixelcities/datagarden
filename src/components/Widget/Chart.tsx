@@ -4,6 +4,7 @@ import { faKey } from '@fortawesome/free-solid-svg-icons'
 import Dropdown from 'components/Dropdown'
 import Histogram, { HistogramSettings } from './Histogram'
 import Donut, { DonutSettings } from './Donut'
+import Bar, { BarSettings } from './Bar'
 
 import { useAppDispatch, useAppSelector } from 'hooks'
 import { selectActiveDataSpace, selectPages, selectContentByWidgetId } from 'state/selectors'
@@ -66,6 +67,7 @@ const Chart: FC<ChartProps> = ({ id, collectionId, columnNames, schema, settings
           columnId={settings.column}
           xLabel={settings.xLabel}
           yLabel={settings.yLabel}
+          color={settings.color}
           nrBins={parseInt(settings.nrBins)}
           getContentCallback={getContentCallback}
         />
@@ -77,6 +79,21 @@ const Chart: FC<ChartProps> = ({ id, collectionId, columnNames, schema, settings
           collectionId={collectionId}
           nameColumnId={settings.nameColumnId}
           valueColumnId={settings.valueColumnId}
+          getContentCallback={getContentCallback}
+        />
+      )
+    } else if (settings.type === "Bar") {
+      return (
+        <Bar
+          id={id}
+          collectionId={collectionId}
+          nameColumnId={settings.nameColumnId}
+          valueColumnId={settings.valueColumnId}
+          xLabel={settings.xLabel}
+          yLabel={settings.yLabel}
+          yFormat={settings.yFormat}
+          color={settings.color}
+          sort={settings.sort}
           getContentCallback={getContentCallback}
         />
       )
@@ -97,6 +114,15 @@ const Chart: FC<ChartProps> = ({ id, collectionId, columnNames, schema, settings
     } else if (settings.type === "Donut") {
       return (
         <DonutSettings
+          id={id}
+          columnNames={columnNames}
+          settings={settings}
+          isPublished={isPublished}
+        />
+      )
+    } else if (settings.type === "Bar") {
+      return (
+        <BarSettings
           id={id}
           columnNames={columnNames}
           settings={settings}
@@ -167,7 +193,7 @@ const Chart: FC<ChartProps> = ({ id, collectionId, columnNames, schema, settings
           </div>
 
           <Dropdown
-            items={["Histogram", "Donut"]}
+            items={["Histogram", "Donut", "Bar"]}
             onClick={handleChartType}
             selected={settings.type}
             isDisabled={isPublished}

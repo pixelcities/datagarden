@@ -7,26 +7,26 @@ import { putWidgetSetting } from 'state/actions'
 import { WidgetSettings } from 'types'
 
 import { useDataFusionContext } from 'contexts'
-import { renderHistogram } from 'utils/charts'
+import { renderBar } from 'utils/charts'
 
-interface HistogramSettingsProps {
+interface BarSettingsProps {
   id: string,
   columnNames: {[key: string]: string},
   settings: WidgetSettings,
   isPublished: boolean
 }
 
-const HistogramSettings: FC<HistogramSettingsProps> = ({ id, columnNames, settings, isPublished }) => {
+const BarSettings: FC<BarSettingsProps> = ({ id, columnNames, settings, isPublished }) => {
   const dispatch = useAppDispatch()
 
-  const handleColumn = (item: string) => {
+  const handleColumn = (key: string, item: string) => {
     const columnId = Object.keys(columnNames).find(id => columnNames[id] === item)
 
-    if (columnId && columnId !== settings.column) {
+    if (columnId && columnId !== settings[key]) {
       dispatch(putWidgetSetting({
         id: id,
         workspace: "default",
-        key: "column",
+        key: key,
         value: columnId
       }))
     }
@@ -50,17 +50,39 @@ const HistogramSettings: FC<HistogramSettingsProps> = ({ id, columnNames, settin
     }))
   }
 
+  const handleSort = (sort: string) => {
+    dispatch(putWidgetSetting({
+      id: id,
+      workspace: "default",
+      key: "sort",
+      value: sort
+    }))
+  }
+
   return (
     <>
       <>
         <div className="field pb-0 pt-5">
-          <label className="label">Column</label>
+          <label className="label">Group column</label>
         </div>
 
         <Dropdown
           items={Object.values(columnNames)}
-          onClick={handleColumn}
-          selected={columnNames[settings.column]}
+          onClick={e => handleColumn("nameColumnId", e)}
+          selected={columnNames[settings.nameColumnId]}
+          isDisabled={isPublished}
+        />
+      </>
+
+      <>
+        <div className="field pb-0 pt-5">
+          <label className="label">Value Column</label>
+        </div>
+
+        <Dropdown
+          items={Object.values(columnNames)}
+          onClick={e => handleColumn("valueColumnId", e)}
+          selected={columnNames[settings.valueColumnId]}
           isDisabled={isPublished}
         />
       </>
@@ -83,6 +105,14 @@ const HistogramSettings: FC<HistogramSettingsProps> = ({ id, columnNames, settin
 
       <>
         <div className="field pb-0 pt-5">
+          <label className="label">Y Format</label>
+        </div>
+
+        <input type="text" className="input" value={settings.yFormat || ""} onChange={e => handleDispatch(e, "yFormat")} disabled={isPublished} />
+      </>
+
+      <>
+        <div className="field pb-0 pt-5">
           <label className="label">Color</label>
 
           <ColorPicker
@@ -95,28 +125,36 @@ const HistogramSettings: FC<HistogramSettingsProps> = ({ id, columnNames, settin
 
       <>
         <div className="field pb-0 pt-5">
-          <label className="label">Bins</label>
+          <label className="label">Sort</label>
         </div>
 
-        <input type="number" className="input" value={settings.nrBins || 5} onChange={e => handleDispatch(e, "nrBins")} disabled={isPublished} />
+        <Dropdown
+          items={["None", "Ascending", "Descending"]}
+          onClick={handleSort}
+          selected={settings.sort}
+          isDisabled={isPublished}
+        />
       </>
+
     </>
   )
 }
 
 
-interface HistogramProps {
+interface BarProps {
   id: string,
   collectionId: string,
-  columnId: string,
+  nameColumnId: string,
+  valueColumnId: string,
   xLabel: string,
   yLabel: string,
+  yFormat: string,
   color: string,
-  nrBins: number,
+  sort: string,
   getContentCallback?: (cb: () => {content: string | undefined, height: number | undefined}) => void
 }
 
-const Histogram: FC<HistogramProps> = ({ id, collectionId, columnId, xLabel, yLabel, color, nrBins, getContentCallback }) => {
+const Bar: FC<BarProps> = ({ id, collectionId, nameColumnId, valueColumnId, xLabel, yLabel, yFormat, color, sort, getContentCallback }) => {
   const ref = useRef<HTMLDivElement | null>(null)
   const [dimensions, setDimensions] = useState({height: 0, width: 0})
 
@@ -147,7 +185,7 @@ const Histogram: FC<HistogramProps> = ({ id, collectionId, columnId, xLabel, yLa
     const node = document.getElementById("canvas")
 
     if (data && node) {
-      const svg = renderHistogram(data, columnId, xLabel, yLabel, color, nrBins)
+      const svg = renderBar(data, nameColumnId, valueColumnId, xLabel, yLabel, yFormat, color, sort)
       node.append(svg)
 
       // Callback
@@ -164,7 +202,7 @@ const Histogram: FC<HistogramProps> = ({ id, collectionId, columnId, xLabel, yLa
         svg.remove()
       }
     }
-  }, [ data, columnId, xLabel, yLabel, color, nrBins, getContentCallback ])
+  }, [ data, nameColumnId, valueColumnId, xLabel, yLabel, yFormat, color, sort, getContentCallback ])
 
   return (
     <div ref={ref} style={{width: "100%", height: "100%"}}>
@@ -173,7 +211,7 @@ const Histogram: FC<HistogramProps> = ({ id, collectionId, columnId, xLabel, yLa
   )
 }
 
-export default Histogram
+export default Bar
 export {
-  HistogramSettings
+  BarSettings
 }
