@@ -2,9 +2,7 @@ import React, { FC, useMemo, useCallback, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faKey } from '@fortawesome/free-solid-svg-icons'
 import Dropdown from 'components/Dropdown'
-import Histogram, { HistogramSettings } from './Histogram'
-import Donut, { DonutSettings } from './Donut'
-import Bar, { BarSettings } from './Bar'
+import Choropleth, { ChoroplethSettings } from './Choropleth'
 
 import { useAppDispatch, useAppSelector } from 'hooks'
 import { selectActiveDataSpace, selectPages, selectContentByWidgetId } from 'state/selectors'
@@ -12,12 +10,12 @@ import { putWidgetSetting, publishWidget, updateContent } from 'state/actions'
 import { Schema, Share, WidgetSettings, Page } from 'types'
 import { useKeyStoreContext } from 'contexts'
 import { toASCII } from 'utils/helpers'
-import { wrapChartContent } from 'utils/charts'
+import { wrapMapContent } from 'utils/maps'
 
-import './Widget.sass'
+import '../Widget.sass'
 
 
-interface ChartProps {
+interface MapProps {
   id: string,
   collectionId: string,
   columnNames: {[key: string]: string},
@@ -27,7 +25,7 @@ interface ChartProps {
   isPublished: boolean
 }
 
-const Chart: FC<ChartProps> = ({ id, collectionId, columnNames, schema, settings, access, isPublished }) => {
+const Maps: FC<MapProps> = ({ id, collectionId, columnNames, schema, settings, access, isPublished }) => {
   const dispatch = useAppDispatch()
   const [content, setContent] = useState<string | undefined>()
   const [height, setHeight] = useState<number | undefined>()
@@ -40,7 +38,7 @@ const Chart: FC<ChartProps> = ({ id, collectionId, columnNames, schema, settings
 
   const pageMap = useMemo(() => pages.reduce((a: {[key: string]: Page}, b) => ({...a, [b.id]: b}), {}), [ pages ])
 
-  const handleChartType = (item: string) => {
+  const handleMapType = (item: string) => {
     if (item !== settings.type) {
       dispatch(putWidgetSetting({
         id: id,
@@ -51,7 +49,7 @@ const Chart: FC<ChartProps> = ({ id, collectionId, columnNames, schema, settings
     }
   }
 
-  const renderChart = useMemo(() => {
+  const renderMap = useMemo(() => {
     const getContentCallback = (cb: () => {content: string | undefined, height: number | undefined}) => {
       const result = cb()
 
@@ -59,41 +57,16 @@ const Chart: FC<ChartProps> = ({ id, collectionId, columnNames, schema, settings
       setHeight(result.height)
     }
 
-    if (settings.type === "Histogram") {
+    if (settings.type === "Choropleth") {
       return (
-        <Histogram
-          id={id}
-          collectionId={collectionId}
-          columnId={settings.column}
-          xLabel={settings.xLabel}
-          yLabel={settings.yLabel}
-          color={settings.color}
-          nrBins={parseInt(settings.nrBins)}
-          getContentCallback={getContentCallback}
-        />
-      )
-    } else if (settings.type === "Donut") {
-      return (
-        <Donut
+        <Choropleth
           id={id}
           collectionId={collectionId}
           nameColumnId={settings.nameColumnId}
           valueColumnId={settings.valueColumnId}
-          getContentCallback={getContentCallback}
-        />
-      )
-    } else if (settings.type === "Bar") {
-      return (
-        <Bar
-          id={id}
-          collectionId={collectionId}
-          nameColumnId={settings.nameColumnId}
-          valueColumnId={settings.valueColumnId}
-          xLabel={settings.xLabel}
-          yLabel={settings.yLabel}
-          yFormat={settings.yFormat}
-          color={settings.color}
-          sort={settings.sort}
+          geomColumnId={settings.geomColumnId}
+          valueFormat={settings.valueFormat}
+          colorRamp={settings.colorRamp}
           getContentCallback={getContentCallback}
         />
       )
@@ -101,28 +74,10 @@ const Chart: FC<ChartProps> = ({ id, collectionId, columnNames, schema, settings
 
   }, [ id, collectionId, settings, setContent ])
 
-  const renderChartSettings = useMemo(() => {
-    if (settings.type === "Histogram") {
+  const renderMapSettings = useMemo(() => {
+    if (settings.type === "Choropleth") {
       return (
-        <HistogramSettings
-          id={id}
-          columnNames={columnNames}
-          settings={settings}
-          isPublished={isPublished}
-        />
-      )
-    } else if (settings.type === "Donut") {
-      return (
-        <DonutSettings
-          id={id}
-          columnNames={columnNames}
-          settings={settings}
-          isPublished={isPublished}
-        />
-      )
-    } else if (settings.type === "Bar") {
-      return (
-        <BarSettings
+        <ChoroplethSettings
           id={id}
           columnNames={columnNames}
           settings={settings}
@@ -139,7 +94,7 @@ const Chart: FC<ChartProps> = ({ id, collectionId, columnNames, schema, settings
       if (contentBlocks.length > 0 && !isPublished) {
         for (const c of contentBlocks) {
           const page = pageMap[c.page_id]
-          const pageContent = wrapChartContent(content, c.height)
+          const pageContent = wrapMapContent(content, c.height)
 
           if (page.access.filter(x => x.type === "internal").length > 0 && page.key_id) {
             dispatch(updateContent({...c, ...{
@@ -182,8 +137,8 @@ const Chart: FC<ChartProps> = ({ id, collectionId, columnNames, schema, settings
 
   return (
     <>
-      <div className="chart-container">
-        { renderChart }
+      <div className="map-container">
+        { renderMap }
       </div>
 
       <div className="widget-control-container">
@@ -193,13 +148,13 @@ const Chart: FC<ChartProps> = ({ id, collectionId, columnNames, schema, settings
           </div>
 
           <Dropdown
-            items={["Histogram", "Donut", "Bar"]}
-            onClick={handleChartType}
+            items={["Choropleth"]}
+            onClick={handleMapType}
             selected={settings.type}
             isDisabled={isPublished}
           />
 
-          { renderChartSettings }
+          { renderMapSettings }
 
           <div className="field pb-0 pt-5">
             <label id="publish" className="label pb-2"> Release process </label>
@@ -230,4 +185,4 @@ const Chart: FC<ChartProps> = ({ id, collectionId, columnNames, schema, settings
   )
 }
 
-export default Chart
+export default Maps

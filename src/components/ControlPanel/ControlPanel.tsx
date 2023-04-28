@@ -162,6 +162,10 @@ const WorkspaceTab: FC = (props) => {
         <div className="column is-4 mt-4">
           <WidgetCard title="Chart" type="chart" tooltip={helpIsActive ? "Create and publish charts, to gain insights about your data" : undefined} />
         </div>
+
+        <div className="column is-4 mt-4">
+          <WidgetCard title="Map" type="map" tooltip={helpIsActive ? "Create and publish maps, to gain insights about your data" : undefined} />
+        </div>
       </div>
 
       <div className="panel-block-nb">
