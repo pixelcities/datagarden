@@ -10,7 +10,7 @@ import { putWidgetSetting, publishWidget, updateContent } from 'state/actions'
 import { Schema, Share, WidgetSettings, Page } from 'types'
 import { useKeyStoreContext } from 'contexts'
 import { toASCII } from 'utils/helpers'
-import { wrapMapContent } from 'utils/maps'
+import { wrapChartContent } from 'utils/charts'
 
 import '../Widget.sass'
 
@@ -62,11 +62,15 @@ const Maps: FC<MapProps> = ({ id, collectionId, columnNames, schema, settings, a
         <Choropleth
           id={id}
           collectionId={collectionId}
+          classification={settings.classification}
+          nrClasses={parseInt(settings.nrClasses)}
           nameColumnId={settings.nameColumnId}
           valueColumnId={settings.valueColumnId}
           geomColumnId={settings.geomColumnId}
+          legendTitle={settings.legendTitle}
           valueFormat={settings.valueFormat}
           colorRamp={settings.colorRamp}
+          transform={settings.transform}
           getContentCallback={getContentCallback}
         />
       )
@@ -94,7 +98,7 @@ const Maps: FC<MapProps> = ({ id, collectionId, columnNames, schema, settings, a
       if (contentBlocks.length > 0 && !isPublished) {
         for (const c of contentBlocks) {
           const page = pageMap[c.page_id]
-          const pageContent = wrapMapContent(content, c.height)
+          const pageContent = wrapChartContent(content, c.height)
 
           if (page.access.filter(x => x.type === "internal").length > 0 && page.key_id) {
             dispatch(updateContent({...c, ...{
