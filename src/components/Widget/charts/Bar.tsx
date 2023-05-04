@@ -116,7 +116,7 @@ const BarSettings: FC<BarSettingsProps> = ({ id, columnNames, settings, isPublis
           <label className="label">Color</label>
 
           <ColorPicker
-            color={settings.color || "steelblue"}
+            color={settings.color || "#3457A6"}
             onClick={handleColorChange}
             isDisabled={isPublished}
           />

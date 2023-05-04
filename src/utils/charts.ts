@@ -129,7 +129,7 @@ export const renderHistogram = (data: any, columnId: string, xLabel: string, yLa
       .text(yLabel && yLabel !== "" && "↑" + yLabel))
 
   svg.append("g")
-    .attr("fill", color || "steelblue")
+    .attr("fill", color || "#3457A6")
     .selectAll("rect")
     .data(bins)
     .join("rect")
@@ -213,7 +213,7 @@ export const renderBar = (data: any, nameColumnId: string, valueColumnId: string
       .text(yLabel && yLabel !== "" && "↑" + yLabel));
 
   svg.append("g")
-    .attr("fill", color)
+    .attr("fill", color || "#3457A6")
     .selectAll("rect")
     .data(I)
     .join("rect")
@@ -304,7 +304,7 @@ export const renderLine = (data: any, timeColumnId: string, valueColumnId: strin
 
   svg.append("path")
     .attr("fill", "none")
-    .attr("stroke", color)
+    .attr("stroke", color || "#3457A6")
     .attr("stroke-width", 1.5)
     .attr("stroke-linecap", "round")
     .attr("stroke-linejoin", "round")
@@ -372,7 +372,7 @@ export const renderArea = (data: any, timeColumnId: string, valueColumnId: strin
       .text(yLabel && yLabel !== "" && "↑" + yLabel))
 
   svg.append("path")
-      .attr("fill", color)
+      .attr("fill", color || "#3457A6")
       .attr("d", area(I as any))
 
   svg.append("g")

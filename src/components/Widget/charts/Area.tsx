@@ -102,7 +102,7 @@ const AreaSettings: FC<AreaSettingsProps> = ({ id, columnNames, settings, isPubl
           <label className="label">Color</label>
 
           <ColorPicker
-            color={settings.color || "steelblue"}
+            color={settings.color || "#3457A6"}
             onClick={handleColorChange}
             isDisabled={isPublished}
           />
