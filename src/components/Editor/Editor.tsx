@@ -67,7 +67,7 @@ const Editor: FC<EditorProps> = ({ id, content, publishCallback, keyId } ) => {
     if (content) {
       if (access.filter(x => x.type === "public").length > 0) {
         dispatch(updateContent({...content, ...{
-          content: btoa(html),
+          content: btoa(encodeURIComponent(html)),
           draft: draft,
           height: node.offsetHeight
         }}))

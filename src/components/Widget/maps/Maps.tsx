@@ -9,7 +9,6 @@ import { selectActiveDataSpace, selectPages, selectContentByWidgetId } from 'sta
 import { putWidgetSetting, publishWidget, updateContent } from 'state/actions'
 import { Schema, Share, WidgetSettings, Page } from 'types'
 import { useKeyStoreContext } from 'contexts'
-import { toASCII } from 'utils/helpers'
 import { wrapChartContent } from 'utils/charts'
 
 import '../Widget.sass'
@@ -107,7 +106,7 @@ const Maps: FC<MapProps> = ({ id, collectionId, columnNames, schema, settings, a
 
           } else {
             dispatch(updateContent({...c, ...{
-              content: btoa(toASCII(pageContent))
+              content: btoa(encodeURIComponent(pageContent))
             }}))
           }
         }

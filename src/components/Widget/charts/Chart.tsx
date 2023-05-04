@@ -5,13 +5,14 @@ import Dropdown from 'components/Dropdown'
 import Histogram, { HistogramSettings } from './Histogram'
 import Donut, { DonutSettings } from './Donut'
 import Bar, { BarSettings } from './Bar'
+import Line, { LineSettings } from './Line'
+import Area, { AreaSettings } from './Area'
 
 import { useAppDispatch, useAppSelector } from 'hooks'
 import { selectActiveDataSpace, selectPages, selectContentByWidgetId } from 'state/selectors'
 import { putWidgetSetting, publishWidget, updateContent } from 'state/actions'
 import { Schema, Share, WidgetSettings, Page } from 'types'
 import { useKeyStoreContext } from 'contexts'
-import { toASCII } from 'utils/helpers'
 import { wrapChartContent } from 'utils/charts'
 
 import '../Widget.sass'
@@ -97,6 +98,32 @@ const Chart: FC<ChartProps> = ({ id, collectionId, columnNames, schema, settings
           getContentCallback={getContentCallback}
         />
       )
+    } else if (settings.type === "Line") {
+      return (
+        <Line
+          id={id}
+          collectionId={collectionId}
+          timeColumnId={settings.timeColumnId}
+          valueColumnId={settings.valueColumnId}
+          xLabel={settings.xLabel}
+          yLabel={settings.yLabel}
+          color={settings.color}
+          getContentCallback={getContentCallback}
+        />
+      )
+    } else if (settings.type === "Area") {
+      return (
+        <Area
+          id={id}
+          collectionId={collectionId}
+          timeColumnId={settings.timeColumnId}
+          valueColumnId={settings.valueColumnId}
+          xLabel={settings.xLabel}
+          yLabel={settings.yLabel}
+          color={settings.color}
+          getContentCallback={getContentCallback}
+        />
+      )
     }
 
   }, [ id, collectionId, settings, setContent ])
@@ -129,6 +156,24 @@ const Chart: FC<ChartProps> = ({ id, collectionId, columnNames, schema, settings
           isPublished={isPublished}
         />
       )
+    } else if (settings.type === "Line") {
+      return (
+        <LineSettings
+          id={id}
+          columnNames={columnNames}
+          settings={settings}
+          isPublished={isPublished}
+        />
+      )
+    } else if (settings.type === "Area") {
+      return (
+        <AreaSettings
+          id={id}
+          columnNames={columnNames}
+          settings={settings}
+          isPublished={isPublished}
+        />
+      )
     }
 
   }, [ id, columnNames, settings, isPublished ])
@@ -148,7 +193,7 @@ const Chart: FC<ChartProps> = ({ id, collectionId, columnNames, schema, settings
 
           } else {
             dispatch(updateContent({...c, ...{
-              content: btoa(toASCII(pageContent))
+              content: btoa(encodeURIComponent(pageContent))
             }}))
           }
         }
@@ -193,7 +238,7 @@ const Chart: FC<ChartProps> = ({ id, collectionId, columnNames, schema, settings
           </div>
 
           <Dropdown
-            items={["Histogram", "Donut", "Bar"]}
+            items={["Histogram", "Donut", "Bar", "Line", "Area"]}
             onClick={handleChartType}
             selected={settings.type}
             isDisabled={isPublished}

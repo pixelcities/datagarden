@@ -1,6 +1,6 @@
 {
   "name": "datagarden.app",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "private": true,
   "dependencies": {
     "@ericlathrop/phoenix-js-react-hooks": "^0.1.0",
@@ -11,7 +11,7 @@
     "@fortawesome/free-solid-svg-icons": "^5.15.2",
     "@fortawesome/react-fontawesome": "^0.1.14",
     "@pixelcities/arrow-wasm": "^0.1.4",
-    "@pixelcities/datafusion-wasm": "^0.1.1",
+    "@pixelcities/datafusion-wasm": "^0.1.2",
     "@pixelcities/key-x-wasm": "^0.1.6",
     "@reduxjs/toolkit": "^1.7.2",
     "async-mutex": "^0.3.2",

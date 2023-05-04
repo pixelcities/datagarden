@@ -4,7 +4,7 @@ import { ExecutionError, DataSpace, User, Task, Content, Page, Share } from 'typ
 import { RootState } from 'state/store'
 import { publishWidget, updateContent } from 'state/actions'
 import { toASCII } from 'utils/helpers'
-import { renderDonut, renderHistogram, renderBar, wrapChartContent } from 'utils/charts'
+import { renderDonut, renderHistogram, renderBar, renderLine, renderArea, wrapChartContent } from 'utils/charts'
 import { renderChoropleth } from 'utils/maps'
 
 import { loadRemoteTable } from 'utils/loadRemoteTable'
@@ -55,6 +55,10 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
           svg = renderDonut(data, settings.nameColumnId, settings.valueColumnId).outerHTML
         } else if (settings.type === "Bar") {
           svg = renderBar(data, settings.nameColumnId, settings.valueColumnId, settings.xLabel, settings.yLabel, settings.yFormat, settings.color, settings.sort).outerHTML
+        } else if (settings.type === "Line") {
+          svg = renderLine(data, settings.timeColumnId, settings.valueColumnId, settings.xLabel, settings.yLabel, settings.color).outerHTML
+        } else if (settings.type === "Area") {
+          svg = renderArea(data, settings.timeColumnId, settings.valueColumnId, settings.xLabel, settings.yLabel, settings.color).outerHTML
         } else if (settings.type === "Choropleth") {
           svg = renderChoropleth(data, settings.classification, parseInt(settings.nrClasses), settings.nameColumnId, settings.valueColumnId, settings.geomColumnId, settings.legendTitle, settings.valueFormat, settings.colorRamp, settings.transform).outerHTML
         }

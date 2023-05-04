@@ -9,7 +9,6 @@ import { useAuthContext } from 'contexts'
 import { useAppSelector, useAppDispatch } from 'hooks'
 import { selectPages, selectPageById, selectContentIdsByPageId, selectMetadataMap, selectMetadataById, selectActiveDataSpace, selectUsers, selectPublishedWidgets } from 'state/selectors'
 import { createPage, setPageOrder, createContent, createMetadata, shareSecret, sendLocalNotification } from 'state/actions'
-import { toASCII } from 'utils/helpers'
 import { wrapChartContent } from 'utils/charts'
 import { getCSRFToken } from 'utils/getCSRFToken'
 
@@ -169,7 +168,7 @@ const Report: FC = (props) => {
 
   const handleAddStaticContent = useCallback(() => {
     if (page && keyStoreIsReady) {
-      let initialContent = btoa("<p></p>")
+      let initialContent = btoa(encodeURIComponent("<p></p>"))
 
       if (page.access.filter(x => x.type === "internal").length > 0 && page.key_id) {
         initialContent = keyStore?.encrypt_metadata(page.key_id, "<p></p>")
@@ -218,10 +217,8 @@ const Report: FC = (props) => {
           widgetContent = wrapChartContent(widget.content || "", height)
         }
 
-        // Crudely convert to ASCII by just replacing bad characters, as btoa does not like unicode very much.
-        //
-        // TODO: Properly encode / decode unicode text
-        let content = btoa(toASCII(widgetContent))
+        // URI encode it first, as btoa does not like unicode very much.
+        let content = btoa(encodeURIComponent(widgetContent))
 
         if (page.access.filter(x => x.type === "internal").length > 0 && page.key_id) {
           content = keyStore?.encrypt_metadata(page.key_id, widgetContent)
