@@ -184,7 +184,8 @@ const WorkspaceTab: FC = (props) => {
 }
 
 const ControlPanel: FC = (props) => {
-  const [ activeTab, setActiveTab ] = useState("sources")
+  // Default the active panel to sources if the onboarding is not yet completed, the workspace tab otherwise
+  const [ activeTab, setActiveTab ] = useState(parseInt(localStorage.getItem("onboarding-builder") || "0") !== -1 ? "sources" : "workspace")
   const [ search, setSearch ] = useState("")
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
