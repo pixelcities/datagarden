@@ -56,13 +56,15 @@ export const AuthProvider: FC = ({ children }) => {
         },
         redirect: 'error'
       }).then((response) => {
-        handleLogin()
+        if (response.ok) {
+          handleLogin()
 
-        response.json()
-          .then((resp) => {
-            handleLogin(resp)
-            setIsLoading(false)
-          })
+          response.json()
+            .then((resp) => {
+              handleLogin(resp)
+              setIsLoading(false)
+            })
+        }
       }).catch((e) => setIsLoading(false))
 
     } else {

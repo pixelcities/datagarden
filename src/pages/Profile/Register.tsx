@@ -43,71 +43,73 @@ const Register: FC = () => {
       return
     }
 
-    const hashedPassword = keyStore.open_sesame(email, password)
+    if (keyStore && protocol) {
+      const hashedPassword = keyStore.open_sesame(email, password)
 
-    let userBody: {[key: string]: string} = {
-      "email": email,
-      "password": hashedPassword,
-      "remember_me": "true",
-      "join_trial": joinTrial.toString()
-    }
-
-    if (honeypotPassword !== "") {
-      userBody.confirm_password = hashedPassword
-    }
-
-    if (path) {
-      const match = path.match(/accept_invite\/([a-zA-Z0-9_-]+)/)
-
-      if (match?.length === 2) {
-        userBody.invite = match[1]
-      }
-    }
-
-    fetch(process.env.REACT_APP_API_BASE_PATH + "/auth/local/register", {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRF-Token": isValidMovement ? genCSRFToken() : toHex(crypto.getRandomValues(new Uint8Array(32)))
-      },
-      body: JSON.stringify({
-        "user": userBody
-      })
-    }).then((response) => {
-      if (!response.ok) {
-        return Promise.reject(response)
-      } else {
-        return response.json()
-      }
-    }).then((data) => {
-      if (!userBody.invite) {
-        setConfirmPrompt(true)
+      let userBody: {[key: string]: string} = {
+        "email": email,
+        "password": hashedPassword,
+        "remember_me": "true",
+        "join_trial": joinTrial.toString()
       }
 
-      // Ensure we start fresh
-      localStorage.clear()
+      if (honeypotPassword !== "") {
+        userBody.confirm_password = hashedPassword
+      }
 
-      keyStore.create_named_key("protocol", 32).then((key_id: string) => {
-        protocol.register(keyStore.get_key(key_id), process.env.REACT_APP_API_BASE_PATH).then((pub_key: string) => {
-          handleLogin(data)
-          keyStore.init().then(() => {
-            __setIsReady__(true)
+      if (path) {
+        const match = path.match(/accept_invite\/([a-zA-Z0-9_-]+)/)
 
-            if (userBody.invite) {
-              history.push("/")
-            }
+        if (match?.length === 2) {
+          userBody.invite = match[1]
+        }
+      }
+
+      fetch(process.env.REACT_APP_API_BASE_PATH + "/auth/local/register", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": isValidMovement ? genCSRFToken() : toHex(crypto.getRandomValues(new Uint8Array(32)))
+        },
+        body: JSON.stringify({
+          "user": userBody
+        })
+      }).then((response) => {
+        if (!response.ok) {
+          return Promise.reject(response)
+        } else {
+          return response.json()
+        }
+      }).then((data) => {
+        if (!userBody.invite) {
+          setConfirmPrompt(true)
+        }
+
+        // Ensure we start fresh
+        localStorage.clear()
+
+        keyStore.create_named_key("protocol", 32).then((key_id: string) => {
+          protocol.register(keyStore.get_key(key_id), process.env.REACT_APP_API_BASE_PATH).then((pub_key: string) => {
+            handleLogin(data)
+            keyStore.init().then(() => {
+              __setIsReady__(true)
+
+              if (userBody.invite) {
+                history.push("/")
+              }
+            })
           })
         })
-      })
-    }).catch((e) => {
-      setError("Something went wrong")
-      console.log(e)
-    });
+      }).catch((e) => {
+        setError("Something went wrong")
+        console.log(e)
+      });
 
-    setEmail("")
-    setPassword("")
-    setConfirmPassword("")
+      setEmail("")
+      setPassword("")
+      setConfirmPassword("")
+    }
   }
 
   return (

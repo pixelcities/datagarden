@@ -11,6 +11,7 @@ import Onboarding from './Onboarding'
 
 import { DataSpace } from 'types'
 
+import { useAuthContext } from 'contexts'
 import { useKeyStoreContext } from 'contexts'
 import { useAppDispatch, useAppSelector } from 'hooks'
 import { selectActiveDataSpace } from 'state/selectors'
@@ -36,6 +37,7 @@ const VerifyHandle: FC = ({ children }) => {
   const history = useHistory()
   const { handle } = useParams<{handle: string}>()
   const { keyStore, keyStoreIsReady } = useKeyStoreContext()
+  const { isAuthenticated } = useAuthContext()
 
   const dispatch = useAppDispatch()
   const activeHandle = useAppSelector(selectActiveDataSpace)
@@ -59,7 +61,7 @@ const VerifyHandle: FC = ({ children }) => {
     }
   }, [ activeHandle, handle, dispatch, history ])
 
-  if (keyStoreIsReady && activeHandle && !keyStore?.has_key(activeHandle.key_id)) {
+  if (isAuthenticated && keyStoreIsReady && activeHandle && !keyStore?.has_key(activeHandle.key_id)) {
     if (activeHandle?.handle === "trial") {
       // The trial space key is received almost immediatly. Just "refresh" after a short
       // period.
