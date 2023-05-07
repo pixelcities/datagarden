@@ -1,5 +1,8 @@
 import React, { FC, useEffect, useState, useMemo } from 'react'
 import { Route, Switch, Link, useHistory, useParams } from "react-router-dom"
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faPlus } from '@fortawesome/free-solid-svg-icons'
+
 import PrivateRoute from 'utils/PrivateRoute'
 
 import Contacts from 'pages/Contacts'
@@ -94,7 +97,7 @@ const VerifyHandle: FC = ({ children }) => {
 const DataSpaces: FC = (props) => {
   const dispatch = useAppDispatch()
 
-  const [dataSpaces, setDataSpaces] = useState<DataSpace[]>([])
+  const [dataSpaces, setDataSpaces] = useState<DataSpace[]>(JSON.parse(sessionStorage.getItem("spaces") || "[]"))
 
   useEffect(() => {
     dispatch(leaveDataSpace())
@@ -141,7 +144,6 @@ const DataSpaces: FC = (props) => {
     })
   }, [ dataSpaces, dispatch ])
 
-
   return (
     <>
       <Navbar />
@@ -153,7 +155,16 @@ const DataSpaces: FC = (props) => {
 
             <h2 className="subtitle pt-3 is-size-4 has-text-centered">
               <span id="welcome">
-                Choose a Data Space
+                Data Spaces
+              </span>
+              <span className="pl-3" data-tooltip={"Create a new data space"}>
+                <Link to="/checkout">
+                  <div className="button is-small is-info">
+                    <span className="icon is-small" >
+                      <FontAwesomeIcon icon={faPlus} size="sm"/>
+                    </span>
+                  </div>
+                </Link>
               </span>
             </h2>
 

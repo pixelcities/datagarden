@@ -24,6 +24,7 @@ import Privacy from 'pages/Privacy'
 import Terms from 'pages/Terms'
 import ContactUs from 'pages/ContactUs'
 import Pricing from 'pages/Pricing'
+import Checkout from 'pages/Checkout'
 
 import PrivateRoute from 'utils/PrivateRoute'
 import { AuthProvider } from 'contexts'
@@ -56,6 +57,8 @@ function App() {
                   <DataFusionProvider>
                     <ExecutionProvider store={store}>
                       <Switch>
+                        { /* Checkout */ }
+                        <Route path="/checkout" component={Checkout} />
 
                         { /* Profile */ }
                         <Route path="/register" component={Profile} />
