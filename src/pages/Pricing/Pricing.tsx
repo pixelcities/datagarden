@@ -6,6 +6,8 @@ import Navbar from 'components/Navbar'
 import Section from 'components/Section'
 import Footer from 'components/Footer'
 
+import { useAuthContext } from 'contexts'
+
 
 const PricingRoute: FC<RouteComponentProps> = ({ match }) => {
   return (
@@ -25,6 +27,8 @@ const PricingRoute: FC<RouteComponentProps> = ({ match }) => {
 
 const Pricing: FC = () => {
   useLayoutEffect(() => window.scrollTo(0, 0))
+
+  const { isAuthenticated } = useAuthContext()
 
   return (
     <Section>
@@ -89,7 +93,7 @@ const Pricing: FC = () => {
           </div>
 
           <div className="pt-6 mx-4">
-            <Link className="button is-primary is-outlined is-fullwidth" to="/register">
+            <Link className="button is-primary is-outlined is-fullwidth" to={isAuthenticated ? "/checkout" : "/register"}>
               Create your data space
             </Link>
           </div>

@@ -18,7 +18,7 @@ const Navbar: FC = () => {
         <Link className="navbar-item" to="/">
           <img src={logo} alt="logo" width="40" height="35"/>
           <h1 className="header-label label-size-4 is-white pl-2">
-            DataGarden
+            DataGarden <span className="header-label label-size-1 is-white" style={{marginTop: "-1rem"}}><sup>Beta</sup></span>
           </h1>
         </Link>
       </div>

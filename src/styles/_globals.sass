@@ -209,3 +209,14 @@ $colors: indigo, darkviolet, magenta, mediumvioletred, deeppink, crimson, red, o
     overflow: scroll
     white-space: nowrap
 
+.spinner
+  color: transparent !important
+  pointer-events: none
+  height: 3rem
+  &::after
+    @extend %loader
+    +center(3em)
+    position: relative !important
+    height: 3em !important
+    width: 3em !important
+
