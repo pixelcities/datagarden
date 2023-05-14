@@ -98,6 +98,7 @@ const DataSpaces: FC = (props) => {
   const dispatch = useAppDispatch()
 
   const [dataSpaces, setDataSpaces] = useState<DataSpace[]>(JSON.parse(sessionStorage.getItem("spaces") || "[]"))
+  const [inactiveSpaces, setInactiveSpaces] = useState<DataSpace[]>([])
 
   useEffect(() => {
     dispatch(leaveDataSpace())
@@ -116,9 +117,10 @@ const DataSpaces: FC = (props) => {
       } else {
         return response.json()
       }
-    }).then((data) => {
-      sessionStorage.setItem("spaces", JSON.stringify(data))
-      setDataSpaces(data)
+    }).then(({ active, inactive }) => {
+      sessionStorage.setItem("spaces", JSON.stringify(active))
+      setDataSpaces(active)
+      setInactiveSpaces(inactive)
 
     }).catch((e) => {
       console.log(e);
@@ -143,6 +145,22 @@ const DataSpaces: FC = (props) => {
       )
     })
   }, [ dataSpaces, dispatch ])
+
+  const renderInactiveDataSpaces = useMemo(() => {
+    return inactiveSpaces.map((dataSpace) => {
+      return (
+        <div key={dataSpace.id} className="column is-narrow">
+          <div className="card">
+            <div className="card-content px-6 py-6">
+              <p className="subtitle is-unselectable" style={{color: "#ccc"}}>
+                { dataSpace.name || dataSpace.handle }
+              </p>
+            </div>
+          </div>
+        </div>
+      )
+    })
+  }, [ inactiveSpaces ])
 
   return (
     <>
@@ -172,6 +190,7 @@ const DataSpaces: FC = (props) => {
               <div className="columns is-multiline is-centered">
 
                 { renderDataSpaces }
+                { renderInactiveDataSpaces }
 
               </div>
             </div>

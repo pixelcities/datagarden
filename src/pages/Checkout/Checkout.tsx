@@ -1,6 +1,6 @@
 import React, { FC, Component, useState, useEffect, useMemo } from 'react'
 import { RouteComponentProps } from 'react-router'
-import { Route } from "react-router-dom"
+import { Route, useHistory } from "react-router-dom"
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faTimes, faEquals, faPlus, faDollarSign, faCheck } from '@fortawesome/free-solid-svg-icons'
 
@@ -9,7 +9,7 @@ import NotificationsBar from 'components/NotificationsBar'
 import Section from 'components/Section'
 import Footer from 'components/Footer'
 
-import { useAuthContext } from 'contexts'
+import { useKeyStoreContext } from 'contexts'
 import { getCSRFToken } from 'utils/getCSRFToken'
 
 
@@ -31,9 +31,11 @@ class CheckoutRoute extends Component<RouteComponentProps> {
 }
 
 const Checkout: FC<RouteComponentProps> = ({ location }) => {
-  const isComplete = new URLSearchParams(location.search).get("checkout") !== null
+  const checkoutId = new URLSearchParams(location.search).get("checkout")
+  const isComplete = checkoutId !== null
 
-  const { user } = useAuthContext()
+  const history = useHistory()
+  const { keyStore } = useKeyStoreContext()
 
   const [step, setStep] = useState(isComplete ? 3 : 0)
   const [name, setName] = useState("")
@@ -42,23 +44,52 @@ const Checkout: FC<RouteComponentProps> = ({ location }) => {
   const [auto, setAuto] = useState(true)
   const [noFree, setNoFree] = useState(false)
   const [interval, setInterval] = useState("monthly")
+  const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
     let isCancelled = false
 
-    const init = async () => {
-      setTimeout(() => {
-        if (!isCancelled) {
-          setNoFree(true)
-        }
-      }, 3000)
-    }
-
-    init()
+    fetch(process.env.REACT_APP_API_BASE_PATH + "/subscriptions/plan?plan=free", {
+      method: "GET",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json"
+      }
+    }).then((response) => {
+      if (!response.ok) {
+        return Promise.reject(response)
+      } else {
+        return response.json()
+      }
+    }).then(({ is_available }) => {
+      if (!isCancelled) {
+        setNoFree(!is_available)
+      }
+    }).catch((e) => {
+      console.log(e);
+    })
 
     return () => { isCancelled = true }
   }, [])
 
+  useEffect(() => {
+    if (isComplete) {
+      fetch(process.env.REACT_APP_API_BASE_PATH + `/spaces/activate/${checkoutId}`, {
+        method: "PUT",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": getCSRFToken()
+        }
+      }).then((response) => {
+        if (response.ok) {
+          history.push("/")
+        }
+      }).catch((e) => {
+        console.log(e);
+      })
+    }
+  }, [ isComplete, checkoutId, history ])
 
   const handleCreateSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -91,6 +122,37 @@ const Checkout: FC<RouteComponentProps> = ({ location }) => {
     setHandle(sluggify(e.target.value))
   }
 
+  const submitRequest = () => {
+    setIsLoading(true)
+
+    keyStore?.generate_key(32).then((key_id: string) => {
+      fetch(process.env.REACT_APP_API_BASE_PATH + `/spaces/${handle}/create`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": getCSRFToken()
+        },
+        body: JSON.stringify({
+          "name": name,
+          "key_id": key_id,
+          "plan": plan.toLowerCase(),
+          "interval": interval
+        })
+      }).then((response) => {
+        if (!response.ok) {
+          return Promise.reject(response)
+        } else {
+          return response.json()
+        }
+      }).then(({ uri }) => {
+        window.location.href = uri
+      }).catch((e) => {
+        console.log(e);
+      })
+    })
+  }
+
   const renderCost = useMemo(() => {
     let base = 20
 
@@ -117,7 +179,7 @@ const Checkout: FC<RouteComponentProps> = ({ location }) => {
         <span className="is-size-6">$</span><span className="is-size-5 has-text-weight-semibold">{base}</span>
       </p>
     )
-  }, [ plan, interval ])
+  }, [ plan ])
 
   const renderCreateStep = (
     <form className="is-flex is-justify-content-center is-align-items-center" onSubmit={handleCreateSubmit}>
@@ -284,7 +346,9 @@ const Checkout: FC<RouteComponentProps> = ({ location }) => {
               </div>
 
               <div className="field">
-                <button className="button is-primary is-fullwidth"> Continue to payment </button>
+                <button className={"button is-primary is-fullwidth" + (isLoading ? " is-loading" : "")} onClick={submitRequest}>
+                  Continue to payment
+                </button>
               </div>
 
             </div>
