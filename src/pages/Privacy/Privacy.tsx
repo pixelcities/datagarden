@@ -153,8 +153,8 @@ const Privacy: FC = () => {
       <i> https://pxc-collection-store.s3.eu-west-1.amazonaws.com</i>. </li>
 
       <li> <strong>When you create a new Data Space, or alter any existing subscriptions</strong>. Data Spaces require
-      an active subscription, and all payment processing is handled by the Paddle Checkout located at:
-      <i> https://a.paddle.com/checkout/</i> and <i>https://checkout.paddle.com</i>. </li>
+      an active subscription, and all payment processing is handled by Paddle. To manage a subscription you will be redirected
+      to their platform. </li>
     </ul>
 
     <h3 id="data-retention"> 5. Data Retention </h3>
@@ -172,7 +172,7 @@ const Privacy: FC = () => {
     <p> Contact us at <a href="mailto:hello@pixelcities.io">hello@pixelcities.io</a> if you have any questions or concerns about this privacy statement. </p>
 
     <br />
-    <p> Last updated: 2023-04-07 </p>
+    <p> Last updated: 2023-05-18 </p>
 
     </article>
   )
