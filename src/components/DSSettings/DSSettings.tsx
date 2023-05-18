@@ -239,6 +239,7 @@ const DSSettings: FC<DSSettingsProps> = ({ isActive, onClose, dataSpace, role })
     </>
   )
 
+  // TODO: Handle info prompt with current cost + valid_to
   return (
     <>
       <div className={"modal " + (isActive ? "is-active" : "")}>
@@ -251,7 +252,7 @@ const DSSettings: FC<DSSettingsProps> = ({ isActive, onClose, dataSpace, role })
               <>
                 { userRole === "owner" ?
                   <>
-                    { subscription !== null && !!subscription.valid_to &&
+                    { subscription !== null &&
                       <>
                         { renderUpdateInfo }
 
