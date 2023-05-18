@@ -240,3 +240,11 @@ export interface NotificationMsg {
   is_local?: boolean
 }
 
+export interface Subscription {
+  subscription_id: string,
+  plan_name: string,
+  status: string,
+  cancel_url: string,
+  update_url: string,
+  valid_to?: Date
+}

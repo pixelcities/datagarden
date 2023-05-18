@@ -1,7 +1,7 @@
 import React, { FC, useEffect, useState, useMemo } from 'react'
 import { Route, Switch, Link, useHistory, useParams } from "react-router-dom"
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faPlus } from '@fortawesome/free-solid-svg-icons'
+import { faPlus, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons'
 
 import PrivateRoute from 'utils/PrivateRoute'
 
@@ -10,6 +10,7 @@ import Contacts from 'pages/Contacts'
 import Section from 'components/Section'
 import Navbar from 'components/Navbar'
 import Footer from 'components/Footer'
+import DSSettings from 'components/DSSettings'
 import Onboarding from './Onboarding'
 
 import { DataSpace } from 'types'
@@ -99,6 +100,7 @@ const DataSpaces: FC = (props) => {
 
   const [dataSpaces, setDataSpaces] = useState<DataSpace[]>(JSON.parse(sessionStorage.getItem("spaces") || "[]"))
   const [inactiveSpaces, setInactiveSpaces] = useState<DataSpace[]>([])
+  const [activeSettings, setActiveSettings] = useState<DataSpace | undefined>()
 
   useEffect(() => {
     dispatch(leaveDataSpace())
@@ -151,6 +153,12 @@ const DataSpaces: FC = (props) => {
       return (
         <div key={dataSpace.id} className="column is-narrow">
           <div className="card">
+            <div style={{position: "absolute", top: 0, right: 0, marginTop: -7.5, marginRight: -2.5, zIndex: 1}} onClick={() => setActiveSettings(dataSpace)}>
+              <span className="icon is-small has-tooltip-danger" data-tooltip={"Inactive data space. It will automatically be deleted in 30 days."}>
+                <FontAwesomeIcon icon={faExclamationTriangle} size="lg" color="#f03158"/>
+              </span>
+            </div>
+
             <div className="card-content px-6 py-6">
               <p className="subtitle is-unselectable" style={{color: "#ccc"}}>
                 { dataSpace.name || dataSpace.handle }
@@ -166,6 +174,15 @@ const DataSpaces: FC = (props) => {
     <>
       <Navbar />
       <Section backdrop={true}>
+        { !!activeSettings &&
+          <DSSettings
+            isActive={!!activeSettings}
+            onClose={() => setActiveSettings(undefined)}
+            dataSpace={activeSettings}
+            role={"owner"}
+          />
+        }
+
         <div className="columns is-centered">
           <div className="column is-half">
 

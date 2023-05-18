@@ -30,7 +30,8 @@ export type {
   DataSpace,
   Page,
   Content,
-  NotificationMsg
+  NotificationMsg,
+  Subscription
 } from './interfaces'
 
 export {
