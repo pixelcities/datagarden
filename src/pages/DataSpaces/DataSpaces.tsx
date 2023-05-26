@@ -9,6 +9,7 @@ import Contacts from 'pages/Contacts'
 
 import Section from 'components/Section'
 import Navbar from 'components/Navbar'
+import NotificationsBar from 'components/NotificationsBar'
 import Footer from 'components/Footer'
 import DSSettings from 'components/DSSettings'
 import Onboarding from './Onboarding'
@@ -173,6 +174,8 @@ const DataSpaces: FC = (props) => {
   return (
     <>
       <Navbar />
+      <NotificationsBar />
+
       <Section backdrop={true}>
         { !!activeSettings &&
           <DSSettings

@@ -140,6 +140,7 @@ export interface User {
   name: string,
   picture: string,
   last_active_at: string,
+  confirmed_at?: Date,
   relation?: string
 }
 

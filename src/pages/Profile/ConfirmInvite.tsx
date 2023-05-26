@@ -27,7 +27,7 @@ const ConfirmInvite: FC <RouteComponentProps<ConfirmInviteProps>> = (props) => {
           "X-CSRF-Token": getCSRFToken()
         }
       }).then((response) => {
-
+        history.push("/")
       }).catch((e) => {
         console.log(e);
       })
