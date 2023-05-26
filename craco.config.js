@@ -2,6 +2,7 @@ const { addBeforeLoader, loaderByName, addPlugins } = require('@craco/craco');
 
 const webpack = require('webpack');
 const CopyPlugin = require("copy-webpack-plugin");
+const { sentryWebpackPlugin } = require("@sentry/webpack-plugin");
 
 module.exports = {
   webpack: {
@@ -35,6 +36,34 @@ module.exports = {
           ]
         })
       ]);
+
+      if (process.env.REACT_APP_SENTRY_URL && process.env.REACT_APP_SENTRY_AUTH_TOKEN) {
+        webpackConfig.devtool = "source-map";
+
+        addPlugins(webpackConfig, [
+          sentryWebpackPlugin({
+            org: "pixelcities",
+            project: "datagarden",
+            url: process.env.REACT_APP_SENTRY_URL,
+            authToken: process.env.REACT_APP_SENTRY_AUTH_TOKEN,
+            silent: true,
+            telemetry: false,
+            release: {
+              name: `datagarden-${process.env.REACT_APP_VERSION}`,
+              create: true,
+              finalize: false,
+              uploadLegacySourcemaps: {
+                paths: ["build"],
+                ignore: [
+                  "craco.config.js",
+                  "book",
+                  "node_modules",
+                ],
+              }
+            }
+          })
+        ]);
+      }
 
       const wasmExtensionRegExp = /\.wasm$/;
       webpackConfig.resolve.extensions.push('.wasm');

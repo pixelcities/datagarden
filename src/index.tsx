@@ -6,6 +6,7 @@ import { DndProvider } from 'react-dnd'
 import { HTML5Backend } from 'react-dnd-html5-backend'
 import { gsap } from "gsap"
 import { Draggable } from "gsap/Draggable"
+import * as Sentry from "@sentry/react"
 
 import store from 'state/store'
 
@@ -36,6 +37,15 @@ import 'styles/style.css'
 import 'styles/style.sass'
 
 gsap.registerPlugin(Draggable);
+
+if (process.env.REACT_APP_SENTRY_DSN) {
+  Sentry.init({
+    dsn: process.env.REACT_APP_SENTRY_DSN,
+    release: `datagarden-${process.env.REACT_APP_VERSION}`,
+    autoSessionTracking: false,
+    maxBreadcrumbs: 20,
+  })
+}
 
 function App() {
   return (

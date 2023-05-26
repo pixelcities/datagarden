@@ -29,6 +29,9 @@ jobs:
           REACT_APP_API_BASE_PATH: ${{ vars.API_BASEPATH }}
           REACT_APP_CONTENT_HOST: ${{ vars.CONTENT_BASEPATH }}
           REACT_APP_WS_BASE_PATH: ${{ vars.WS_BASEPATH }}
+          REACT_APP_SENTRY_URL: ${{ vars.SENTRY_URL }}
+          REACT_APP_SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          REACT_APP_SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
       - name: Archive build artifacts
         uses: actions/upload-artifact@v3
         with:
