@@ -11,7 +11,7 @@
     "@fortawesome/free-solid-svg-icons": "^5.15.2",
     "@fortawesome/react-fontawesome": "^0.1.14",
     "@pixelcities/arrow-wasm": "^0.1.4",
-    "@pixelcities/datafusion-wasm": "^0.1.3",
+    "@pixelcities/datafusion-wasm": "file:../datafusion-wasm/pkg",
     "@pixelcities/key-x-wasm": "^0.1.8",
     "@reduxjs/toolkit": "^1.7.2",
     "@sentry/react": "^7.53.1",

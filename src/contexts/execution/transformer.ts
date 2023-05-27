@@ -322,7 +322,7 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
               rebuildSchema(id, target, collection.id, collection.schema, [], fragments, task_meta, user, metadata, dataSpace, keyStore, protocol).then(({actions, schema, renames, meta}) => {
 
                 // Generate the synthesized table
-                dataFusion?.synthesize_table(collection.id, id, 1.0).then(() => {
+                dataFusion?.synthesize_table(collection.id, id, [], 1.0).then(() => {
                   updateSchema(id, fragments, renames, dataFusion)
                   writeRemoteTable(id, task.task["uri"], schema, user, arrow, dataFusion, keyStore).then(() => {
                     resolve({
