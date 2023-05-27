@@ -305,7 +305,7 @@ const AttributeTransformer: FC<AttributeTransformerProps> = ({ id, wal, tableId,
       return (
         <div key={"column" + i} className="field has-addons is-horizontal pb-0">
           <Dropdown
-            items={columnNames}
+            items={columnNames.filter(([a, _]) => dropColumns.find((x) => a === x?.[0]) === undefined)}
             maxWidth={200}
             onClick={(item) => addDropColumn(dropColumns.map((x, j) => i === j ? item : x))}
             selected={drop}
