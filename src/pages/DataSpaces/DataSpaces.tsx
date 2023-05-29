@@ -48,7 +48,7 @@ const VerifyHandle: FC = ({ children }) => {
   const activeHandle = useAppSelector(selectActiveDataSpace)
 
   useEffect(() => {
-    if (activeHandle?.handle !== handle) {
+    if (keyStoreIsReady && activeHandle?.handle !== handle) {
       const data = sessionStorage.getItem("spaces")
       const dataSpaces: DataSpace[] = data ? JSON.parse(data) : []
       const dataSpace = dataSpaces?.find(ds => ds.handle === handle)
@@ -64,7 +64,7 @@ const VerifyHandle: FC = ({ children }) => {
         history.push("/")
       }
     }
-  }, [ activeHandle, handle, dispatch, history ])
+  }, [ keyStoreIsReady, activeHandle, handle, dispatch, history ])
 
   if (isAuthenticated && keyStoreIsReady && activeHandle && !keyStore?.has_key(activeHandle.key_id)) {
     if (activeHandle?.handle === "trial") {

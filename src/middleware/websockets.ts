@@ -111,7 +111,7 @@ export const websocketMiddleware: Middleware<{}, any> = storeApi => {
     if (event.type in events) {
       store.dispatch(events[event.type](event.payload));
 
-      if (event.id && Math.random() <= 0.1) {
+      if (event.id !== undefined && Math.random() <= 0.1) {
         saveState(event.id, storeApi.getState())
       }
     }
