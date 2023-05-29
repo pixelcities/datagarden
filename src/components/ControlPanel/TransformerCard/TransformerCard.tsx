@@ -62,7 +62,7 @@ const TransformerCard: FC<TransformerCardProps> = ({ title, type, tooltip, isDis
         opacity: monitor.isDragging() ? 0.5 : 1
       })
     }),
-    []
+    [ dataSpace?.key_id ]
   )
 
   return (

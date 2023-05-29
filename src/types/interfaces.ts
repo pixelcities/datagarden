@@ -56,7 +56,8 @@ export interface WAL {
   identifiers: {[key: number]: Identifier},
   values: {[key: number]: string},
   transactions: string[],
-  artifacts: string[]
+  artifacts: string[],
+  data?: string
 }
 
 export interface Collection extends Component {

@@ -318,11 +318,16 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
               }
 
               const id = dataFusion?.clone_table(collection.id, transformer_id)
+              const cloneId = dataFusion?.clone_table(collection.id, "")
 
               rebuildSchema(id, target, collection.id, collection.schema, [], fragments, task_meta, user, metadata, dataSpace, keyStore, protocol).then(({actions, schema, renames, meta}) => {
+                // Retrieve the epsilon and column budgets
+                const { epsilon, weights } = JSON.parse(keyStore.decrypt_metadata(collection.schema.key_id, wal["data"]))
 
                 // Generate the synthesized table
-                dataFusion?.synthesize_table(collection.id, id, [], 1.0).then(() => {
+                dataFusion?.synthesize_table(id, cloneId, weights, epsilon).then(() => {
+                  dataFusion?.merge_table(id, cloneId)
+
                   updateSchema(id, fragments, renames, dataFusion)
                   writeRemoteTable(id, task.task["uri"], schema, user, arrow, dataFusion, keyStore).then(() => {
                     resolve({

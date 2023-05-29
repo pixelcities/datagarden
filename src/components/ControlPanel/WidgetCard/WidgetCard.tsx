@@ -63,7 +63,7 @@ const WidgetCard: FC<WidgetCardProps> = ({ title, type, tooltip, isDisabled }) =
         opacity: monitor.isDragging() ? 0.5 : 1
       })
     }),
-    []
+    [ dataSpace?.key_id ]
   )
 
   return (

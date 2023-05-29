@@ -6,6 +6,7 @@ import { updateTransformerWAL, sendLocalNotification } from 'state/actions'
 import { Schema, Identifier, WAL, ConceptA } from 'types'
 
 import { useDataFusionContext } from 'contexts'
+import { useKeyStoreContext } from 'contexts'
 
 import sprites from 'assets/t-sprites.svg'
 
@@ -30,6 +31,7 @@ const PrivatiseTransformer: FC<PrivatiseTransformerProps> = ({ id, wal, tableId,
   const [columnWeights, setColumnWeights] = useState<{[key: string]: number}>({})
   const [epsilon, setEpsilon] = useState(1)
 
+  const { keyStore } = useKeyStoreContext()
   const { dataFusion } = useDataFusionContext()
 
   const onError = useCallback((error: string) => {
@@ -52,7 +54,6 @@ const PrivatiseTransformer: FC<PrivatiseTransformerProps> = ({ id, wal, tableId,
 
       dataFusion?.synthesize_table(tableId, cloneId, Object.entries(columnWeights), epsilon).then(() => {
         dataFusion?.merge_table(tableId, cloneId)
-        // dataFusion?.move_table(cloneId, tableId)
         onComplete()
       })
 
@@ -68,6 +69,11 @@ const PrivatiseTransformer: FC<PrivatiseTransformerProps> = ({ id, wal, tableId,
       identifiers[1+i] = {"id": schema.column_order[i], "type": "column"}
     }
 
+    const data = keyStore?.encrypt_metadata(schema.key_id, JSON.stringify({
+      epsilon: epsilon,
+      weights: Object.entries(columnWeights)
+    }))
+
     dispatch(updateTransformerWAL({
       id: id,
       workspace: "default",
@@ -75,7 +81,8 @@ const PrivatiseTransformer: FC<PrivatiseTransformerProps> = ({ id, wal, tableId,
         identifiers: identifiers,
         values: {},
         transactions: [],
-        artifacts: []
+        artifacts: [],
+        data: data
       }
     }))
 
@@ -163,23 +170,23 @@ const PrivatiseTransformer: FC<PrivatiseTransformerProps> = ({ id, wal, tableId,
   }, [ columnWeights ])
 
   const renderColumnWeights = useMemo(() => {
-    return Object.keys(columns).map(column => {
-      const isActive = column in columnWeights
+    return Object.entries(columns).map(([columnId, concept]) => {
+      const isActive = columnId in columnWeights
 
       return (
-        <div key={column} className="pt-3">
+        <div key={columnId} className="pt-3">
           <div className="field has-addons is-horizontal pb-0">
-            <span className="px-3" style={{marginTop: "-0.2rem", cursor: "pointer"}} onClick={() => toggleWeight(column)}>
+            <span className="px-3" style={{marginTop: "-0.2rem", cursor: "pointer"}} onClick={() => toggleWeight(columnId)}>
               <svg xmlns="http://www.w3.org/2000/svg" width={20} height={20}>
                 <rect width="20" height="20" rx="5" ry="5" fill="#fff" />
                 <use href={sprites + "#privatise"} style={{color: isActive ? "#363636" : "#dbdbdb" }} />
               </svg>
             </span>
-            <p className="fineprint-label label-size-2 is-left"> {column} </p>
+            <p className="fineprint-label label-size-2 is-left"> {concept.name} </p>
           </div>
 
           <div className="field py-0">
-            <input className={"slider" + (isActive ? "" : " is-disabled")} type="range" min="1" max="100" value={columnWeights[column] || "50"} onChange={(e: any) => changeWeight(column, Number(e.target.value))} disabled={!isActive} />
+            <input className={"slider" + (isActive ? "" : " is-disabled")} type="range" min="1" max="100" value={columnWeights[columnId] || "50"} onChange={(e: any) => changeWeight(columnId, Number(e.target.value))} disabled={!isActive} />
           </div>
         </div>
       )
