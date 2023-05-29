@@ -35,7 +35,7 @@ class Builder extends Component {
     return (
       <div className="px-0 pt-0">
         <div className="columns is-gapless">
-          <div className="column is-2">
+          <div className="column-2 ib-container">
             <ControlPanel />
           </div>
 

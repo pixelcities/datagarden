@@ -157,11 +157,6 @@ const FormulaBuilder: FC<FormulaBuilderProps> = ({ schema, onChange }) => {
           break
       }
     }
-
-    // Disable newlines
-    if (event.key === "Enter") {
-      event.preventDefault()
-    }
   }, [ editor, chars, columnChars, index, target, searchType ])
 
   const onSlateChange = useCallback((value: Descendant[]) => {
@@ -240,7 +235,7 @@ const FormulaBuilder: FC<FormulaBuilderProps> = ({ schema, onChange }) => {
   }, [chars.length, editor, index, search, target])
 
   return (
-    <div className="input" style={{overflow: "hidden"}}>
+    <div className="textarea is-hovered query-font" style={{overflow: "hidden"}}>
       <Slate editor={editor} value={initialValue} onChange={onSlateChange}>
         <Editable
           style={{width: "100%", whiteSpace: "nowrap"}}
@@ -254,10 +249,22 @@ const FormulaBuilder: FC<FormulaBuilderProps> = ({ schema, onChange }) => {
               {chars.map((char, i) => (
                 <div
                   key={char}
+                  onClick={() => {
+                    Transforms.select(editor, target)
+
+                    if (searchType === SearchType.Column) {
+                      insertReference(editor, columnChars[i])
+                    } else if (searchType === SearchType.MFunc1) {
+                      insertFunction(editor, chars[i])
+                    }
+
+                    setTarget(undefined)
+                  }}
                   style={{
-                    padding: '1px 3px',
-                    borderRadius: '3px',
-                    background: i === index ? '#B4D5FF' : 'transparent',
+                    cursor: "pointer",
+                    padding: "1px 3px",
+                    borderRadius: "3px",
+                    background: i === index ? "#B4D5FF" : "transparent",
                   }}
                 >
                   {char}

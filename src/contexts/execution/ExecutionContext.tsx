@@ -1,6 +1,8 @@
-import React, { useEffect, useMemo, useRef, useCallback, FC } from "react";
+import React, { useEffect, useMemo, useRef, useCallback, FC } from "react"
 import { EnhancedStore } from '@reduxjs/toolkit'
 import { Mutex } from 'async-mutex'
+import * as Sentry from "@sentry/browser"
+
 import { RootState } from 'state/store'
 import { ExecutionError } from 'types'
 import { useAppSelector, useAppDispatch } from 'hooks'
@@ -50,6 +52,19 @@ export const ExecutionProvider: FC<ExecutionProviderI> = ({ store, children }) =
             if (taskCache.current.has(task.id)) {
               return
             }
+
+            const watchdog = setTimeout(() => {
+              Sentry.captureMessage("Watchdog is reporting task failure and restarting")
+              console.warn("Watchdog is reporting task failure and restarting")
+
+              taskCache.current.add(task.id)
+              dispatch(failTask({
+                id: task.id,
+                error: "Timed out"
+              }))
+
+              window.location.reload() // hard reset
+            }, Math.max(task.expires_at! - Date.now(), TASK_TTL_BUFFER))
 
             const result = (() => {
               if (task.type === "protocol") {
@@ -121,6 +136,7 @@ export const ExecutionProvider: FC<ExecutionProviderI> = ({ store, children }) =
                   }))
                 }
               })
+              .finally(() => clearTimeout(watchdog))
           })
 
         } else { // Task expired

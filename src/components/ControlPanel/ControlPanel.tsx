@@ -82,7 +82,7 @@ const WorkspaceTab: FC = (props) => {
   const [helpIsActive, setHelpIsActive] = useState(false)
 
   return (
-    <>
+    <div style={{paddingBottom: "1rem", position: "relative", maxHeight: "calc(100% - 5.5em - 5px)", overflowY: "scroll"}}>
       <div className="panel-block-nb">
         <div className="div is-11">
           <p className="header-label">
@@ -179,7 +179,7 @@ const WorkspaceTab: FC = (props) => {
         </div>
       </div>
 
-    </>
+    </div>
   )
 }
 
@@ -195,7 +195,7 @@ const ControlPanel: FC = (props) => {
 
   return (
     <>
-      <nav className="panel" style={{height: "100%"}}>
+      <nav className="panel is-relative" style={{height: "100%", width: "100%"}}>
         <p className="panel-tabs">
           <Link id="workspace-intro" to="#workspace" className={"panel-tab-header" + (activeTab === "workspace" ? " is-active" : "")} onClick={() => setActiveTab("workspace")}>Workspace</Link>
           <Link to="#sources" className={"panel-tab-header" + (activeTab === "sources" ? " is-active" : "")} onClick={() => setActiveTab("sources")}>Sources</Link>

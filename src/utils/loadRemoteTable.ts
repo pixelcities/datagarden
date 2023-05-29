@@ -46,7 +46,12 @@ export const loadRemoteTable = (tableId: string, uri: [string, string], schema: 
           arrow.read_remote_parquet(s3_path, path, tokens.access_key, tokens.secret_key, tokens.session_token, keymap).then(() => {
 
             // Move to datafusion
-            dataFusion.load_table(arrow["FS"].readFile(path, {}), tableId)
+            try {
+              dataFusion.load_table(arrow["FS"].readFile(path, {}), tableId)
+            } catch { // Error loading table
+              reject()
+              release()
+            }
 
             resolve()
             release()

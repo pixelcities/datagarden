@@ -61,7 +61,7 @@ function Dropdown<T extends Primitive | [Primitive, Primitive] | [string, DataTy
       }
 
       return (
-        <div key={key} onClick={(e) => handleSelect(e, item)} className={"dropdown-item" + (equals ? " is-active" : "")} style={style}>
+        <div key={key} onMouseDown={(e) => handleSelect(e, item)} className={"dropdown-item" + (equals ? " is-active" : "")} style={style}>
          { value }
         </div>
       )
@@ -84,7 +84,7 @@ function Dropdown<T extends Primitive | [Primitive, Primitive] | [string, DataTy
   }, [ isActive, isDisabled ])
 
   return (
-    <div className={"dropdown" + (isActive && !isDisabled ? " is-active" : "") + (isDropUp ? " is-up" : "")}>
+    <div className={"dropdown" + (isActive && !isDisabled ? " is-active" : "") + (isDropUp ? " is-up" : "")} tabIndex={0} onBlur={() => setIsActive(false)}>
       <div ref={triggerRef} className="dropdown-trigger">
         <abbr title={(Array.isArray(selectedItem) ? selectedItem[1] : selectedItem)?.toString()}>
           <div className="button" onClick={() => setIsActive(!isActive && !isDisabled)} aria-haspopup="true" aria-controls="dropdown-menu" style={isDisabled ? {maxWidth: "calc(2em + 8.75px + " + maxWidth + "px)", cursor: "default", pointerEvents: "none"} : {maxWidth: "calc(2em + 8.75px + " + maxWidth + "px)"}}>
@@ -100,7 +100,7 @@ function Dropdown<T extends Primitive | [Primitive, Primitive] | [string, DataTy
       <Portal>
         <div ref={contentRef} className="portal">
           <div className="dropdown-menu" id="dropdown-menu" role="menu" style={isActive && !isDisabled ? {display: "block"} : {}}>
-            <div className="dropdown-content">
+            <div className="dropdown-content" style={{height: "250px", overflow: "scroll"}}>
               { renderItems }
             </div>
           </div>
