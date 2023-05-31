@@ -14,7 +14,7 @@ const ConfirmRegistration: FC <RouteComponentProps<ConfirmRegistrationProps>> = 
   const params = props.match.params
   const token = params?.token
 
-  const { isAuthenticated } = useAuthContext();
+  const { isAuthenticated, setConfirmedMessage } = useAuthContext();
   const history = useHistory();
 
   useEffect(() => {
@@ -27,6 +27,8 @@ const ConfirmRegistration: FC <RouteComponentProps<ConfirmRegistrationProps>> = 
           "X-CSRF-Token": getCSRFToken()
         }
       }).then((response) => {
+        setConfirmedMessage("Thank you for confirming your email")
+
         // Ensure that everything is in sync
         history.push("/logout")
 
@@ -34,7 +36,7 @@ const ConfirmRegistration: FC <RouteComponentProps<ConfirmRegistrationProps>> = 
         console.log(e);
       })
     }
-  }, [ isAuthenticated, url, token, history ])
+  }, [ isAuthenticated, url, token, history, setConfirmedMessage ])
 
   return (
     <></>

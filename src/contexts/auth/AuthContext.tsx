@@ -12,10 +12,11 @@ interface AuthContextI {
   handleLogout: any,
   path: string,
   setPath: any,
+  setConfirmedMessage: any,
   user?: User
 }
 
-const AuthContext = React.createContext<AuthContextI>({isAuthenticated: false, handleLogin: null, handleLogout: null, path: "", setPath: null});
+const AuthContext = React.createContext<AuthContextI>({isAuthenticated: false, handleLogin: null, handleLogout: null, path: "", setPath: null, setConfirmedMessage: null});
 
 export const AuthProvider: FC = ({ children }) => {
   const dispatch = useAppDispatch()
@@ -25,6 +26,7 @@ export const AuthProvider: FC = ({ children }) => {
   const [path, setPath] = useState<string>("")
   const [user, setUser] = useState<any>(null)
   const [error, setError] = useState("")
+  const [confirmedMessage, setConfirmedMessage] = useState("")
 
   const dataSpace = useAppSelector(selectActiveDataSpace)
 
@@ -46,7 +48,10 @@ export const AuthProvider: FC = ({ children }) => {
     }
   }, [ dispatch, setUser, setIsAuthenticated ])
 
-  const handleLogout = () => setIsAuthenticated(false)
+  const handleLogout = () => {
+    setIsAuthenticated(false)
+    setError("")
+  }
 
   // Just check if the session is authenticated, if not it attempts to redirect so just error out
   const loginRequest = useCallback(() => {
@@ -59,8 +64,6 @@ export const AuthProvider: FC = ({ children }) => {
       redirect: 'error'
     }).then((response) => {
       if (response.ok) {
-        handleLogin()
-
         response.json()
           .then((resp) => {
             handleLogin(resp)
@@ -85,9 +88,18 @@ export const AuthProvider: FC = ({ children }) => {
     </div>
   )
 
+  const renderConfirmedMessage = (
+    <div className="notification is-light is-success" style={{marginTop: "0.7rem"}}>
+      <button className="delete" onClick={() => setConfirmedMessage("")} />
+      { confirmedMessage }
+    </div>
+  )
+
   return (
-    <AuthContext.Provider value={{isAuthenticated, handleLogin, handleLogout, path, setPath, user}} >
+    <AuthContext.Provider value={{isAuthenticated, handleLogin, handleLogout, path, setPath, setConfirmedMessage, user}} >
       { error !== "" && renderError }
+      { confirmedMessage !== "" && renderConfirmedMessage }
+
       { !isLoading && children }
     </AuthContext.Provider>
   )
