@@ -2,6 +2,7 @@ import React, { useRef, useCallback, useState, useEffect, useContext, useMemo, F
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faLock } from '@fortawesome/free-solid-svg-icons'
 import { useLocation } from "react-router-dom"
+import { Mutex } from 'async-mutex'
 
 import { useAppSelector } from 'hooks'
 import { selectSecrets } from 'state/selectors'
@@ -34,30 +35,33 @@ export const KeyStoreProvider: FC = ({ children }) => {
 
   const { isAuthenticated, user } = useAuthContext();
 
+  const mutex = useMemo(() => new Mutex(), [])
+
   const keyCache = useRef<any>(new Set())
   const secrets = useAppSelector(selectSecrets)
 
   useEffect(() => {
     if (isReady) {
-      secrets.forEach(secret => {
-        if (! keyCache.current.has(secret.key_id)) {
-          protocol?.decrypt(secret.owner, secret.ciphertext).then((key: string) => {
+      mutex.runExclusive(async () => {
+        for (const secret of secrets) {
+          if (! keyCache.current.has(secret.key_id)) {
+            const key: string = await protocol?.decrypt(secret.owner, secret.ciphertext)
+
             // Special hello message
             if (secret.key_id === secret.owner) {
               keyCache.current.add(secret.key_id)
 
             // Key shares
             } else {
-              keyStore?.add_key(secret.key_id, key).then((key_id: string) => {
-                console.log("Received new key: ", key_id)
-                keyCache.current.add(key_id)
-              })
+              const key_id: string = await keyStore?.add_key(secret.key_id, key)
+              console.log("Received new key: ", key_id)
+              keyCache.current.add(key_id)
             }
-          })
+          }
         }
       })
     }
-  }, [ isReady, keyCache, secrets, keyStore, protocol ])
+  }, [ isReady, keyCache, secrets, keyStore, protocol, mutex ])
 
   const init = async () => {
     setLoading(true)
