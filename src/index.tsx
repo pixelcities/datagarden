@@ -26,6 +26,7 @@ import Terms from 'pages/Terms'
 import ContactUs from 'pages/ContactUs'
 import Pricing from 'pages/Pricing'
 import Checkout from 'pages/Checkout'
+import Error from 'pages/Error'
 
 import PrivateRoute from 'utils/PrivateRoute'
 import { AuthProvider } from 'contexts'
@@ -59,6 +60,7 @@ function App() {
                 <Route path="/privacy" component={Privacy} />
                 <Route path="/contact" component={ContactUs} />
                 <Route path="/pricing" component={Pricing} />
+                <Route path="/error" component={Error} />
 
                 { /* Toggles between public or authenticated landing */ }
                 <Home>
@@ -95,7 +97,6 @@ function App() {
                           <PrivateRoute path="/ds/:handle/settings" component={Settings} />
                           <PrivateRoute path="/ds/:handle/" component={Builder} />
                         </DataSpaces>
-
                       </Switch>
                     </ExecutionProvider>
                   </DataFusionProvider>

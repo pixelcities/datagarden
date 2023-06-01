@@ -118,7 +118,8 @@ export const KeyStoreProvider: FC = ({ children }) => {
       path.startsWith("/privacy") ||
       path.startsWith("/contact") ||
       path.startsWith("/pricing") ||
-      path.startsWith("/checkout")
+      path.startsWith("/checkout") ||
+      path.startsWith("/error")
 
     return (
       <div className={"modal " + (isActive && !skipModal ? "is-active" : "")}>
