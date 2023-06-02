@@ -13,10 +13,6 @@ export const loadRemoteTable = (tableId: string, uri: [string, string], schema: 
 
         if (arrow["FS"].analyzePath(path, false).exists) {
           arrow["FS"].unlink(path)
-
-          resolve()
-          release()
-          return
         }
 
         // Get fresh session tokens
@@ -48,9 +44,12 @@ export const loadRemoteTable = (tableId: string, uri: [string, string], schema: 
             // Move to datafusion
             try {
               dataFusion.load_table(arrow["FS"].readFile(path, {}), tableId)
-            } catch { // Error loading table
+            } catch (e) { // Error loading table
+              console.error(e)
+
               reject()
               release()
+              return
             }
 
             resolve()
