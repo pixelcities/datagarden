@@ -19,7 +19,7 @@ import { DataSpace } from 'types'
 import { useAuthContext } from 'contexts'
 import { useKeyStoreContext } from 'contexts'
 import { useAppDispatch, useAppSelector } from 'hooks'
-import { selectActiveDataSpace, selectConnectionState } from 'state/selectors'
+import { selectActiveDataSpace, selectConnectionState, selectIsLoading } from 'state/selectors'
 import { leaveDataSpace, setActiveDataSpace } from 'state/actions'
 
 import benchImg from 'assets/bench.png'
@@ -47,6 +47,7 @@ const VerifyHandle: FC = ({ children }) => {
   const dispatch = useAppDispatch()
   const activeHandle = useAppSelector(selectActiveDataSpace)
   const connectionState = useAppSelector(selectConnectionState)
+  const isLoading = useAppSelector(selectIsLoading)
 
   useEffect(() => {
     if (keyStoreIsReady && activeHandle?.handle !== handle) {
@@ -89,9 +90,24 @@ const VerifyHandle: FC = ({ children }) => {
     )
   }
 
+  if (isLoading) {
+    return (
+      <Switch>
+        <Route path="/">
+          <div className="pageloader is-bottom-to-top is-active">
+            <span className="title">
+              Loading...
+            </span>
+          </div>
+        </Route>
+      </Switch>
+    )
+  }
+
   return (
     <Switch>
-      { connectionState === "disconnected" && <DisconnectModal /> }
+
+      { connectionState !== "connected" && <DisconnectModal state={connectionState} /> }
       { children }
     </Switch>
   )
@@ -180,7 +196,7 @@ const DataSpaces: FC = (props) => {
       <Navbar />
       <NotificationsBar />
 
-      { connectionState === "disconnected" && <DisconnectModal /> }
+      { connectionState !== "connected" && <DisconnectModal state={connectionState} /> }
 
       <Section backdrop={true}>
         { !!activeSettings &&
@@ -254,17 +270,46 @@ const WaitingRoom: FC = (props) => {
   )
 }
 
-const DisconnectModal: FC = (props) => {
-  return (
-    <div className="modal is-active">
-      <div className="modal-background"/>
-      <div className="modal-content">
-        <p className="subtitle has-text-centered" style={{color: "#fff"}}>
-          No connection to server. Reconnecting..
-        </p>
+interface DisconnectModalProps {
+  state: string
+}
+
+const DisconnectModal: FC<DisconnectModalProps> = ({ state }) => {
+  const history = useHistory()
+  const [isActive, setIsActive] = useState(false)
+
+  // Only display after a short delay
+  useEffect(() => {
+    const timeout = setTimeout(() => setIsActive(true), 1500)
+    return () => clearTimeout(timeout)
+  }, [])
+
+  if (isActive) {
+    return (
+      <div className="modal is-active">
+        <div className="modal-background"/>
+        <div className="modal-content">
+          <p className="subtitle has-text-centered" style={{color: "#fff"}}>
+            { state === "disconnected" && "This account already has another active session." }
+            { state === "error" && "No connection to server. Reconnecting.." }
+          </p>
+          <p className="has-text-centered" style={{color: "#fff"}}>
+            { state === "disconnected" && "If you would like this session to become the active one, you can refresh instead." }
+          </p>
+        </div>
+
+        <div className="modal-footer">
+          <div className="fineprint-label label-size-1 is-white is-clickable" onClick={() => history.push("/logout")}>
+            Logout
+          </div>
+        </div>
       </div>
-    </div>
-  )
+    )
+  } else {
+    return (
+      <></>
+    )
+  }
 }
 
 export default DataSpacesRoute;

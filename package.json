@@ -1,6 +1,6 @@
 {
   "name": "datagarden.app",
-  "version": "0.2.10",
+  "version": "0.2.11",
   "private": true,
   "dependencies": {
     "@ericlathrop/phoenix-js-react-hooks": "^0.1.0",

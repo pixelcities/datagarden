@@ -17,6 +17,7 @@ class WebSocket {
   userId?: string
   handle?: string
   eventId?: number
+  error?: boolean
 
   constructor(endpoint: string, callback: (event: any) => void, dispatch: (payload: any) => void) {
     this.endpoint = endpoint
@@ -25,6 +26,8 @@ class WebSocket {
   }
 
   handleOpen() {
+    this.error = false
+
     if (this.userId && !this.user) {
       this.handleUserChannel(this.userId)
     }
@@ -52,7 +55,7 @@ class WebSocket {
 
     this.dispatch({
       type: "ui/setConnectionState",
-      payload: "disconnected"
+      payload: this.error ? "error" : "disconnected"
     })
   }
 
@@ -62,7 +65,7 @@ class WebSocket {
 
     this.socket.onOpen(() => this.handleOpen())
     this.socket.onClose(() => this.handleClose())
-    this.socket.onError(() => this.handleClose())
+    this.socket.onError(() => { this.error = true; this.handleClose() })
   }
 
   handleUserChannel(user_id: string) {
@@ -89,9 +92,12 @@ class WebSocket {
 
         const ref = this.user.on("history", this.callback)
 
+        this.dispatch({ type: "ui/setIsLoading", payload: true })
+
         // Only init the event playback after selecting a ds
         this.ds.push("init", {"type": "events", "payload": eventId})
           .receive("ok", () => {
+            this.dispatch({ type: "ui/setIsLoading", payload: false })
 
             // TODO: small moment where no messages are handled
             this.user?.off("history", ref)

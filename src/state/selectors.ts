@@ -49,7 +49,8 @@ import {
   selectCoords,
   selectWindowDimensions,
   selectComponentDimensionsById,
-  selectConnectionState
+  selectConnectionState,
+  selectIsLoading
 } from './slices/ui'
 
 import {
@@ -201,6 +202,7 @@ export {
   selectWindowDimensions,
   selectComponentDimensionsById,
   selectConnectionState,
+  selectIsLoading,
   selectUsers,
   selectUserById,
   selectUserByEmail,

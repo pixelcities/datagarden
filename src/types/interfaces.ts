@@ -23,7 +23,8 @@ export interface UserInterface {
   components: {
     [key: string]: ComponentDimensions
   },
-  connectionState: string
+  connectionState: string,
+  isLoading: boolean
 }
 
 export interface Component {
