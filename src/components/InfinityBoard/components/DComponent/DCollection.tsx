@@ -1,4 +1,4 @@
-import React, { useEffect, useState, forwardRef } from 'react'
+import React, { useEffect, useState, forwardRef, useRef } from 'react'
 
 import { useAppDispatch, useAppSelector } from 'hooks'
 import { Coords, WindowDimensions, Component } from 'types'
@@ -32,8 +32,13 @@ const DCollection = forwardRef<{[id: string]: any}, DCollectionProps>((props, _r
   const [title, setTitle] = useState("")
   const [isReady, setIsReady] = useState(false)
 
+  const positionRef = useRef(collection.position)
+  positionRef.current = collection.position
+
   const setComponentPosition = (payload: {id: string, workspace: string, position: number[]}) => {
-    dispatch(setCollectionPosition(payload))
+    if (Math.abs(positionRef.current[0] - payload.position[0]) > 1 || Math.abs(positionRef.current[1] - payload.position[1]) > 1) {
+      dispatch(setCollectionPosition(payload))
+    }
   }
 
   const addComponentTarget = (payload: {id: string, workspace: string, target: string}) => {

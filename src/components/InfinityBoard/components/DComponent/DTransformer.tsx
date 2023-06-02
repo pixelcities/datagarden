@@ -1,4 +1,4 @@
-import React, { forwardRef } from 'react'
+import React, { forwardRef, useRef } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faExclamationTriangle } from '@fortawesome/free-solid-svg-icons'
 
@@ -24,8 +24,13 @@ const DTransformer = forwardRef<{[id: string]: any}, DTransformerProps>((props, 
   const dispatch = useAppDispatch()
   const myTransformer = useAppSelector(state => selectTransformerById(state, transformer?.id))
 
-  const setComponentPosition = (payload: any) => {
-    dispatch(setTransformerPosition(payload))
+  const positionRef = useRef(transformer.position)
+  positionRef.current = transformer.position
+
+  const setComponentPosition = (payload: {id: string, workspace: string, position: number[]}) => {
+    if (Math.abs(positionRef.current[0] - payload.position[0]) > 1 || Math.abs(positionRef.current[1] - payload.position[1]) > 1) {
+      dispatch(setTransformerPosition(payload))
+    }
   }
 
   const addComponentTarget = (payload: any) => {
