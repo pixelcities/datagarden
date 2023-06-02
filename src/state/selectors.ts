@@ -48,7 +48,8 @@ import {
   selectOffset,
   selectCoords,
   selectWindowDimensions,
-  selectComponentDimensionsById
+  selectComponentDimensionsById,
+  selectConnectionState
 } from './slices/ui'
 
 import {
@@ -199,6 +200,7 @@ export {
   selectCoords,
   selectWindowDimensions,
   selectComponentDimensionsById,
+  selectConnectionState,
   selectUsers,
   selectUserById,
   selectUserByEmail,

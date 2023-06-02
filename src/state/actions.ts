@@ -55,7 +55,8 @@ import {
   setOffset,
   setCoords,
   setWindowDimensions,
-  setComponentDimensions
+  setComponentDimensions,
+  setConnectionState
 } from './slices/ui'
 
 import {
@@ -308,6 +309,7 @@ export {
   setCoords,
   setWindowDimensions,
   setComponentDimensions,
+  setConnectionState,
   sendLocalNotification,
   deleteLocalNotification,
   deleteLocalTask

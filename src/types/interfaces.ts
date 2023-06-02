@@ -22,7 +22,8 @@ export interface UserInterface {
   dimensions: WindowDimensions,
   components: {
     [key: string]: ComponentDimensions
-  }
+  },
+  connectionState: string
 }
 
 export interface Component {

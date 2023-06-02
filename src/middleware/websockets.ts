@@ -9,22 +9,65 @@ import { getCSRFToken } from 'utils/getCSRFToken'
 class WebSocket {
   endpoint: string
   callback: (event: any) => void
+  dispatch: (payload: any) => void
   socket?: Socket
   user?: Channel
   ds?: Channel
   chain?: () => void
+  userId?: string
+  handle?: string
+  eventId?: number
 
-  constructor(endpoint: string, callback: (event: any) => void) {
+  constructor(endpoint: string, callback: (event: any) => void, dispatch: (payload: any) => void) {
     this.endpoint = endpoint
     this.callback = callback
+    this.dispatch = dispatch
+  }
+
+  handleOpen() {
+    if (this.userId && !this.user) {
+      this.handleUserChannel(this.userId)
+    }
+
+    if (this.handle && this.eventId && !this.ds) {
+      this.handleDsChannel(this.handle, this.eventId)
+    }
+
+    this.dispatch({
+      type: "ui/setConnectionState",
+      payload: "connected"
+    })
+  }
+
+  handleClose() {
+    if (this.user) {
+      this.user.leave()
+      this.user = undefined
+    }
+
+    if (this.ds) {
+      this.ds.leave()
+      this.ds = undefined
+    }
+
+    this.dispatch({
+      type: "ui/setConnectionState",
+      payload: "disconnected"
+    })
   }
 
   handleSocket(token: string) {
     this.socket = new Socket(this.endpoint, {params: {token: token}})
     this.socket.connect()
+
+    this.socket.onOpen(() => this.handleOpen())
+    this.socket.onClose(() => this.handleClose())
+    this.socket.onError(() => this.handleClose())
   }
 
   handleUserChannel(user_id: string) {
+    this.userId = user_id
+
     if (this.socket) {
       this.user = this.socket.channel(`user:${user_id}`, {})
       this.user.join()
@@ -36,6 +79,9 @@ class WebSocket {
   }
 
   handleDsChannel(handle: string, eventId: number) {
+    this.handle = handle
+    this.eventId = eventId
+
     if (this.socket) {
       if (! this.ds && this.user) {
         this.ds = this.socket.channel(`ds:${handle}`, {})
@@ -49,7 +95,7 @@ class WebSocket {
 
             // TODO: small moment where no messages are handled
             this.user?.off("history", ref)
-            this.ds?.on("event", this.callback)
+            this.ds?.on("event", (e: any) => { this.eventId = e.id; this.callback(e) })
             this.user?.on("event", this.callback)
 
             this.ds?.push("init", {"type": "secrets"})
@@ -76,6 +122,9 @@ class WebSocket {
   }
 
   leaveDsChannel() {
+    this.handle = undefined
+    this.eventId = undefined
+
     if (this.socket && this.ds && this.user) {
       this.user.off("event")
 
@@ -107,17 +156,21 @@ class WebSocket {
 }
 
 export const websocketMiddleware: Middleware<{}, any> = storeApi => {
+  const internalDispatcher = (store: MiddlewareAPI<Dispatch<AnyAction>>) => (payload: any) => {
+    store.dispatch(payload)
+  }
+
   const onMessage = (store: MiddlewareAPI<Dispatch<AnyAction>>) => (event: any) => {
     if (event.type in events) {
-      store.dispatch(events[event.type](event.payload));
+      store.dispatch(events[event.type](event.payload))
 
       if (event.id !== undefined && Math.random() <= 0.1) {
         saveState(event.id, storeApi.getState())
       }
     }
-  };
+  }
 
-  let socket = new WebSocket(process.env.REACT_APP_WS_BASE_PATH + "/socket", onMessage(storeApi))
+  let socket = new WebSocket(process.env.REACT_APP_WS_BASE_PATH + "/socket", onMessage(storeApi), internalDispatcher(storeApi))
 
   return next => action => {
 

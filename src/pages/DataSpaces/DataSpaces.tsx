@@ -19,7 +19,7 @@ import { DataSpace } from 'types'
 import { useAuthContext } from 'contexts'
 import { useKeyStoreContext } from 'contexts'
 import { useAppDispatch, useAppSelector } from 'hooks'
-import { selectActiveDataSpace } from 'state/selectors'
+import { selectActiveDataSpace, selectConnectionState } from 'state/selectors'
 import { leaveDataSpace, setActiveDataSpace } from 'state/actions'
 
 import benchImg from 'assets/bench.png'
@@ -46,6 +46,7 @@ const VerifyHandle: FC = ({ children }) => {
 
   const dispatch = useAppDispatch()
   const activeHandle = useAppSelector(selectActiveDataSpace)
+  const connectionState = useAppSelector(selectConnectionState)
 
   useEffect(() => {
     if (keyStoreIsReady && activeHandle?.handle !== handle) {
@@ -90,6 +91,7 @@ const VerifyHandle: FC = ({ children }) => {
 
   return (
     <Switch>
+      { connectionState === "disconnected" && <DisconnectModal /> }
       { children }
     </Switch>
   )
@@ -102,6 +104,8 @@ const DataSpaces: FC = (props) => {
   const [dataSpaces, setDataSpaces] = useState<DataSpace[]>(JSON.parse(sessionStorage.getItem("spaces") || "[]"))
   const [inactiveSpaces, setInactiveSpaces] = useState<DataSpace[]>([])
   const [activeSettings, setActiveSettings] = useState<DataSpace | undefined>()
+
+  const connectionState = useAppSelector(selectConnectionState)
 
   useEffect(() => {
     dispatch(leaveDataSpace())
@@ -176,6 +180,8 @@ const DataSpaces: FC = (props) => {
       <Navbar />
       <NotificationsBar />
 
+      { connectionState === "disconnected" && <DisconnectModal /> }
+
       <Section backdrop={true}>
         { !!activeSettings &&
           <DSSettings
@@ -248,5 +254,17 @@ const WaitingRoom: FC = (props) => {
   )
 }
 
+const DisconnectModal: FC = (props) => {
+  return (
+    <div className="modal is-active">
+      <div className="modal-background"/>
+      <div className="modal-content">
+        <p className="subtitle has-text-centered" style={{color: "#fff"}}>
+          No connection to server. Reconnecting..
+        </p>
+      </div>
+    </div>
+  )
+}
 
 export default DataSpacesRoute;
