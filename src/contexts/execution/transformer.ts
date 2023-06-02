@@ -171,8 +171,19 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
 
                 // Look at the requested fragments, and determine if this requires executing the
                 // real query or if we can simply use the artifact.
-                const identifiers = Object.values(wal.identifiers)
-                const nrFragments = fragments.filter(f => !!identifiers.find(id => id.id === f))
+                let identifiers: string[] = []
+                for (const transaction of wal.transactions) {
+                  for (const match of transaction.matchAll(/%([0-9]+)\$I/g)) {
+                    if (match[1]) {
+                      const identifier = wal.identifiers[Number(match[1])]
+                      if (identifier) {
+                        identifiers.push(identifier.id)
+                      }
+                    }
+                  }
+                }
+
+                const nrFragments = fragments.filter(f => !!identifiers.find(id => id === f))
                 const useArtifacts = nrFragments.length === 0
 
                 execute(id, wal, fragments, useArtifacts, true, dataFusion, metadata, dataSpace, keyStore).then(() => {
