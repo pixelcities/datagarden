@@ -45,7 +45,7 @@ export const KeyStoreProvider: FC = ({ children }) => {
       mutex.runExclusive(async () => {
         for (const secret of secrets) {
           if (! keyCache.current.has(secret.key_id)) {
-            const key: string = await protocol?.decrypt(secret.owner, secret.ciphertext)
+            const key: string = await protocol?.decrypt(secret.owner, secret.message_id || "", secret.ciphertext)
 
             // Special hello message
             if (secret.key_id === secret.owner) {

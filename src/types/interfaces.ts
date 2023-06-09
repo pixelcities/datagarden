@@ -189,7 +189,8 @@ export interface Secret {
   key_id: string,
   owner: string,
   receiver: string,
-  ciphertext: string
+  ciphertext: string,
+  message_id?: string
 }
 
 export interface Task {
