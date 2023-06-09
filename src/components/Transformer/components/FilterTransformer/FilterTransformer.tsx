@@ -202,7 +202,7 @@ const FilterTransformer: FC<FilterTransformerProps> = ({ id, wal, tableId, leftI
         <Dropdown
           key={"dropdown-col-" + (column !== null).toString()}
           items={columnNames}
-          maxWidth={150}
+          maxWidth={100}
           onClick={(item) => setColumn(item)}
           selected={column}
           isDisabled={valueIsLocked}

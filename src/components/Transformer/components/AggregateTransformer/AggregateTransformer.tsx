@@ -219,7 +219,7 @@ const AggregateTransformer: FC<AggregateTransformerProps> = ({ id, wal, tableId,
   const columnSelection = React.useMemo(() => {
     return selects.map((column, i) => {
       return (
-        <div key={"column" + column} className="field has-addons is-horizontal pb-0">
+        <div key={"columnselection" + i} className="field has-addons is-horizontal pb-0">
           <Dropdown
             items={["SUM", "AVG", "MIN", "MAX"]}
             maxWidth={100}
@@ -250,7 +250,7 @@ const AggregateTransformer: FC<AggregateTransformerProps> = ({ id, wal, tableId,
   const groupSelection = React.useMemo(() => {
     return groupClauses.map((group, i) => {
       return (
-        <div key={"column" + i} className="field has-addons is-horizontal pb-0">
+        <div key={"columngroup" + i} className="field has-addons is-horizontal pb-0">
           <Dropdown
             items={columnNames}
             maxWidth={200}
