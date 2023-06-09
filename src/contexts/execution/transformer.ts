@@ -43,20 +43,20 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
             return
           }
 
+          // Filter the fragments for this particular table
+          const requestedFragments = fragments.filter(f => collection.schema.column_order.indexOf(f) !== -1)
+
+          // Nothing to do
+          if (requestedFragments.length === 0) {
+            resolve()
+            return
+          }
+
           if (dataFusion?.table_exists(collection.id)) {
             // If the table is already loaded, we still need to validate if it has the right columns
             // in memory. If this table was loaded a long time ago, it could have fewer columns than
             // the current transformer is expecting.
             const fields = dataFusion?.get_schema(collection.id).fields.map((field: any) => field.name)
-
-            // Filter the fragments for this particular table
-            const requestedFragments = fragments.filter(f => collection.schema.column_order.indexOf(f) !== -1)
-
-            // Nothing to do
-            if (requestedFragments.length === 0) {
-              resolve()
-              return
-            }
 
             // Check if all the expected fragements are encountered for
             if (requestedFragments.filter(f => fields.indexOf(f) === -1).length === 0) {
