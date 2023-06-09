@@ -97,7 +97,7 @@ const ShareInstance: FC<ShareInstanceProps> = ({ share, updateUser }) => {
         opacity: monitor.isDragging() ? 0.5 : 1
       })
     }),
-    []
+    [ updateUser ]
   )
 
   let icon = faUserSlash
@@ -142,6 +142,7 @@ type ShareOptionsI = ShareSourceOptionsI | ShareCollectionOptionsI
 const ShareOptions: FC<ShareOptionsI> = ({ me, columnId, source, collection }) => {
   const dispatch = useAppDispatch()
   const [schemaIsValid, setSchemaIsValid] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
 
   const { keyStore, protocol } = useKeyStoreContext();
 
@@ -159,6 +160,7 @@ const ShareOptions: FC<ShareOptionsI> = ({ me, columnId, source, collection }) =
   useEffect(() => {
     verifySchema(schema, keyStore?.get_key(schema.key_id)).then(isValid => {
       setSchemaIsValid(isValid)
+      setIsLoading(false)
 
       if (!isValid) {
         console.error("Invalid schema signature")
@@ -213,6 +215,8 @@ const ShareOptions: FC<ShareOptionsI> = ({ me, columnId, source, collection }) =
                 }}))
               })
             }
+
+            setIsLoading(true)
           })
         } else {
           console.log("[WARNING] Not sharing column because schema signature could not be verified")
@@ -312,16 +316,21 @@ const ShareOptions: FC<ShareOptionsI> = ({ me, columnId, source, collection }) =
         { renderAllowedUsers }
       </div>
 
-      <div className="panel-block" />
-      <div className="panel-block-nb">
-        <p className="header-label">
-          Blocked
-        </p>
-      </div>
-      <div ref={dropRefBlocked} style={{height: 100, borderWidth: "thin", borderStyle: isOverBlocked ? "dashed" : "none"}}>
-        { renderDisallowedUsers }
-      </div>
-
+      { isLoading ? (
+        <div className="spinner pt-3 pb-6" />
+      ) : (
+        <>
+          <div className="panel-block" />
+          <div className="panel-block-nb">
+            <p className="header-label">
+              Blocked
+            </p>
+          </div>
+          <div ref={dropRefBlocked} style={{height: 100, borderWidth: "thin", borderStyle: isOverBlocked ? "dashed" : "none"}}>
+            { renderDisallowedUsers }
+          </div>
+        </>
+      )}
     </>
   )
 }
@@ -337,12 +346,12 @@ const HeaderDropdown: FC<HeaderDropdownProps> = ({ fieldId, fieldName, inputId, 
   const renderDropdown = React.useMemo(() => {
     if (user && settingsActive && isSource && source) {
       return (
-        <ShareOptions me={user} columnId={fieldId} source={source} />
+        <ShareOptions key={fieldId} me={user} columnId={fieldId} source={source} />
       )
 
     } else if (user && settingsActive && collection) {
       return (
-        <ShareOptions me={user} columnId={fieldId} collection={collection} />
+        <ShareOptions key={fieldId} me={user} columnId={fieldId} collection={collection} />
       )
 
     } else {
