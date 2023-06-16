@@ -74,7 +74,7 @@ export const AuthProvider: FC = ({ children }) => {
   }, [ handleLogin ])
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (!isAuthenticated && window.WebAssembly !== undefined) {
       loginRequest()
     } else {
       setIsLoading(false)

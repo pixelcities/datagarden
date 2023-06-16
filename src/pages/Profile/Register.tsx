@@ -21,6 +21,7 @@ const Register: FC = () => {
   const [confirmPrompt, setConfirmPrompt] = useState(false)
   const [joinTrial, setJoinTrial] = useState(true)
   const [error, setError] = useState("")
+  const registrationIsDisabled = window.WebAssembly === undefined
 
   const ref = useRef<HTMLDivElement | null>(null)
   const isValidMovement = useMovement(ref)
@@ -197,7 +198,7 @@ const Register: FC = () => {
 
                       <div className="field is-grouped is-grouped-right">
                         <p className="control">
-                          <input type="submit" tabIndex={-1} className="button is-primary" value="Register" />
+                          <input type="submit" tabIndex={-1} className="button is-primary" value="Register" disabled={registrationIsDisabled} />
                         </p>
                       </div>
                     </form>

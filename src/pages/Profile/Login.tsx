@@ -13,6 +13,7 @@ const Login: FC = () => {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState(false)
+  const loginIsDisabled = window.WebAssembly === undefined
 
   const { isAuthenticated, handleLogin, path } = useAuthContext();
   const { keyStore, protocol, __setIsReady__ } = useKeyStoreContext();
@@ -22,45 +23,47 @@ const Login: FC = () => {
   const handleSubmit = (e: any) => {
     e.preventDefault();
 
-    const hashedPassword = keyStore.open_sesame(email, password)
+    if (!loginIsDisabled) {
+      const hashedPassword = keyStore.open_sesame(email, password)
 
-    fetch(process.env.REACT_APP_API_BASE_PATH + "/auth/local/login", {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRF-Token": genCSRFToken()
-      },
-      body: JSON.stringify({
-        "user": {
-          "email": email,
-          "password": hashedPassword,
-          "remember_me": "true"
+      fetch(process.env.REACT_APP_API_BASE_PATH + "/auth/local/login", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": genCSRFToken()
         },
-      })
-    }).then((response) => {
-      if (!response.ok) {
-        return Promise.reject(response)
-      } else {
-        return response.json()
-      }
-    }).then((data) => {
-      handleLogin(data)
-      keyStore?.init().then(() => {
-        const secret_key = keyStore?.get_named_key("protocol")
-        protocol?.init(secret_key, process.env.REACT_APP_API_BASE_PATH).then(() => {
-          __setIsReady__(true)
+        body: JSON.stringify({
+          "user": {
+            "email": email,
+            "password": hashedPassword,
+            "remember_me": "true"
+          },
         })
-      })
+      }).then((response) => {
+        if (!response.ok) {
+          return Promise.reject(response)
+        } else {
+          return response.json()
+        }
+      }).then((data) => {
+        handleLogin(data)
+        keyStore?.init().then(() => {
+          const secret_key = keyStore?.get_named_key("protocol")
+          protocol?.init(secret_key, process.env.REACT_APP_API_BASE_PATH).then(() => {
+            __setIsReady__(true)
+          })
+        })
 
-      history.push(path)
-    }).catch((e) => {
-      setError(true)
-      console.log(e);
-    });
+        history.push(path)
+      }).catch((e) => {
+        setError(true)
+        console.log(e);
+      });
 
-    setEmail("")
-    setPassword("")
+      setEmail("")
+      setPassword("")
+    }
   }
 
   useEffect(() => {
@@ -112,7 +115,7 @@ const Login: FC = () => {
                     </div>
                     <div className="field is-grouped is-grouped-right">
                       <p className="control">
-                        <input type="submit" className="button is-primary" value="Login" />
+                        <input type="submit" className="button is-primary" value="Login" disabled={loginIsDisabled} />
                       </p>
                     </div>
                   </form>

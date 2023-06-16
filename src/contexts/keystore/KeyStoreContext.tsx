@@ -78,7 +78,9 @@ export const KeyStoreProvider: FC = ({ children }) => {
   }
 
   useEffect(()=> {
-    init();
+    if (window.WebAssembly !== undefined) {
+      init()
+    }
   },[])
 
 
@@ -149,6 +151,7 @@ export const KeyStoreProvider: FC = ({ children }) => {
     )
   }, [ isActive, error, location.pathname, handleSubmit, password ])
 
+
   return (
     <KeyStoreContext.Provider value={{keyStore, keyStoreIsReady: isReady, protocol, __setIsReady__: setIsReady}} >
       <div className={"pageloader is-bottom-to-top" + (loading ? " is-active" : "")}>
@@ -156,6 +159,12 @@ export const KeyStoreProvider: FC = ({ children }) => {
           Loading...
         </span>
       </div>
+
+      { window.WebAssembly === undefined && (
+        <div className="notification is-light is-danger" style={{marginTop: "0.7rem"}}>
+          Platform not supported. DataGarden requires WebAssembly to function, which is not enabled on your device.
+        </div>
+      )}
 
       { renderModal }
 
