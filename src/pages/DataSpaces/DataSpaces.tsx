@@ -133,6 +133,10 @@ const DataSpaces: FC = (props) => {
   const connectionState = useAppSelector(selectConnectionState)
 
   useEffect(() => {
+    if (process.env.REACT_APP_SENTRY_DSN) {
+      Sentry.setTag("dataspace", null)
+    }
+
     dispatch(leaveDataSpace())
   }, [ dispatch ])
 
@@ -160,11 +164,19 @@ const DataSpaces: FC = (props) => {
   }, [ setDataSpaces ])
 
   const renderDataSpaces = useMemo(() => {
+    const handleClick = (dataSpace: DataSpace) => {
+      if (process.env.REACT_APP_SENTRY_DSN) {
+        Sentry.setTag("dataspace", dataSpace.handle)
+      }
+
+      dispatch(setActiveDataSpace(dataSpace))
+    }
+
     return dataSpaces.map((dataSpace) => {
       return (
         <div id={dataSpace.handle === "trial" ? "trial-space" : ""} key={dataSpace.id} className="column is-narrow">
 
-          <Link to={"/ds/" + dataSpace.handle + "/sources"} onClick={() => dispatch(setActiveDataSpace(dataSpace))}>
+          <Link to={"/ds/" + dataSpace.handle + "/sources"} onClick={() => handleClick(dataSpace)}>
             <div className="card">
               <div className="card-content px-6 py-6">
                 <p className="subtitle">
