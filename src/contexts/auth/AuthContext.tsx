@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useContext, FC } from "react";
+import * as Sentry from "@sentry/react"
 
 import { useAppSelector, useAppDispatch } from 'hooks'
 import { selectUserById, selectActiveDataSpace } from 'state/selectors'
@@ -45,6 +46,10 @@ export const AuthProvider: FC = ({ children }) => {
       setIsAuthenticated(true)
 
       setError(user.confirmed_at === null ? "Email is unconfirmed" : "")
+
+      if (process.env.REACT_APP_SENTRY_DSN) {
+        Sentry.setUser({ id: user.id })
+      }
     }
   }, [ dispatch, setUser, setIsAuthenticated ])
 

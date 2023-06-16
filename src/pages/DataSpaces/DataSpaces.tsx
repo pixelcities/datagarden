@@ -2,6 +2,7 @@ import React, { FC, useEffect, useState, useMemo } from 'react'
 import { Route, Switch, Link, useHistory, useParams } from "react-router-dom"
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPlus, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons'
+import * as Sentry from "@sentry/react"
 
 import PrivateRoute from 'utils/PrivateRoute'
 
@@ -57,7 +58,15 @@ const VerifyHandle: FC = ({ children }) => {
 
       if (dataSpace) {
         if (activeHandle) {
+          if (process.env.REACT_APP_SENTRY_DSN) {
+            Sentry.setTag("dataspace", null)
+          }
+
           dispatch(leaveDataSpace())
+        }
+
+        if (process.env.REACT_APP_SENTRY_DSN) {
+          Sentry.setTag("dataspace", dataSpace.handle)
         }
 
         dispatch(setActiveDataSpace(dataSpace))
