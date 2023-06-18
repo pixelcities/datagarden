@@ -526,9 +526,6 @@ const rebuildSchema = async (id: string, target: Collection, oldId: string, old:
   let meta = JSON.parse(JSON.stringify(taskMeta))
   let updated = false
 
-  let updated_columns = meta["updated_columns"] || []
-  let renames: {[key: string]: string} = {}
-
   if ("schema" in taskMeta) {
     schema = meta["schema"]
 
@@ -587,9 +584,9 @@ const rebuildSchema = async (id: string, target: Collection, oldId: string, old:
     updated = true
   }
 
-  // This transformer task may not be the first, so the fragment could already exist in the schema. The task
-  // metadata will keep track of the (old) column ids that have been updated so far.
-  const new_fragments = fragments.filter(f => updated_columns.indexOf(f) === -1)
+  // This transformer task may not be the first, so the fragment could already exist in the schema. Each column
+  // keeps track of it's lineage, which can now be used to filter the columns that have already been created so far.
+  const new_fragments = fragments.filter(f => !schema.columns.find(col => col.lineage === f))
 
   // Filter the old columns with the fragments that are left
   const old_columns = old.columns.filter(c => new_fragments.indexOf(c.id) !== -1)
@@ -617,10 +614,9 @@ const rebuildSchema = async (id: string, target: Collection, oldId: string, old:
 
     columns.push({...column, ...{
       id: id,
-      key_id: key_id
+      key_id: key_id,
+      lineage: column.id
     }})
-
-    renames[column.id] = id
 
     updated = true
   }
@@ -639,13 +635,21 @@ const rebuildSchema = async (id: string, target: Collection, oldId: string, old:
     }))
 
     meta["schema"] = signedSchema
-    meta["updated_columns"] = [...updated_columns, ...Object.keys(renames)]
   }
 
   // After updating the real schema, return a limited one that
   // only includes the fragment columns.
-  schema.columns = columns
+  schema.columns = schema.columns.filter(col => fragments.indexOf(col.lineage || "") !== -1)
   schema.column_order = schema.columns.map(x => x.id)
+
+  let renames: {[key: string]: string} = {}
+  for (const column of schema.columns) {
+    const old_column = old.columns.find(c => c.id === column.lineage)
+
+    if (old_column) {
+      renames[old_column.id] = column.id
+    }
+  }
 
   return {
     actions: actions,

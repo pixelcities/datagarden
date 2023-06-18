@@ -108,6 +108,7 @@ export interface Column {
   concept_id: string,
   key_id: string,
   shares: Share[],
+  lineage?: string,
   metadata?: any
 }
 
