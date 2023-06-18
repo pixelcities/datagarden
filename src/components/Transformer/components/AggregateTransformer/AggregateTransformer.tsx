@@ -1,6 +1,6 @@
 import React, { FC, useCallback, useMemo, useEffect, useState } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faPlus } from '@fortawesome/free-solid-svg-icons'
+import { faMinus, faPlus } from '@fortawesome/free-solid-svg-icons'
 
 import { useAppDispatch, useAppSelector } from 'hooks'
 import { selectConceptMap, selectActiveDataSpace } from 'state/selectors'
@@ -41,13 +41,14 @@ const AggregateTransformer: FC<AggregateTransformerProps> = ({ id, wal, tableId,
 
   const [startup, setStartup] = useState(true)
   const [replay, setReplay] = useState(false)
+  const [isDisabled, setIsDisabled] = useState(log.transactions.length === 0)
 
   const { dataFusion } = useDataFusionContext()
 
   const columnNames: [string, string][] = useMemo(() => Object.entries(columns).map(([id, concept]) => [id, concept.name]), [ columns ])
 
   const onError = useCallback((error: string) => {
-    console.log(error)
+    console.error(error)
 
     dispatch(sendLocalNotification({
       id: crypto.randomUUID(),
@@ -98,6 +99,7 @@ const AggregateTransformer: FC<AggregateTransformerProps> = ({ id, wal, tableId,
 
       setStartup(false)
       setReplay(true)
+      setIsDisabled(true)
     }
   }, [ tableId, startup, wal, columns ])
 
@@ -185,7 +187,7 @@ const AggregateTransformer: FC<AggregateTransformerProps> = ({ id, wal, tableId,
 
   // Replay if old state was loaded
   useEffect(() => {
-    if (tableId && replay && selects.length > 1 && aggregateFns.length > 1) {
+    if (tableId && replay && selects.length > 0 && aggregateFns.length > 0) {
       setReplay(false)
 
       dataFusion?.clone_table(leftId, tableId)
@@ -201,6 +203,7 @@ const AggregateTransformer: FC<AggregateTransformerProps> = ({ id, wal, tableId,
     execute()
       .then((result) => {
         setLog(result)
+        setIsDisabled(false)
       })
       .catch((e) => onError(e ? e.message : "Error executing query"))
   }, [ leftId, tableId, execute, setLog, dataFusion, onError ])
@@ -218,25 +221,31 @@ const AggregateTransformer: FC<AggregateTransformerProps> = ({ id, wal, tableId,
 
   const columnSelection = React.useMemo(() => {
     return selects.map((column, i) => {
-      return (
-        <div key={"columnselection" + i} className="field has-addons is-horizontal pb-0">
-          <Dropdown
-            items={["SUM", "AVG", "MIN", "MAX"]}
-            maxWidth={100}
-            onClick={item => addAggregateFn(aggregateFns.map((x, j) => i === j ? item : x))}
-            selected={aggregateFns[i]}
-          />
+      if (column !== null) {
+        return (
+          <div key={"columnselection" + i} className="field has-addons is-horizontal pb-0">
+            <Dropdown
+              items={["SUM", "AVG", "MIN", "MAX"]}
+              maxWidth={100}
+              onClick={item => { addAggregateFn(aggregateFns.map((x, j) => i === j ? item : x)); setIsDisabled(true) }}
+              selected={aggregateFns[i]}
+            />
 
-          <span className="is-size-4 has-text-weight-bold px-2"> ( </span>
-          <Dropdown
-            items={columnNames}
-            maxWidth={150}
-            onClick={item => addSelect(selects.map((x, j) => i === j ? item : x))}
-            selected={column}
-          />
-          <span className="is-size-4 has-text-weight-bold px-2"> ) </span>
-        </div>
-      )
+            <span className="is-size-4 has-text-weight-bold px-2"> ( </span>
+            <Dropdown
+              items={columnNames}
+              maxWidth={150}
+              onClick={item => { addSelect(selects.map((x, j) => i === j ? item : x)); setIsDisabled(true) }}
+              selected={column}
+            />
+            <span className="is-size-4 has-text-weight-bold px-2"> ) </span>
+          </div>
+        )
+      } else {
+        return (
+          <div key={"emptycolumnselection" + i} />
+        )
+      }
     })
   }, [ selects, columnNames, aggregateFns, addAggregateFn, addSelect ])
 
@@ -245,7 +254,21 @@ const AggregateTransformer: FC<AggregateTransformerProps> = ({ id, wal, tableId,
 
     addSelect([...selects, null])
     addAggregateFn([...aggregateFns, "SUM"])
+
+    setIsDisabled(true)
   }
+
+  const handleDelColumn = (e: any) => {
+    e.preventDefault()
+
+    if (selects.length > 1) {
+      addSelect(selects.slice(0, -1))
+      addAggregateFn(aggregateFns.slice(0, -1))
+
+      setIsDisabled(true)
+    }
+  }
+
 
   const groupSelection = React.useMemo(() => {
     return groupClauses.map((group, i) => {
@@ -254,7 +277,7 @@ const AggregateTransformer: FC<AggregateTransformerProps> = ({ id, wal, tableId,
           <Dropdown
             items={columnNames}
             maxWidth={200}
-            onClick={item => addGroupClause(groupClauses.map((x, j) => i === j ? item : x))}
+            onClick={item => { addGroupClause(groupClauses.map((x, j) => i === j ? item : x)); setIsDisabled(true) }}
             selected={group}
           />
 
@@ -272,7 +295,20 @@ const AggregateTransformer: FC<AggregateTransformerProps> = ({ id, wal, tableId,
     e.preventDefault()
 
     addGroupClause([...groupClauses, null])
+
+    setIsDisabled(true)
   }
+
+  const handleDelGroupClause = (e: any) => {
+    e.preventDefault()
+
+    if (groupClauses.length > 0) {
+      addGroupClause(groupClauses.slice(0, -1))
+
+      setIsDisabled(true)
+    }
+  }
+
 
   if (!tableId) {
     return (
@@ -287,22 +323,37 @@ const AggregateTransformer: FC<AggregateTransformerProps> = ({ id, wal, tableId,
       <div className="control-settings">
         <form onSubmit={handleAggregate}>
           <div className="field pb-0">
-            <button className="hover-button is-right is-small" onClick={handleAddColumn}>
-              <span className="icon is-small">
-                <FontAwesomeIcon icon={faPlus} size="sm"/>
-              </span>
-            </button>
+            <div className="hover-buttons is-right">
+              <button className="hover-button is-small" onClick={handleDelColumn}>
+                <span className="icon is-small">
+                  <FontAwesomeIcon icon={faMinus} size="sm"/>
+                </span>
+              </button>
+              <button className="hover-button is-small" onClick={handleAddColumn}>
+                <span className="icon is-small">
+                  <FontAwesomeIcon icon={faPlus} size="sm"/>
+                </span>
+              </button>
+            </div>
             <label className="label">Aggregate Columns</label>
           </div>
 
           { columnSelection }
 
           <div className="field pb-0">
-            <button className="hover-button is-right is-small" onClick={handleAddGroupClause}>
-              <span className="icon is-small">
-                <FontAwesomeIcon icon={faPlus} size="sm"/>
-              </span>
-            </button>
+            <div className="hover-buttons is-right">
+              <button className="hover-button is-small" onClick={handleDelGroupClause}>
+                <span className="icon is-small">
+                  <FontAwesomeIcon icon={faMinus} size="sm"/>
+                </span>
+              </button>
+
+              <button className="hover-button is-small" onClick={handleAddGroupClause}>
+                <span className="icon is-small">
+                  <FontAwesomeIcon icon={faPlus} size="sm"/>
+                </span>
+              </button>
+            </div>
             <label className="label">Group By</label>
           </div>
 
@@ -317,7 +368,7 @@ const AggregateTransformer: FC<AggregateTransformerProps> = ({ id, wal, tableId,
       </div>
 
       <div className="commit-footer">
-        <button className="button is-primary is-fullwidth" onClick={handleCommit} disabled={log.transactions.length === 0}> Commit </button>
+        <button className="button is-primary is-fullwidth" onClick={handleCommit} disabled={isDisabled}> Commit </button>
       </div>
     </div>
   )
