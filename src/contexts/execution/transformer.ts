@@ -640,8 +640,9 @@ const rebuildSchema = async (id: string, target: Collection, oldId: string, old:
 
   // After updating the real schema, return a limited one that
   // only includes the fragment columns.
-  schema.columns = schema.columns.filter(col => fragments.indexOf(col.lineage || "") !== -1)
-  schema.column_order = schema.columns.map(x => x.id)
+  const miniSchema: Schema = JSON.parse(JSON.stringify(schema))
+  miniSchema.columns = miniSchema.columns.filter(col => fragments.indexOf(col.lineage || "") !== -1)
+  miniSchema.column_order = miniSchema.columns.map(x => x.id)
 
   let renames: {[key: string]: string} = {}
   for (const column of schema.columns) {
@@ -654,7 +655,7 @@ const rebuildSchema = async (id: string, target: Collection, oldId: string, old:
 
   return {
     actions: actions,
-    schema: schema,
+    schema: miniSchema,
     renames: renames,
     meta: meta
   }
