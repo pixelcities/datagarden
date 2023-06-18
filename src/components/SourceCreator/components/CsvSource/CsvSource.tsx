@@ -209,6 +209,7 @@ const CsvSource: FC<CsvSourceProps> = ({onComplete}) => {
         id: attribute.id,
         concept_id: attribute.concept_id,
         key_id: key_id,
+        lineage: null,
         shares: [
           {
             type: "owner",

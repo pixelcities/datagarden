@@ -123,6 +123,7 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
                     return {
                       id: x.id,
                       concept_id: x.params![0],
+                      lineage: null,
                       key_id: "", // Will be generated later
                       shares: oldSchema.shares // Inherit the schema shares for new (and empty) columns by default
                     }

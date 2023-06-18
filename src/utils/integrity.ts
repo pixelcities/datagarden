@@ -38,7 +38,7 @@ const verify = (message: Buffer, tag: string, secret: string) => {
 }
 
 const hashSchema = (schema: UnverifiedSchema | Schema): Buffer => {
-  return objectHash(schema, {encoding: "buffer", excludeKeys: (k: string) => k === "tag", unorderedArrays: true})
+  return objectHash(schema, {encoding: "buffer", excludeKeys: (k: string) => k === "tag" || k === "lineage", unorderedArrays: true})
 }
 
 /*

@@ -182,6 +182,7 @@ const ShareOptions: FC<ShareOptionsI> = ({ me, columnId, source, collection }) =
           id: column.id,
           concept_id: column.concept_id,
           key_id: column.key_id,
+          lineage: column.lineage,
           shares: [...column.shares ?? [], {
             type: "full",
             principal: user.id
@@ -238,6 +239,7 @@ const ShareOptions: FC<ShareOptionsI> = ({ me, columnId, source, collection }) =
           id: column.id,
           concept_id: column.concept_id,
           key_id: column.key_id,
+          lineage: column.lineage,
           shares: column.shares.filter(s => s.principal !== user.id)
         })
 
