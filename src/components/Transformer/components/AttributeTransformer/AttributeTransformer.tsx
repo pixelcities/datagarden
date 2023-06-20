@@ -1,6 +1,6 @@
 import React, { FC, useMemo, useCallback, useEffect, useState } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faPlus } from '@fortawesome/free-solid-svg-icons'
+import { faMinus, faPlus } from '@fortawesome/free-solid-svg-icons'
 
 import { useAppDispatch, useAppSelector } from 'hooks'
 import { createConcept, updateTransformerWAL, sendLocalNotification } from 'state/actions'
@@ -46,6 +46,7 @@ const AttributeTransformer: FC<AttributeTransformerProps> = ({ id, wal, tableId,
   const [alterTypes, addAlterType] = useState<string[]>([])
   const [log, setLog] = useState<WAL>(wal ?? {identifiers: {}, values: {}, transactions: [], artifacts: []})
   const [isLocked, setIsLocked] = useState(false)
+  const [isDisabled, setIsDisabled] = useState(Object.keys(log.identifiers).length === 0)
 
   const [startup, setStartup] = useState(true)
   const [replay, setReplay] = useState(false)
@@ -110,6 +111,7 @@ const AttributeTransformer: FC<AttributeTransformerProps> = ({ id, wal, tableId,
       setStartup(false)
       setReplay(true)
       setIsLocked(true)
+      setIsDisabled(true)
     }
   }, [ tableId, startup, wal, columns, concepts, dataSpace ])
 
@@ -216,6 +218,7 @@ const AttributeTransformer: FC<AttributeTransformerProps> = ({ id, wal, tableId,
     execute()
       .then((result) => {
         setLog(result)
+        setIsDisabled(false)
       })
       .catch((e) => onError(e ? e.message : "Error executing query"))
   }, [ leftId, tableId, execute, setLog, dataFusion, onError ])
@@ -298,6 +301,16 @@ const AttributeTransformer: FC<AttributeTransformerProps> = ({ id, wal, tableId,
     e.preventDefault()
 
     addDropColumn([...dropColumns, null])
+    setIsDisabled(true)
+  }
+
+  const handleDelDropColumn = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault()
+
+    if (dropColumns.length > 0) {
+      addDropColumn(dropColumns.slice(0, -1))
+      setIsDisabled(true)
+    }
   }
 
   const dropSelection = useMemo(() => {
@@ -331,8 +344,21 @@ const AttributeTransformer: FC<AttributeTransformerProps> = ({ id, wal, tableId,
 
       setNewColumn("")
       setNewColumnModalIsActive(false)
+
+      setIsDisabled(true)
     }
   }, [ newColumn, newColumns, newTypes ])
+
+  const handleDelAddColumn = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault()
+
+    if (newColumns.length > 0) {
+      addNewColumn(newColumns.slice(0, -1))
+      addNewType(newTypes.slice(0, -1))
+
+      setIsDisabled(true)
+    }
+  }
 
   const renderNewColumnModal = useMemo(() => {
     return (
@@ -390,8 +416,21 @@ const AttributeTransformer: FC<AttributeTransformerProps> = ({ id, wal, tableId,
     if (columnName) {
       addAlterColumn([...alterColumns, [id, columnName]])
       addAlterType([...alterTypes, "String"])
+
+      setIsDisabled(true)
     }
   }, [ columns, alterColumns, alterTypes ])
+
+  const handleDelAlterColumn = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault()
+
+    if (alterColumns.length > 0) {
+      addAlterColumn(alterColumns.slice(0, -1))
+      addAlterType(alterTypes.slice(0, -1))
+
+      setIsDisabled(true)
+    }
+  }
 
   const handleAlterModal = () => {
     setAlterModalIsActive(true)
@@ -448,22 +487,36 @@ const AttributeTransformer: FC<AttributeTransformerProps> = ({ id, wal, tableId,
 
         <div>
           <div className="field pb-0">
-            <button className="hover-button is-right is-small" onClick={handleAddDropColumn} disabled={isLocked}>
-              <span className="icon is-small">
-                <FontAwesomeIcon icon={faPlus} size="sm"/>
-              </span>
-            </button>
+            <div className="hover-buttons is-right">
+              <button className="hover-button is-small" onClick={handleDelDropColumn} disabled={isLocked}>
+                <span className="icon is-small">
+                  <FontAwesomeIcon icon={faMinus} size="sm"/>
+                </span>
+              </button>
+              <button className="hover-button is-small" onClick={handleAddDropColumn} disabled={isLocked}>
+                <span className="icon is-small">
+                  <FontAwesomeIcon icon={faPlus} size="sm"/>
+                </span>
+              </button>
+            </div>
             <label className="label">Drop Attributes</label>
           </div>
 
           { dropSelection }
 
           <div className="field pt-6 pb-0">
-            <button className="hover-button is-right is-small" onClick={() => setNewColumnModalIsActive(true)} disabled={isLocked}>
-              <span className="icon is-small">
-                <FontAwesomeIcon icon={faPlus} size="sm"/>
-              </span>
-            </button>
+            <div className="hover-buttons is-right">
+              <button className="hover-button is-small" onClick={handleDelAddColumn} disabled={isLocked}>
+                <span className="icon is-small">
+                  <FontAwesomeIcon icon={faMinus} size="sm"/>
+                </span>
+              </button>
+              <button className="hover-button is-small" onClick={() => setNewColumnModalIsActive(true)} disabled={isLocked}>
+                <span className="icon is-small">
+                  <FontAwesomeIcon icon={faPlus} size="sm"/>
+                </span>
+              </button>
+            </div>
             <label className="label">Add Attributes</label>
           </div>
 
@@ -481,11 +534,18 @@ const AttributeTransformer: FC<AttributeTransformerProps> = ({ id, wal, tableId,
           </table>
 
           <div className="field pt-6 pb-0">
-            <button className="hover-button is-right is-small" onClick={() => handleAlterModal()} disabled={isLocked}>
-              <span className="icon is-small">
-                <FontAwesomeIcon icon={faPlus} size="sm"/>
-              </span>
-            </button>
+            <div className="hover-buttons is-right">
+              <button className="hover-button is-small" onClick={handleDelAlterColumn} disabled={isLocked}>
+                <span className="icon is-small">
+                  <FontAwesomeIcon icon={faMinus} size="sm"/>
+                </span>
+              </button>
+              <button className="hover-button is-small" onClick={() => handleAlterModal()} disabled={isLocked}>
+                <span className="icon is-small">
+                  <FontAwesomeIcon icon={faPlus} size="sm"/>
+                </span>
+              </button>
+            </div>
             <label className="label">Alter Attributes</label>
           </div>
 
@@ -511,7 +571,7 @@ const AttributeTransformer: FC<AttributeTransformerProps> = ({ id, wal, tableId,
       </div>
 
       <div className="commit-footer">
-        <button className="button is-primary is-fullwidth" onClick={handleCommit} disabled={isLocked || Object.keys(log.identifiers).length === 0}> Commit </button>
+        <button className="button is-primary is-fullwidth" onClick={handleCommit} disabled={isLocked || isDisabled}> Commit </button>
       </div>
     </div>
   )
