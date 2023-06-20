@@ -221,31 +221,25 @@ const AggregateTransformer: FC<AggregateTransformerProps> = ({ id, wal, tableId,
 
   const columnSelection = React.useMemo(() => {
     return selects.map((column, i) => {
-      if (column !== null) {
-        return (
-          <div key={"columnselection" + i} className="field has-addons is-horizontal pb-0">
-            <Dropdown
-              items={["SUM", "AVG", "MIN", "MAX"]}
-              maxWidth={100}
-              onClick={item => { addAggregateFn(aggregateFns.map((x, j) => i === j ? item : x)); setIsDisabled(true) }}
-              selected={aggregateFns[i]}
-            />
+      return (
+        <div key={"columnselection" + (column !== null) + i} className="field has-addons is-horizontal pb-0">
+          <Dropdown
+            items={["SUM", "AVG", "MIN", "MAX"]}
+            maxWidth={50}
+            onClick={item => { addAggregateFn(aggregateFns.map((x, j) => i === j ? item : x)); setIsDisabled(true) }}
+            selected={aggregateFns[i]}
+          />
 
-            <span className="is-size-4 has-text-weight-bold px-2"> ( </span>
-            <Dropdown
-              items={columnNames}
-              maxWidth={150}
-              onClick={item => { addSelect(selects.map((x, j) => i === j ? item : x)); setIsDisabled(true) }}
-              selected={column}
-            />
-            <span className="is-size-4 has-text-weight-bold px-2"> ) </span>
-          </div>
-        )
-      } else {
-        return (
-          <div key={"emptycolumnselection" + i} />
-        )
-      }
+          <span className="is-size-4 has-text-weight-bold pl-2 pr-1"> ( </span>
+          <Dropdown
+            items={columnNames}
+            maxWidth={110}
+            onClick={item => { addSelect(selects.map((x, j) => i === j ? item : x)); setIsDisabled(true) }}
+            selected={column}
+          />
+          <span className="is-size-4 has-text-weight-bold px-1"> ) </span>
+        </div>
+      )
     })
   }, [ selects, columnNames, aggregateFns, addAggregateFn, addSelect ])
 
