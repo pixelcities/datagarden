@@ -10,7 +10,7 @@ import { renderChoropleth } from 'utils/maps'
 import { loadRemoteTable } from 'utils/loadRemoteTable'
 
 export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: EnhancedStore<RootState>, keyStore: any, arrow: any, dataFusion: any) => {
-  return new Promise<{actions: any[], metadata: {[key: string]: any}}>((resolve, reject) => {
+  return new Promise<{actions: any[], metadata: {[key: string]: any}, completed_fragments?: string[]}>((resolve, reject) => {
     const instruction = task.task["instruction"]
     const widget_id = task.task["widget_id"]
 

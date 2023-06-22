@@ -2,7 +2,7 @@ import { EnhancedStore } from '@reduxjs/toolkit'
 
 import { ExecutionError, User, DataSpace, Task, Collection, Schema, Concept, Share, WAL } from 'types'
 import { RootState } from 'state/store'
-import { shareSecret, createMetadata, updateCollectionSchema, updateTransformerWAL } from 'state/actions'
+import { shareSecret, createMetadata, updateCollectionSchema, updateTransformerWAL, shareMPCPartial } from 'state/actions'
 
 import { writeRemoteTable } from 'utils/writeRemoteTable'
 import { loadRemoteTable } from 'utils/loadRemoteTable'
@@ -11,7 +11,7 @@ import { emptyTaxonomy } from 'utils/taxonomy'
 import { signSchema, verifySchema } from 'utils/integrity'
 
 export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: EnhancedStore<RootState>, keyStore: any, protocol: any, arrow: any, dataFusion: any) => {
-  return new Promise<{actions: any[], metadata: {[key: string]: any}}>((resolve, reject) => {
+  return new Promise<{actions: any[], metadata: {[key: string]: any}, completed_fragments?: string[]}>((resolve, reject) => {
     const instruction = task.task["instruction"]
     const transformer_id = task.task["transformer_id"]
     const wal: WAL = task.task["wal"]
@@ -72,7 +72,7 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
         })
       })).then(() => {
         // Handle transformer tasks with just one input collection
-        if (transformer.type !== "merge" && transformer.type !== "privatise") {
+        if (transformer.type !== "merge" && transformer.type !== "privatise" && transformer.type !== "mpc") {
           const collection = collections[0]
 
           if (collection && target) {
@@ -352,6 +352,65 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
                   })
                 })
               })
+            })
+          }
+
+        } else if (transformer.type === "mpc") {
+          const collection = collections[0]
+
+          if (collection && target) {
+            verifySchema(collection.schema, keyStore.get_key(collection.schema.key_id)).then(schemaIsValid => {
+              if (!schemaIsValid) {
+                reject([ExecutionError.Integrity, "Cannot validate schema integrity"])
+                return
+              }
+
+              const mpcResult = store.getState().mpc.entities[transformer_id]
+              const { selected, output, secret } = JSON.parse(keyStore.decrypt_metadata(collection.schema.key_id, wal["data"]))
+
+              const ourFragments = fragments.filter(f => selected.indexOf(f) !== -1)
+
+              // Result is in, let's create a collection
+              if (mpcResult && mpcResult.value) {
+                console.log("Building a result table")
+
+                const result = mpcResult.value - (secret * mpcResult.nr_parties!)
+
+                const id = dataFusion?.clone_table(collection.id, transformer_id)
+                rebuildSchema(id, target, collection.id, collection.schema, [], [output], task_meta, user, metadata, dataSpace, keyStore, protocol).then(({actions, schema, renames, meta}) => {
+                  dataFusion?.query(id, `SELECT ${result} AS "${output}" FROM "${id}" LIMIT 1`).then(() => {
+                    updateSchema(id, [output], renames, dataFusion)
+
+                    writeRemoteTable(id, task.task["uri"], schema, user, arrow, dataFusion, keyStore).then(() => {
+                      resolve({
+                        actions: actions,
+                        metadata: meta
+                      })
+                    })
+                  })
+                })
+
+              // Just compute our share and share it with the server
+              } else if (ourFragments.length === 1) {
+                const ourFragment = ourFragments[0]
+                const cloneId = dataFusion?.clone_table(collection.id, "")
+
+                dataFusion?.query(cloneId, `SELECT SUM("${ourFragment}") AS result FROM "${cloneId}"`).then(() => {
+                  const result = dataFusion?.get_row(cloneId, 0)["result"]
+                  console.log("Sharing partial MPC result")
+
+                  const shareAction = shareMPCPartial({
+                    id: transformer_id,
+                    value: result + secret
+                  })
+
+                  resolve({
+                    actions: [shareAction],
+                    metadata: {},
+                    completed_fragments: [ourFragment]
+                  })
+                })
+              }
             })
           }
 

@@ -31,7 +31,8 @@ export type {
   Page,
   Content,
   NotificationMsg,
-  Subscription
+  Subscription,
+  MPC
 } from './interfaces'
 
 export {

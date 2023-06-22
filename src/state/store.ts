@@ -20,6 +20,7 @@ import taskReducer from './slices/tasks'
 import contentReducer from './slices/content'
 import pageReducer from './slices/pages'
 import notificationReducer from './slices/notifications'
+import mpcReducer from './slices/mpc'
 
 
 const rootReducer = combineReducers({
@@ -40,7 +41,8 @@ const rootReducer = combineReducers({
   tasks: taskReducer,
   content: contentReducer,
   pages: pageReducer,
-  notifications: notificationReducer
+  notifications: notificationReducer,
+  mpc: mpcReducer
 })
 
 const store = configureStore({

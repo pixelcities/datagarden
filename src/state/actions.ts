@@ -126,6 +126,12 @@ import {
   notificationRead
 } from './slices/notifications'
 
+import {
+  mpcCreated,
+  mpcPartialShared,
+  mpcResultShared
+} from './slices/mpc'
+
 
 const recreateAction = <T extends ActionCreatorWithPayload<any,string>>(type: string): T => {
   return createAction(type, (action) => {
@@ -190,6 +196,8 @@ const updateContent = recreateAction<typeof contentUpdated>("UpdateContent")
 const updateContentDraft = recreateAction<typeof contentDraftUpdated>("UpdateContentDraft")
 const deleteContent = recreateAction<typeof contentDeleted>("DeleteContent")
 const markNotificationRead = recreateAction<typeof notificationRead>("MarkNotificationRead")
+const createMPC = recreateAction<typeof mpcCreated>("CreateMPC")
+const shareMPCPartial = recreateAction<typeof mpcPartialShared>("ShareMPCPartial")
 
 const events: {[key: string]: ActionCreatorWithPayload<any, string>} = {
   "CollectionCreated": collectionCreated,
@@ -245,7 +253,9 @@ const events: {[key: string]: ActionCreatorWithPayload<any, string>} = {
   "ContentDraftUpdated": contentDraftUpdated,
   "ContentDeleted": contentDeleted,
   "UserNotificationSent": userNotificationSent,
-  "NotificationRead": notificationRead
+  "NotificationRead": notificationRead,
+  "MPCCreated": mpcCreated,
+  "MPCResultShared": mpcResultShared
 }
 
 export {
@@ -301,6 +311,8 @@ export {
   updateContentDraft,
   deleteContent,
   markNotificationRead,
+  createMPC,
+  shareMPCPartial,
 
   addWorkspace,
   setWorkspacePosition,

@@ -114,6 +114,10 @@ import {
   selectUrgentNotifications
 } from './slices/notifications'
 
+import {
+  selectMPCs,
+  selectMPCbyId
+} from './slices/mpc'
 
 
 // union views
@@ -230,5 +234,7 @@ export {
   selectContentIdsByPageId,
   selectContentByWidgetId,
   selectNotifications,
-  selectUrgentNotifications
+  selectUrgentNotifications,
+  selectMPCs,
+  selectMPCbyId
 }

@@ -129,6 +129,9 @@ const WorkspaceTab: FC = (props) => {
         <div className="column is-4 mt-4">
           <TransformerCard title="Privatise" type="privatise" tooltip={helpIsActive ? "Create a synthetic copy of your original data" : undefined} />
         </div>
+        <div className="column is-4 mt-4">
+          <TransformerCard title="Secure Sum" type="mpc" tooltip={helpIsActive ? "Join numeric data with 3 or more parties, securely" : undefined} />
+        </div>
       </div>
 
       <div className="panel-block-nb">

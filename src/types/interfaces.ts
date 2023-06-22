@@ -254,3 +254,9 @@ export interface Subscription {
   update_url: string,
   valid_to?: Date
 }
+
+export interface MPC {
+  id: string,
+  nr_parties?: number,
+  value?: number
+}
