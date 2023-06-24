@@ -26,6 +26,11 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
       return
     }
 
+    if (store.getState().secrets.ids.length > 0) {
+      reject([ExecutionError.Retry, undefined])
+      return
+    }
+
     console.log("Received a transformer task: ", task.task)
 
     if (instruction === "compute_fragment") {
@@ -101,7 +106,7 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
 
               // Optionally drop a column from the schema
               const dropIds = Object.values(wal.identifiers).filter(id => id.type === "column" && id.action === "drop").map(id => id.id)
-              if (dropIds.length > 0) {
+              if (dropIds.length > 0 && !("schema" in task_meta)) {
                 dataFusion?.drop_columns(id, dropIds)
 
                 oldSchema.column_order = oldSchema.column_order.filter(c => dropIds.indexOf(c) === -1)
@@ -110,7 +115,8 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
 
               // Optionally add a column to the schema
               const newColumns = Object.values(wal.identifiers).filter(id => id.type === "column" && id.action === "add")
-              if (newColumns.length > 0) {
+              if (newColumns.length > 0 && !("schema" in task_meta)) {
+                console.log("Adding column")
                 // New columns are never part of the task fragments, so we have to add it here
                 for (const column of newColumns) {
                   fragments.push(column.id)
@@ -133,7 +139,7 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
 
               // Optionally alter a column in the schema
               const alterColumns = Object.values(wal.identifiers).filter(id => id.type === "column" && id.action === "alter")
-              if (alterColumns.length > 0) {
+              if (alterColumns.length > 0 && !("schema" in task_meta)) {
                 oldSchema.columns = oldSchema.columns.map(column => {
                   const alteredColumn = alterColumns.find(id => id.id === column.id)
 

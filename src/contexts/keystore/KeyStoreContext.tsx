@@ -4,7 +4,8 @@ import { faLock } from '@fortawesome/free-solid-svg-icons'
 import { useLocation } from "react-router-dom"
 import { Mutex } from 'async-mutex'
 
-import { useAppSelector } from 'hooks'
+import { useAppSelector, useAppDispatch } from 'hooks'
+import { deleteLocalSecret } from 'state/actions'
 import { selectSecrets } from 'state/selectors'
 
 import { useAuthContext } from 'contexts';
@@ -24,6 +25,7 @@ const KeyStoreContext = React.createContext<KeyStoreContextI>({});
 
 export const KeyStoreProvider: FC = ({ children }) => {
   const location = useLocation()
+  const dispatch = useAppDispatch()
 
   const [loading, setLoading] = useState<boolean>(false);
   const [keyStore, setKeyStore] = useState<KeyStore | undefined>();
@@ -50,18 +52,21 @@ export const KeyStoreProvider: FC = ({ children }) => {
             // Special hello message
             if (secret.key_id === secret.owner) {
               keyCache.current.add(secret.key_id)
+              dispatch(deleteLocalSecret(secret.key_id))
 
             // Key shares
             } else {
               const key_id: string = await keyStore?.add_key(secret.key_id, key)
               console.log("Received new key: ", key_id)
+
               keyCache.current.add(key_id)
+              dispatch(deleteLocalSecret(key_id))
             }
           }
         }
       })
     }
-  }, [ isReady, keyCache, secrets, keyStore, protocol, mutex ])
+  }, [ isReady, keyCache, secrets, keyStore, protocol, mutex, dispatch ])
 
   const init = async () => {
     setLoading(true)

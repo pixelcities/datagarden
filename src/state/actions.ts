@@ -94,7 +94,8 @@ import {
 } from './slices/uri'
 
 import {
-  secretShared
+  secretShared,
+  deleteLocalSecret
 } from './slices/secrets'
 
 import {
@@ -326,5 +327,6 @@ export {
   setIsLoading,
   sendLocalNotification,
   deleteLocalNotification,
-  deleteLocalTask
+  deleteLocalTask,
+  deleteLocalSecret
 }
