@@ -258,5 +258,6 @@ export interface Subscription {
 export interface MPC {
   id: string,
   nr_parties?: number,
-  value?: number
+  partitions?: string[],
+  values?: string[]
 }

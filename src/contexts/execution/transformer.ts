@@ -372,15 +372,20 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
               }
 
               const mpcResult = store.getState().mpc.entities[transformer_id]
-              const { selected, output, secret } = JSON.parse(keyStore.decrypt_metadata(collection.schema.key_id, wal["data"]))
+              const { selected, output, randoms } = JSON.parse(keyStore.decrypt_metadata(collection.schema.key_id, wal["data"]))
 
               const ourFragments = fragments.filter(f => selected.indexOf(f) !== -1)
 
               // Result is in, let's create a collection
-              if (mpcResult && mpcResult.value) {
+              if (mpcResult && mpcResult.values && mpcResult.values.length > 0) {
                 console.log("Building a result table")
 
-                const result = mpcResult.value - (secret * mpcResult.nr_parties!)
+                let randomTotal = BigInt(0)
+                for (const random of randoms) {
+                  randomTotal += BigInt(random)
+                }
+
+                const result = (BigInt(mpcResult.values[0]) - randomTotal).toString()
 
                 const id = dataFusion?.clone_table(collection.id, transformer_id)
                 rebuildSchema(id, target, collection.id, collection.schema, [], [output], task_meta, user, metadata, dataSpace, keyStore, protocol).then(({actions, schema, renames, meta}) => {
@@ -396,18 +401,34 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
                   })
                 })
 
-              // Just compute our share and share it with the server
+              // Just compute our share and send it to the server
               } else if (ourFragments.length === 1) {
                 const ourFragment = ourFragments[0]
                 const cloneId = dataFusion?.clone_table(collection.id, "")
 
                 dataFusion?.query(cloneId, `SELECT SUM("${ourFragment}") AS result FROM "${cloneId}"`).then(() => {
-                  const result = dataFusion?.get_row(cloneId, 0)["result"]
                   console.log("Sharing partial MPC result")
+
+                  // TODO: Add multi partition support
+                  const partitionKeys = ["NONE"]
+                  const randomOffset = selected.indexOf(ourFragment)
+                  const nrRows = 1
+
+                  let values = []
+                  for (let i = 0; i < nrRows; i++) {
+                    const randomValue = BigInt(randoms[nrRows * randomOffset + i])
+
+                    // TODO: Use concept to determine best way to deal with cutoffs (e.g. decimals)
+                    const result = dataFusion?.get_row(cloneId, i)["result"]
+                    const realValue = BigInt(Math.floor(result))
+
+                    values.push((randomValue + realValue).toString())
+                  }
 
                   const shareAction = shareMPCPartial({
                     id: transformer_id,
-                    value: result + secret
+                    partitions: partitionKeys,
+                    values: values
                   })
 
                   resolve({

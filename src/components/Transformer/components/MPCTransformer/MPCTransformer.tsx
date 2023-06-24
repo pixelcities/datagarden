@@ -8,6 +8,7 @@ import { createMPC, updateTransformerWAL } from 'state/actions'
 import Dropdown from 'components/Dropdown'
 import { Schema, Identifier, WAL, ConceptA } from 'types'
 import { useKeyStoreContext } from 'contexts'
+import { useDataFusionContext } from 'contexts'
 
 
 interface MPCTransformerProps {
@@ -32,10 +33,12 @@ const MPCTransformer: FC<MPCTransformerProps> = ({ id, wal, tableId, leftId, rig
   const [isDisabled, setIsDisabled] = useState(true)
 
   const { keyStore } = useKeyStoreContext()
+  const { dataFusion } = useDataFusionContext()
 
   const columnNames: [string, string][] = useMemo(() => Object.entries(columns).map(([id, concept]) => [id, concept.name]), [ columns ])
 
   const handleCommit = () => {
+    const nrRows = dataFusion?.nr_rows(tableId)
     const cols = [...selectedColumns.map(x => x![0]), outputColumn![0]]
 
     let identifiers: {[key: string]: Identifier} = {"1": {"id": id, "type": "table"}}
@@ -43,10 +46,27 @@ const MPCTransformer: FC<MPCTransformerProps> = ({ id, wal, tableId, leftId, rig
       identifiers[1+i] = {"id": cols[i], "type": "column"}
     }
 
+    // Generate a random value for rows * parties. This is meant to safeguard the values from the server,
+    // so it's okay to just generate one big array up front. If a party colludes with the server all bets
+    // are off anyways.
+    let randomArray: number[] = []
+
+    // Generate the values as BigInt to get nice and large numbers, but convert to Number afterwards to be
+    // able to convert to json. When executing the sum, the real value will be added to the random value based
+    // on the type (e.g. decimals are multiplied first), which _could_ overflow and should use BigInt.
+    //
+    // To compute the result, BigInt has to be used again.
+    const buffer = new BigInt64Array(selectedColumns.length * nrRows)
+    window.crypto.getRandomValues(buffer)
+
+    for (const random of buffer) {
+      randomArray.push(Number(random))
+    }
+
     const data = keyStore?.encrypt_metadata(schema.key_id, JSON.stringify({
       selected: selectedColumns.map(x => x![0]),
       output: outputColumn![0],
-      secret: Math.random() * 1000000
+      randoms: randomArray
     }))
 
     dispatch(createMPC({

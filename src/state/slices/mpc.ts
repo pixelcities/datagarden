@@ -11,16 +11,18 @@ const mpcSlice = createSlice({
   initialState: initialState,
   reducers: {
     mpcCreated: mpcAdapter.addOne,
-    mpcPartialShared(state, action: PayloadAction<{id: string, value: number}>) {
+    mpcPartialShared(state, action: PayloadAction<{id: string, partitions: string[], values: string[]}>) {
       const mpc = state.entities[action.payload.id]
       if (mpc) {
-        mpc.value = action.payload.value
+        mpc.partitions = action.payload.partitions
+        mpc.values = action.payload.values
       }
     },
-    mpcResultShared(state, action: PayloadAction<{id: string, value: number}>) {
+    mpcResultShared(state, action: PayloadAction<{id: string, partitions: string[], values: string[]}>) {
       const mpc = state.entities[action.payload.id]
       if (mpc) {
-        mpc.value = action.payload.value
+        mpc.partitions = action.payload.partitions
+        mpc.values = action.payload.values
       }
     }
   }
