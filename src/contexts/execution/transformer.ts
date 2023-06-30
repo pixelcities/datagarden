@@ -9,6 +9,8 @@ import { loadRemoteTable } from 'utils/loadRemoteTable'
 import { buildQuery } from 'utils/query'
 import { emptyTaxonomy } from 'utils/taxonomy'
 import { signSchema, verifySchema } from 'utils/integrity'
+import { toHex } from 'utils/helpers'
+
 
 export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: EnhancedStore<RootState>, keyStore: any, protocol: any, arrow: any, dataFusion: any) => {
   return new Promise<{actions: any[], metadata: {[key: string]: any}, completed_fragments?: string[]}>((resolve, reject) => {
@@ -116,7 +118,6 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
               // Optionally add a column to the schema
               const newColumns = Object.values(wal.identifiers).filter(id => id.type === "column" && id.action === "add")
               if (newColumns.length > 0 && !("schema" in task_meta)) {
-                console.log("Adding column")
                 // New columns are never part of the task fragments, so we have to add it here
                 for (const column of newColumns) {
                   fragments.push(column.id)
@@ -371,73 +372,91 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
                 return
               }
 
-              const mpcResult = store.getState().mpc.entities[transformer_id]
-              const { selected, output, randoms } = JSON.parse(keyStore.decrypt_metadata(collection.schema.key_id, wal["data"]))
+              const signature = transformer.signatures?.find(x => x.split(":")[0] === user.id)?.split(":")[1] || ""
+              const message = transformer_id + Object.values(wal.identifiers).map(x => x.id).join() + wal.transactions.join()
 
-              const ourFragments = fragments.filter(f => selected.indexOf(f) !== -1)
-
-              // Result is in, let's create a collection
-              if (mpcResult && mpcResult.values && mpcResult.values.length > 0) {
-                console.log("Building a result table")
-
-                let randomTotal = BigInt(0)
-                for (const random of randoms) {
-                  randomTotal += BigInt(random)
+              protocol?.verify(message, signature, undefined).then((isApproved: boolean) => {
+                if (!isApproved) {
+                  reject([ExecutionError.Integrity, "Transformer unauthorized"])
+                  return
                 }
 
-                const result = (BigInt(mpcResult.values[0]) - randomTotal).toString()
+                const mpcResult = store.getState().mpc.entities[transformer_id]
+                const { selected, groups, output, randoms } = JSON.parse(keyStore.decrypt_metadata(collection.schema.key_id, wal["data"]))
 
-                const id = dataFusion?.clone_table(collection.id, transformer_id)
-                rebuildSchema(id, target, collection.id, collection.schema, [], [output], task_meta, user, metadata, dataSpace, keyStore, protocol).then(({actions, schema, renames, meta}) => {
-                  dataFusion?.query(id, `SELECT ${result} AS "${output}" FROM "${id}" LIMIT 1`).then(() => {
-                    updateSchema(id, [output], renames, dataFusion)
+                const ourFragments = fragments.filter(f => selected.indexOf(f) !== -1)
 
-                    writeRemoteTable(id, task.task["uri"], schema, user, arrow, dataFusion, keyStore).then(() => {
-                      resolve({
-                        actions: actions,
-                        metadata: meta
+                // Result is in, let's create a collection
+                if (mpcResult && mpcResult.nr_parties && mpcResult.partitions && mpcResult.values && mpcResult.values.length > 0) {
+                  let randomTotals = mpcResult.partitions.map(_ => BigInt(0))
+                  for (let i=0; i < mpcResult.partitions.length; i++) {
+                    for (let j=0; j < mpcResult.nr_parties; j++) {
+                      randomTotals[i] += BigInt(randoms[i * mpcResult.partitions.length + j])
+                    }
+                  }
+
+                  const results = mpcResult.values.map((x, i) => (BigInt(x) - randomTotals[i]).toString())
+
+                  const id = dataFusion?.clone_table(collection.id, transformer_id)
+                  const query = wal.transactions[0].replace(/SUM\(([[0-9I%$]+)\)/, "0")
+
+                  rebuildSchema(id, target, collection.id, collection.schema, [], [...groups, output], task_meta, user, metadata, dataSpace, keyStore, protocol).then(({actions, schema, renames, meta}) => {
+                    dataFusion?.query(id, buildQuery(query, wal, metadata, dataSpace, keyStore)).then(() => {
+                      let row = dataFusion?.get_row(id, 0)
+                      row[output] = results[0]
+                      let rows = [Object.keys(row).join(), Object.values(row).join()]
+
+                      for (let i=1; i < mpcResult.partitions!.length; i++) {
+                        let row = dataFusion?.get_row(id, i)
+                        row[output] = results[i]
+                        rows.push(Object.values(row).join())
+                      }
+                      const csv = rows.join("\n")
+
+                      arrow.load_csv(csv, `/${id}`)
+                      const _table = arrow["FS"].readFile(`/${id}`, {})
+                      dataFusion?.drop_table(id)
+                      dataFusion?.load_table(_table, id)
+
+                      updateSchema(id, [...groups, output], renames, dataFusion)
+
+                      writeRemoteTable(id, task.task["uri"], schema, user, arrow, dataFusion, keyStore).then(() => {
+                        resolve({
+                          actions: actions,
+                          metadata: meta
+                        })
                       })
                     })
                   })
-                })
 
-              // Just compute our share and send it to the server
-              } else if (ourFragments.length === 1) {
-                const ourFragment = ourFragments[0]
-                const cloneId = dataFusion?.clone_table(collection.id, "")
+                // Just compute our share and send it to the server
+                } else if (ourFragments.length === 1) {
+                  const ourFragment = ourFragments[0]
+                  const id = dataFusion?.clone_table(collection.id, transformer_id)
+                  const offset = selected.indexOf(ourFragment)
 
-                dataFusion?.query(cloneId, `SELECT SUM("${ourFragment}") AS result FROM "${cloneId}"`).then(() => {
-                  console.log("Sharing partial MPC result")
+                  dataFusion?.query(id, buildQuery(wal.transactions[offset], wal, metadata, dataSpace, keyStore)).then(() => {
+                    computeMPC(id, groups, output, offset, randoms, dataFusion).then(({ values, partitionKeys }) => {
+                      const restFragments = fragments.filter(x => selected.indexOf(x) === -1 && output !== x)
+                      const completedFragments = [...restFragments, ...[ourFragment]]
 
-                  // TODO: Add multi partition support
-                  const partitionKeys = ["NONE"]
-                  const randomOffset = selected.indexOf(ourFragment)
-                  const nrRows = 1
+                      const shareAction = shareMPCPartial({
+                        id: transformer_id,
+                        partitions: partitionKeys,
+                        values: values
+                      })
 
-                  let values = []
-                  for (let i = 0; i < nrRows; i++) {
-                    const randomValue = BigInt(randoms[nrRows * randomOffset + i])
-
-                    // TODO: Use concept to determine best way to deal with cutoffs (e.g. decimals)
-                    const result = dataFusion?.get_row(cloneId, i)["result"]
-                    const realValue = BigInt(Math.floor(result))
-
-                    values.push((randomValue + realValue).toString())
-                  }
-
-                  const shareAction = shareMPCPartial({
-                    id: transformer_id,
-                    partitions: partitionKeys,
-                    values: values
+                      resolve({
+                        actions: [shareAction],
+                        metadata: {},
+                        completed_fragments: completedFragments
+                      })
+                    })
                   })
-
-                  resolve({
-                    actions: [shareAction],
-                    metadata: {},
-                    completed_fragments: [ourFragment]
-                  })
-                })
-              }
+                } else {
+                  reject([ExecutionError.Retry, "Waiting for data"])
+                }
+              })
             })
           }
 
@@ -547,6 +566,38 @@ const updateSchema = (id: string, fragments: string[], renames: {[key: string]: 
     dataFusion?.update_schema(id, {...arrow_schema, ...{fields: new_fields}})
   } else {
     dataFusion?.update_schema(id, {...arrow_schema, ...{fields: fields}})
+  }
+}
+
+
+const computeMPC = async (id: string, groups: string[], output: string, offset: number, randoms: string[], dataFusion: any) => {
+  let values = []
+  let partitionKeys = []
+
+  const nrRows = dataFusion?.nr_rows(id)
+
+  for (let i = 0; i < nrRows; i++) {
+    const randomValue = BigInt(randoms[nrRows * i + offset])
+
+    // TODO: Use concept to determine best way to deal with cutoffs (e.g. decimals)
+    const row = dataFusion?.get_row(id, i)
+    const result = row[output]
+    const realValue = BigInt(Math.floor(result))
+
+    values.push((randomValue + realValue).toString())
+
+    if (groups.length > 0) {
+      let groupValue = groups.map(x => row[x].toString()).join()
+      const encoder = new TextEncoder()
+      const bytes = await crypto.subtle.digest("SHA-256", encoder.encode(groupValue))
+
+      partitionKeys.push(toHex(new Uint8Array(bytes)))
+    }
+  }
+
+  return {
+    values: values,
+    partitionKeys: partitionKeys.length === 0 ? ["NONE"] : partitionKeys
   }
 }
 

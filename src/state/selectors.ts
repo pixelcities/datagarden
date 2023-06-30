@@ -15,7 +15,8 @@ import {
 import {
   selectTransformers,
   selectTransformerById,
-  selectTransformerIds
+  selectTransformerIds,
+  selectSignaturesByTransformerId
 } from './slices/transformers'
 
 import {
@@ -188,6 +189,7 @@ export {
   selectTransformers,
   selectTransformerById,
   selectTransformerIds,
+  selectSignaturesByTransformerId,
   selectWidgets,
   selectWidgetById,
   selectWidgetIds,

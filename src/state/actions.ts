@@ -21,6 +21,7 @@ import {
   transformerTargetAdded,
   transformerInputAdded,
   transformerWALUpdated,
+  transformerApproved,
   transformerDeleted
 } from './slices/transformers'
 
@@ -166,6 +167,7 @@ const setTransformerIsReady = recreateAction<typeof transformerIsReadySet>("SetT
 const addTransformerTarget = recreateAction<typeof transformerTargetAdded>("AddTransformerTarget")
 const addTransformerInput = recreateAction<typeof transformerInputAdded>("AddTransformerInput")
 const updateTransformerWAL = recreateAction<typeof transformerWALUpdated>("UpdateTransformerWAL")
+const approveTransformer = recreateAction<typeof transformerApproved>("ApproveTransformer")
 const deleteTransformer = recreateAction<typeof transformerDeleted>("DeleteTransformer")
 const createWidget = recreateAction<typeof widgetCreated>("CreateWidget")
 const updateWidget = recreateAction<typeof widgetUpdated>("UpdateWidget")
@@ -219,6 +221,7 @@ const events: {[key: string]: ActionCreatorWithPayload<any, string>} = {
   "TransformerInputAdded": transformerInputAdded,
   "TransformerWALUpdated": transformerWALUpdated,
   "TransformerDeleted": transformerDeleted,
+  "TransformerApproved": transformerApproved,
   "WidgetCreated": widgetCreated,
   "WidgetUpdated": widgetUpdated,
   "WidgetPositionSet": widgetPositionSet,
@@ -292,6 +295,7 @@ export {
   addTransformerTarget,
   addTransformerInput,
   updateTransformerWAL,
+  approveTransformer,
   deleteTransformer,
   createWidget,
   updateWidget,

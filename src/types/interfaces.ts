@@ -72,7 +72,9 @@ export interface Transformer extends Component {
   collections: string[],
   transformers: string[],
   wal?: WAL,
-  error?: string
+  error?: string,
+  nr_parties?: number,
+  signatures?: string[]
 }
 
 export interface WidgetSettings {
