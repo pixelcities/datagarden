@@ -6,7 +6,7 @@ import { faGoogleDrive } from '@fortawesome/free-brands-svg-icons'
 
 import { Source } from 'types'
 
-import CsvSource from './components/CsvSource'
+import LocalSource from './components/LocalSource'
 
 interface SourceCreatorProps {
   isActive: boolean,
@@ -28,8 +28,8 @@ const SourceCreator: FC<SourceCreatorProps> = (props) => {
         </span>
       </button>
 
-      <button className="button is-large" disabled onClick={() => setFileType("spreadsheet")}>
-        <span className="icon is-medium">
+      <button className="button is-large" onClick={() => setFileType("spreadsheet")}>
+        <span className="icon is-medium has-tooltip-right" data-tooltip="Upload a spreadsheet">
           <FontAwesomeIcon icon={faFileExcel} color="#4f4f4f" size="lg"/>
         </span>
       </button>
@@ -55,8 +55,8 @@ const SourceCreator: FC<SourceCreatorProps> = (props) => {
   }
 
   const renderContent = () => {
-    if (fileType === "csv") {
-      return <CsvSource onComplete={handleOnComplete} />
+    if (fileType === "csv" || fileType === "spreadsheet") {
+      return <LocalSource type={fileType} onComplete={handleOnComplete} />
     }
 
     return fileTypePicker

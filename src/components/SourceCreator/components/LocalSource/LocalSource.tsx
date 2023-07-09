@@ -19,34 +19,12 @@ declare global {
   }
 }
 
-const loadCsv = (text: string | ArrayBuffer | null | undefined) => {
-  if ( typeof(text) === "string") {
-    const ln = text.indexOf("\n")
-    const header = text.substr(0, ln)
-    const rest = text.substr(ln)
-
-    const attributes = header.split(",").map((column) => {
-      return {
-        id: crypto.randomUUID(),
-        concept_id: crypto.randomUUID(),
-        name: column
-      }
-    })
-
-    const csv = attributes.map(c => c.id).join(",") + rest
-
-    return {
-      csv,
-      attributes
-    }
-  }
-}
-
-interface CsvSourceProps {
+interface LocalSourceProps {
+  type: "csv" | "spreadsheet",
   onComplete: (source: Source) => void
 }
 
-const CsvSource: FC<CsvSourceProps> = ({onComplete}) => {
+const LocalSource: FC<LocalSourceProps> = ({type, onComplete}) => {
   const { arrow, dataFusion, loadArrow } = useDataFusionContext();
   const { user } = useAuthContext();
   const { keyStore } = useKeyStoreContext();
@@ -67,18 +45,37 @@ const CsvSource: FC<CsvSourceProps> = ({onComplete}) => {
 
     const reader = new FileReader();
     reader.onload = (ev) => {
-      const parsed = loadCsv(ev?.target?.result)
+      const buf = ev?.target?.result
+
+      if (!buf || typeof(buf) === "string") {
+        return
+      }
 
       if (!user) {
         return
       }
 
-      if (!parsed) {
-        console.log("Error while parsing csv")
-        return
+      const data = new Uint8Array(buf)
+      const tableId = (type === "csv") ? dataFusion.load_csv(data, "") : dataFusion.load_sheet(data, "")
+
+      const originalSchema = dataFusion.get_schema(tableId)
+
+      let attributes: {id: string, concept_id: string, name: string}[] = []
+      let fields = []
+
+      for (const field of originalSchema.fields) {
+        const id = crypto.randomUUID()
+
+        fields.push({...field, ...{name: id}})
+        attributes.push({
+          id: id,
+          concept_id: crypto.randomUUID(),
+          name: field.name
+        })
       }
 
-      const { csv, attributes } = parsed
+      dataFusion.update_schema(tableId, {...originalSchema, ...{fields: fields}})
+
       const path = `/${name}`
       const uri = dataURI?.uri ?? ""
       const tag = dataURI?.tag ?? ""
@@ -87,13 +84,7 @@ const CsvSource: FC<CsvSourceProps> = ({onComplete}) => {
       getDataTokens(uri + `/${tableId}.parquet`, tag, "write").then(tokens => {
         const s3_path = uri.split("s3://")[1] + `/${tableId}.parquet`
 
-        // Load the csv and transform it to an arrow table
-        arrow.load_csv(csv, path)
-
-        // Pre-load it into datafusion, and also extract the schema
-        const _table = arrow["FS"].readFile(path, {})
-        dataFusion.load_table(_table, tableId)
-
+        // Get a table description
         dataFusion.describe_table(tableId).then((tableDescription: any) => {
 
           // Publish the title
@@ -171,13 +162,16 @@ const CsvSource: FC<CsvSourceProps> = ({onComplete}) => {
               }
 
               // Save the table
+              const table = dataFusion.export_table(tableId)
+              arrow["FS"].writeFile(path, table)
+
               arrow.write_remote_parquet(path, s3_path, tokens.access_key, tokens.secret_key, tokens.session_token, keymap).then(() => {
                 signSchema(schema, keyStore?.get_key(key_id)).then(signedSchema => {
                   // Save the metadata
                   const source = {
                     id: tableId,
                     workspace: "default",
-                    type: "csv",
+                    type: type,
                     uri: [uri, tag] as [string, string],
                     schema: signedSchema,
                     is_published: false
@@ -196,7 +190,7 @@ const CsvSource: FC<CsvSourceProps> = ({onComplete}) => {
         console.log("Error getting data tokens")
       })
     }
-    reader.readAsText(f)
+    reader.readAsArrayBuffer(f)
   }
 
   const generateColumnsWithKeys = useCallback(async (attributes: any, userId: string) => {
@@ -244,4 +238,4 @@ const CsvSource: FC<CsvSourceProps> = ({onComplete}) => {
   }
 }
 
-export default CsvSource
+export default LocalSource
