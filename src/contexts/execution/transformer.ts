@@ -413,10 +413,8 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
                       }
                       const csv = rows.join("\n")
 
-                      arrow.load_csv(csv, `/${id}`)
-                      const _table = arrow["FS"].readFile(`/${id}`, {})
                       dataFusion?.drop_table(id)
-                      dataFusion?.load_table(_table, id)
+                      dataFusion.load_csv(csv, id)
 
                       updateSchema(id, [...groups, output], renames, dataFusion)
 
