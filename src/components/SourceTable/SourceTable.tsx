@@ -1,6 +1,6 @@
 import React, { FC, useRef, useEffect, useState } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faKey, faFileCsv } from '@fortawesome/free-solid-svg-icons'
+import { faUpload, faKey, faFileCsv } from '@fortawesome/free-solid-svg-icons'
 
 import { useAppDispatch, useAppSelector } from 'hooks'
 import { selectUsers, selectMetadataById, selectSourceById, selectCollectionById, selectActiveDataSpace } from 'state/selectors'
@@ -217,7 +217,7 @@ const SourceTable: FC<SourceTableProps> = (props) => {
   }, [ user, users, userSearch, shareSchemaWithUser ])
 
 
-  const renderPublish = React.useMemo(() => {
+  const renderRelease = React.useMemo(() => {
     const handlePublish = (source: Source | undefined) => {
       if (source) {
         dispatch(updateSource({...source, ...{
@@ -229,6 +229,20 @@ const SourceTable: FC<SourceTableProps> = (props) => {
     return (
       <div className="field">
         <label id="publish" className="label pb-2"> Release process </label>
+
+        <div className="file is-boxed is-small pb-3">
+          <label className="file-label">
+            <input className="file-input" type="file" name="resume" />
+            <span className="file-cta">
+              <span className="file-icon">
+                <FontAwesomeIcon icon={faUpload} size="lg"/>
+              </span>
+              <span className="file-label">
+                Upload new version
+              </span>
+            </span>
+          </label>
+        </div>
 
         <div onClick={() => handlePublish(source)}>
           <input type="checkbox" className="switch" checked={source?.is_published ?? false} readOnly={true} />
@@ -242,7 +256,7 @@ const SourceTable: FC<SourceTableProps> = (props) => {
 
   const renderDelete = React.useMemo(() => {
     const handleDelete = (source: Source | undefined) => {
-      if (source) {
+      if (source && window.confirm("Are you sure you want to delete this source?")) {
         dispatch(deleteSource({
           id: source.id,
           workspace: source.workspace
@@ -374,7 +388,7 @@ const SourceTable: FC<SourceTableProps> = (props) => {
           { renderShares }
         </div>
 
-        { !(isCollection === true) && renderPublish }
+        { !(isCollection === true) && renderRelease }
       </div>
 
       <div className="settings-footer">
