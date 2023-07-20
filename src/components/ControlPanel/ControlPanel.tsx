@@ -101,22 +101,22 @@ const WorkspaceTab: FC = (props) => {
       </div>
       <div className="columns ml-3 is-gapless is-multiline">
         <div className="column is-4 mt-4">
-          <TransformerCard title="Merge" type="merge" tooltip={helpIsActive ? "Merge two collections when both share a column" : undefined} />
+          <TransformerCard title="merge" type="merge" tooltip={helpIsActive ? "Merge two collections when both share a column" : undefined} />
         </div>
         <div className="column is-4 mt-4">
-          <TransformerCard title="Aggregate" type="aggregate" tooltip={helpIsActive ? "Aggregate data" : undefined} />
+          <TransformerCard title="aggregate" type="aggregate" tooltip={helpIsActive ? "Aggregate data" : undefined} />
         </div>
         <div className="column is-4 mt-4">
-          <TransformerCard title="Filter" type="filter" tooltip={helpIsActive ? "Filter data to only keep target rows" : undefined} />
+          <TransformerCard title="filter" type="filter" tooltip={helpIsActive ? "Filter data to only keep target rows" : undefined} />
         </div>
         <div className="column is-4 mt-4">
-          <TransformerCard title="Function" type="function" tooltip={helpIsActive ? "Apply a function or do basic arithmetics on your data" : undefined} />
+          <TransformerCard title="function" type="function" tooltip={helpIsActive ? "Apply a function or do basic arithmetics on your data" : undefined} />
         </div>
         <div className="column is-4 mt-4">
-          <TransformerCard title="Attribute" type="attribute" tooltip={helpIsActive ? "Add or drop columns, or change data types" : undefined} />
+          <TransformerCard title="attribute" type="attribute" tooltip={helpIsActive ? "Add or drop columns, or change data types" : undefined} />
         </div>
         <div className="column is-4 mt-4">
-          <TransformerCard title="Custom" type="custom" tooltip={helpIsActive ? "Advanced SQL query editor" : undefined} />
+          <TransformerCard title="custom" type="custom" tooltip={helpIsActive ? "Advanced SQL query editor" : undefined} />
         </div>
       </div>
 
@@ -127,10 +127,13 @@ const WorkspaceTab: FC = (props) => {
       </div>
       <div className="columns ml-3 is-gapless is-multiline">
         <div className="column is-4 mt-4">
-          <TransformerCard title="Privatise" type="privatise" tooltip={helpIsActive ? "Create a synthetic copy of your original data" : undefined} />
+          <TransformerCard title="synthesize" type="privatise" tooltip={helpIsActive ? "Create a synthetic copy of your original data" : undefined} />
         </div>
         <div className="column is-4 mt-4">
-          <TransformerCard title="Secure Sum" type="mpc" tooltip={helpIsActive ? "Join numeric data with 3 or more parties, securely" : undefined} />
+          <TransformerCard title="secure sum" type="mpc" tooltip={helpIsActive ? "Join numeric data with 3 or more parties, securely" : undefined} />
+        </div>
+        <div className="column is-4 mt-4">
+          <TransformerCard title="private join" type="psi" isDisabled={true} />
         </div>
       </div>
 
@@ -141,7 +144,7 @@ const WorkspaceTab: FC = (props) => {
       </div>
       <div className="columns ml-3 is-gapless is-multiline">
         <div className="column is-4 mt-4">
-          <TransformerCard title="Geocode" type="geocode" isDisabled={true} />
+          <TransformerCard title="geocode" type="geocode" isDisabled={true} />
         </div>
       </div>
 
