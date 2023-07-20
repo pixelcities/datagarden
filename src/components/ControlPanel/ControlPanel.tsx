@@ -186,6 +186,23 @@ const WorkspaceTab: FC = (props) => {
   )
 }
 
+const TemplatesTab: FC = (props) => {
+  return (
+    <>
+      <div style={{position: "relative", maxHeight: "50%"}}>
+        <div className="panel-block-nb">
+          <p className="header-label">
+            Templates
+          </p>
+        </div>
+
+        <div style={{maxHeight: "calc(100% - 2rem)", overflowY: "scroll"}}>
+          <div className="panel-block-nb is-size-7 pl-3"> No templates available </div>
+        </div>
+      </div>
+    </>
+  )
+}
 const ControlPanel: FC = (props) => {
   // Default the active panel to sources if the onboarding is not yet completed, the workspace tab otherwise
   const [ activeTab, setActiveTab ] = useState(parseInt(localStorage.getItem("onboarding-builder") || "0") !== -1 ? "sources" : "workspace")
@@ -202,7 +219,7 @@ const ControlPanel: FC = (props) => {
         <p className="panel-tabs">
           <Link id="workspace-intro" to="#workspace" className={"panel-tab-header" + (activeTab === "workspace" ? " is-active" : "")} onClick={() => setActiveTab("workspace")}>Workspace</Link>
           <Link to="#sources" className={"panel-tab-header" + (activeTab === "sources" ? " is-active" : "")} onClick={() => setActiveTab("sources")}>Sources</Link>
-          <Link to="#comments" className={"panel-tab-header" + (activeTab === "comments" ? " is-active" : "")} onClick={() => setActiveTab("comments")}>Comments</Link>
+          <Link to="#templates" className={"panel-tab-header" + (activeTab === "templates" ? " is-active" : "")} onClick={() => setActiveTab("templates")}>Templates</Link>
         </p>
         <div className="panel-block">
           <p className="control has-icons-left">
@@ -219,6 +236,10 @@ const ControlPanel: FC = (props) => {
 
         { activeTab === "workspace" &&
           <WorkspaceTab />
+        }
+
+        { activeTab === "templates" &&
+          <TemplatesTab />
         }
 
       </nav>
