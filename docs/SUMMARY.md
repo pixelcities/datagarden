@@ -11,6 +11,7 @@
 
 - [Sources](sources/README.md)
     - [CSV](sources/csv.md)
+    - [Spreadsheet](sources/sheet.md)
 - [Taxonomy](taxonomy.md)
 - [Collections]()
 - [Transformers]()

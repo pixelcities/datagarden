@@ -68,5 +68,5 @@ message, the user will then be able to encrypt the secret using their own root k
 
 In order to verify the security of the messages, the combined public keys ("safety code") can be viewed from within
 DataGarden. It's good practice to first verify your collaborators before sharing any keys with them to make sure the
-server is not impoersonating anyone.
+server is not impersonating anyone.
 
