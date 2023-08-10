@@ -56,8 +56,7 @@ const Hero: FC = (props) => {
 
             <div className="column is-narrow pl-6">
               <h1 className="title is-2 has-text-left">
-                Scale data driven <br />
-                multistakeholder collaborations
+                Kickstart your data collaborative
               </h1>
 
               <h2 className="subtitle is-4 has-text-left pt-3">
