@@ -56,7 +56,11 @@ const LocalSource: FC<LocalSourceProps> = ({type, onComplete}) => {
       }
 
       const data = new Uint8Array(buf)
-      const tableId = (type === "csv") ? dataFusion.load_csv(data, "") : dataFusion.load_sheet(data, "")
+      if (type === "csv") {
+        dataFusion.load_csv(data, tableId)
+      } else {
+        dataFusion.load_sheet(data, tableId)
+      }
 
       const originalSchema = dataFusion.get_schema(tableId)
 

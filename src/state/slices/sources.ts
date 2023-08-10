@@ -18,6 +18,12 @@ const sourcesSlice = createSlice({
 
       state.ids = ids
       delete state.entities[action.payload.id]
+    },
+    sourceURIUpdated(state, action: PayloadAction<{id: string, workspace: string, uri: [string, string]}>) {
+      const source = state.entities[action.payload.id]
+      if (source) {
+        source.uri = action.payload.uri
+      }
     }
   }
 })
@@ -29,9 +35,9 @@ export default sourcesSlice.reducer
 export const {
   sourceCreated,
   sourceUpdated,
-  sourceDeleted
+  sourceDeleted,
+  sourceURIUpdated
 } = sourcesSlice.actions
-
 
 
 // selectors

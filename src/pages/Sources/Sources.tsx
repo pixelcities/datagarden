@@ -64,7 +64,7 @@ const Sources: FC = (props) => {
         <div key={source.id} className="column is-narrow">
           <SourceCard
             title={name}
-            type="csv"
+            type={source.type}
             sourceId={source.id}
             onClick={() => setViewSource(source)}
           />

@@ -45,7 +45,8 @@ import {
 import {
   sourceCreated,
   sourceUpdated,
-  sourceDeleted
+  sourceDeleted,
+  sourceURIUpdated
 } from './slices/sources'
 
 import {
@@ -180,6 +181,7 @@ const deleteWidget = recreateAction<typeof widgetDeleted>("DeleteWidget")
 const createSource = recreateAction<typeof sourceCreated>("CreateSource")
 const updateSource = recreateAction<typeof sourceUpdated>("UpdateSource")
 const deleteSource = recreateAction<typeof sourceDeleted>("DeleteSource")
+const updateSourceURI = recreateAction<typeof sourceURIUpdated>("UpdateSourceURI")
 const createDataURI = recreateAction<typeof dataURICreated>("CreateDataURI")
 const createMetadata = recreateAction<typeof metadataCreated>("CreateMetadata")
 const updateMetadata = recreateAction<typeof metadataUpdated>("UpdateMetadata")
@@ -233,6 +235,7 @@ const events: {[key: string]: ActionCreatorWithPayload<any, string>} = {
   "SourceCreated": sourceCreated,
   "SourceUpdated": sourceUpdated,
   "SourceDeleted": sourceDeleted,
+  "SourceURIUpdated": sourceURIUpdated,
   "DataURICreated": dataURICreated,
   "MetadataCreated": metadataCreated,
   "MetadataUpdated": metadataUpdated,
@@ -274,6 +277,7 @@ export {
   createSource,
   updateSource,
   deleteSource,
+  updateSourceURI,
   createMetadata,
   updateMetadata,
   createConcept,

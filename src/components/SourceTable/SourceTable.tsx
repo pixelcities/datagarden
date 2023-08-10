@@ -1,10 +1,11 @@
-import React, { FC, useRef, useEffect, useState } from 'react'
+import React, { FC, useRef, useEffect, useState, useMemo } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faUpload, faKey, faFileCsv } from '@fortawesome/free-solid-svg-icons'
+import { Mutex } from 'async-mutex'
 
 import { useAppDispatch, useAppSelector } from 'hooks'
-import { selectUsers, selectMetadataById, selectSourceById, selectCollectionById, selectActiveDataSpace } from 'state/selectors'
-import { updateSource, deleteSource, updateCollection, updateMetadata, setCollectionColor, shareSecret } from 'state/actions'
+import { selectUsers, selectMetadataById, selectSourceById, selectCollectionById, selectActiveDataSpace, selectDataURIById } from 'state/selectors'
+import { updateSource, deleteSource, updateCollection, updateMetadata, setCollectionColor, shareSecret, sendLocalNotification, createDataURI, updateSourceURI } from 'state/actions'
 
 import { Source, Collection, Schema, User } from 'types'
 
@@ -19,6 +20,7 @@ import { useAuthContext } from 'contexts'
 import { getColumnIds, toRelativeTime } from 'utils/helpers'
 import { loadRemoteTable } from 'utils/loadRemoteTable'
 import { signSchema, verifySchema } from 'utils/integrity'
+import { writeRemoteTable } from 'utils/writeRemoteTable'
 
 import './SourceTable.sass'
 
@@ -35,6 +37,7 @@ const SourceTable: FC<SourceTableProps> = (props) => {
   const { schema, onClose, isCollection } = props
 
   const titleRef = useRef<string>("")
+  const mutex = useMemo(() => new Mutex(), [])
 
   const [title, setTitle] = useState(props.id)
   const [userSearch, setUserSearch] = useState("")
@@ -42,6 +45,8 @@ const SourceTable: FC<SourceTableProps> = (props) => {
   const [handle, setHandle] = useState<number>(0)
   const [isActive, setIsActive] = useState(true)
   const [tableId, setTableId] = useState<string | null>(null)
+  const [uploadId, setUploadId] = useState<string | null>(null)
+  const [versionId, setVersionId] = useState(1)
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null)
   const [schemaIsValid, setSchemaIsValid] = useState(false)
 
@@ -75,6 +80,7 @@ const SourceTable: FC<SourceTableProps> = (props) => {
   const collection = useAppSelector(state => selectCollectionById(state, props.id))
   const source = useAppSelector(state => selectSourceById(state, props.id))
   const dataSpace = useAppSelector(selectActiveDataSpace)
+  const dataURI = useAppSelector(state => selectDataURIById(state, props.id))
 
   useEffect(() => {
     if (titleMetadata) {
@@ -95,7 +101,31 @@ const SourceTable: FC<SourceTableProps> = (props) => {
     }
   }, [ source?.schema, collection?.schema, keyStore ])
 
-  const renderShares = React.useMemo(() => {
+  useEffect(() => {
+    mutex.runExclusive(async () => {
+      if (uploadId && source && dataURI && source.uri?.[0] !== dataURI.uri) {
+        if (dataFusion?.table_exists(uploadId)) {
+          const uri = [dataURI.uri, dataURI.tag] as [string, string]
+
+          dataFusion?.drop_table(source.id)
+          dataFusion?.move_table(uploadId, source.id)
+
+          writeRemoteTable(source.id, uri, source.schema, user, arrow, dataFusion, keyStore).then(() => {
+            setUploadId(null)
+            setVersionId(versionId + 1)
+
+            dispatch(updateSourceURI({
+              id: source.id,
+              workspace: source.workspace,
+              uri: uri
+            }))
+          })
+        }
+      }
+    })
+  }, [ source, versionId, uploadId, dataURI, user, dispatch, arrow, dataFusion, keyStore, mutex ])
+
+  const renderShares = useMemo(() => {
     let res
 
     if (source || collection) {
@@ -203,7 +233,7 @@ const SourceTable: FC<SourceTableProps> = (props) => {
     setUserSearch("")
   }, [ source, collection, isCollection, schemaIsValid, user, keyStore, protocol, dispatch ])
 
-  const renderUserDropdown = React.useMemo(() => {
+  const renderUserDropdown = useMemo(() => {
     const filteredUsers = userSearch !== "" ? users.filter(u => u.id !== user?.id && (u.email.toLowerCase().indexOf(userSearch.toLowerCase()) !== -1 || (u.name?.toLowerCase().indexOf(userSearch.toLowerCase()) ?? -1) !== -1)) : []
     const userItems = filteredUsers.slice(0, 5).map(u => {
       return (
@@ -216,13 +246,59 @@ const SourceTable: FC<SourceTableProps> = (props) => {
     return userItems
   }, [ user, users, userSearch, shareSchemaWithUser ])
 
-
-  const renderRelease = React.useMemo(() => {
+  const renderRelease = useMemo(() => {
     const handlePublish = (source: Source | undefined) => {
       if (source) {
         dispatch(updateSource({...source, ...{
           is_published: !source.is_published
         }}))
+      }
+    }
+
+    const handleUpload = (e: any) => {
+      const f = e.target.files[0];
+
+      if (source) {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          const buf = ev?.target?.result
+
+          if (!buf || typeof(buf) === "string") {
+            return
+          }
+
+          const data = new Uint8Array(buf)
+          const tempId = (source.type === "csv") ? dataFusion.load_csv(data, "") : dataFusion.load_sheet(data, "")
+
+          const originalSchema = dataFusion.get_schema(source.id)
+          const newSchema = dataFusion.get_schema(tempId)
+
+          const originalTypes: string[] = originalSchema.fields.map((field: any) => field.type.name)
+          const newTypes: string[] = newSchema.fields.map((field: any) => field.type.name)
+
+          const newSchemaIsEqual = originalTypes.reduce((a, x, i) => a && x === newTypes[i], true)
+
+          if (newSchemaIsEqual) {
+            dataFusion.update_schema(tempId, originalSchema)
+
+            setUploadId(tempId)
+            dispatch(createDataURI({
+              id: source.id,
+              workspace: "default",
+              type: "source"
+            }))
+
+          } else {
+            dispatch(sendLocalNotification({
+              id: crypto.randomUUID(),
+              type: "error",
+              message: "Columns do not match the original source",
+              is_urgent: true,
+              is_local: true
+            }))
+          }
+        }
+        reader.readAsArrayBuffer(f)
       }
     }
 
@@ -232,7 +308,7 @@ const SourceTable: FC<SourceTableProps> = (props) => {
 
         <div className="file is-boxed is-small pb-3">
           <label className="file-label">
-            <input className="file-input" type="file" name="resume" />
+            <input className="file-input" type="file" name="upload" onChange={handleUpload} accept={source?.type === "csv" ? ".csv" : ".xls,.xlsx,.ods"} />
             <span className="file-cta">
               <span className="file-icon">
                 <FontAwesomeIcon icon={faUpload} size="lg"/>
@@ -252,9 +328,9 @@ const SourceTable: FC<SourceTableProps> = (props) => {
         </div>
       </div>
     )
-  }, [ source, dispatch ])
+  }, [ source, dispatch, dataFusion ])
 
-  const renderDelete = React.useMemo(() => {
+  const renderDelete = useMemo(() => {
     const handleDelete = (source: Source | undefined) => {
       if (source && window.confirm("Are you sure you want to delete this source?")) {
         dispatch(deleteSource({
@@ -278,7 +354,7 @@ const SourceTable: FC<SourceTableProps> = (props) => {
     }
   }, [ source, isCollection, dispatch, handleClose ])
 
-  const renderDownloadButton = React.useMemo(() => {
+  const renderDownloadButton = useMemo(() => {
     const handleDownload = (collection: Collection | undefined) => {
       if (collection) {
         const csv = dataFusion?.export_csv(collection.id)
@@ -309,7 +385,7 @@ const SourceTable: FC<SourceTableProps> = (props) => {
     setDownloadUrl(null)
   }
 
-  const renderDownloadModal = React.useMemo(() => {
+  const renderDownloadModal = useMemo(() => {
     if (downloadUrl) {
       return (
         <div id="test123" className="modal is-active">
@@ -424,11 +500,12 @@ const SourceTable: FC<SourceTableProps> = (props) => {
         </header>
 
         <section className="modal-card-body is-relative px-0 py-0">
-          { tableId ?
+          { tableId && !uploadId ?
             <DataTable
               id={tableId}
               schema={schema}
               interactiveHeader={true}
+              versionId={versionId}
               isSource={!(isCollection === true)}
             />
           :
