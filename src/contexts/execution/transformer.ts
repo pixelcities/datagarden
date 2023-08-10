@@ -477,7 +477,7 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
           }
         })
       })).then(() => {
-        if (transformer.type !== "merge" && transformer.type !== "privatise") {
+        if (transformer.type !== "merge" && transformer.type !== "privatise" && transformer.type !== "mpc") {
           const collection = collections[0]
 
           if (collection) {
@@ -538,6 +538,19 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
 
             })
           }
+
+        } else if (transformer.type === "privatise") {
+          resolve({
+            actions: [
+              updateTransformerWAL({
+                id: transformer_id,
+                workspace: transformer.workspace,
+                wal: wal
+              })
+            ],
+            metadata: {}
+          })
+
         }
       })
     }
@@ -643,7 +656,7 @@ const execute = async (id: string, wal: WAL, fragments: string[], useArtifacts: 
 
       // If not, apply the artifact regardless and merge the results.
       } else {
-        await dataFusion?.apply_artifact(cloneId, wal.artifacts[i])
+        await dataFusion?.apply_artifact(cloneId, artifact)
         dataFusion?.merge_table(cloneId, id)
         dataFusion?.move_table(cloneId, id)
       }
