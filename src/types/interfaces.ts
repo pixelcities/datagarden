@@ -167,11 +167,15 @@ export interface Metadata {
 export interface ConceptA {
   id: string,
   workspace: string,
-  name: string,
-  dataType?: DataType,
+  name: string, // rdfs:label | dc:title | skos:prefLabel
+  dataType?: DataType, // rdfs:range
   aggregateFn?: string,
-  broader?: string,
-  narrower?: string
+  broader?: string[], // skos:broader
+  narrower?: string[], // skos::narrower
+  related?: string[], // skos:related
+  description?: string, // dc:description
+  subject?: string, // dc:subject
+  creator?: string, // dc:creator
 }
 
 export interface Concept {

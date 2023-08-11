@@ -9,7 +9,7 @@ interface TaxonomyI {
   deserialize(c: Concept | undefined): ConceptA | undefined
 }
 
-class Taxonomy implements TaxonomyI {
+export class Taxonomy implements TaxonomyI {
   keyId: string
   concepts: {[key: string]: ConceptA} = {}
 
@@ -18,6 +18,7 @@ class Taxonomy implements TaxonomyI {
 
     if (concepts) {
       this.init(concepts)
+      this.link()
     }
   }
 
@@ -34,6 +35,26 @@ class Taxonomy implements TaxonomyI {
 
   list() {
     return Object.values(this.concepts)
+  }
+
+  root() {
+    return this.list().filter(c => c.narrower !== undefined && c.narrower.length > 0 && (c.broader === undefined || c.broader.length === 0))
+  }
+
+  link() {
+    for (const c of Object.values(this.concepts)) {
+      if (c.broader !== undefined && c.broader.length > 0) {
+        for (const parent of c.broader) {
+          if (this.concepts[parent]) {
+            if (this.concepts[parent].narrower === undefined) {
+              this.concepts[parent].narrower = [c.id]
+            } else if (this.concepts[parent].narrower!.indexOf(c.id) === -1) {
+              this.concepts[parent].narrower!.push(c.id)
+            }
+          }
+        }
+      }
+    }
   }
 
   serialize(c: ConceptA | undefined) {

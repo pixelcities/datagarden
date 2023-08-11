@@ -260,3 +260,43 @@ $colors: indigo, darkviolet, magenta, mediumvioletred, deeppink, crimson, red, o
       border-color: #dbdbdb
       background: #dbdbdb
 
+.page
+  min-height: calc(100vh - #{$navbar-height})
+
+  // padding top + font + (border padding + border) + padding bottom
+  $page-title-height: calc(3rem + 2rem + 1rem + 2px + 1rem)
+
+  .title
+    height: $page-title-height
+    padding: 3rem 1rem 1rem
+
+    font-family: Nunito Sans
+    font-style: normal
+    font-weight: bold
+    font-size: 24px
+    line-height: 30px
+
+    letter-spacing: 2px
+    text-transform: uppercase
+
+    color: #F8CD30
+
+    .border
+      padding-top: 1rem
+      border-bottom: 2px solid #F8CD30
+
+  .layout-settings
+    padding: 0rem 2rem 1rem
+
+  .main
+    font-size: inherit
+    min-height: calc(100vh - #{$navbar-height} - #{$page-title-height} - 12px)
+
+.seperator
+  border-bottom: 1px solid hsl(0deg, 0%, 93%)
+
+
+.tile-is-white
+  @extend .notification
+  background-color: white
+
