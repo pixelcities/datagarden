@@ -8,6 +8,7 @@ import Navbar from 'components/Navbar'
 import Sidebar from 'components/Sidebar'
 import NotificationsBar from 'components/NotificationsBar'
 import Dropdown from 'components/Dropdown'
+import Constraint from 'components/Constraint'
 
 import { useAppSelector, useAppDispatch } from 'hooks'
 import { selectActiveDataSpace, selectConcepts } from 'state/selectors'
@@ -86,7 +87,7 @@ const ConceptDetail: FC<ConceptDetailI> = ({ concept, taxonomy }) => {
     <div>
       <form onSubmit={handleSubmit}>
         <div className="tile is-ancestor">
-          <div className="tile is-vertical is-12">
+          <div className="tile is-vertical is-9">
             <div className="tile">
               <div className="tile is-parent">
                 <div className="tile is-child tile-is-white">
@@ -132,7 +133,7 @@ const ConceptDetail: FC<ConceptDetailI> = ({ concept, taxonomy }) => {
                 <div className="field">
                   <label className="label">Description</label>
                   <div className="control">
-                    <textarea className="input" style={{borderColor: "#f5f5f5"}} value={description} onChange={(e: any) => setDescription(e.target.value)} />
+                    <textarea className="input" style={{borderColor: "#f5f5f5", resize: "vertical", minHeight: "7.5rem"}} value={description} onChange={(e: any) => setDescription(e.target.value)} />
                   </div>
                 </div>
 
@@ -153,6 +154,21 @@ const ConceptDetail: FC<ConceptDetailI> = ({ concept, taxonomy }) => {
                   </div>
 
                 </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="tile is-vertical">
+            <div className="tile is-parent">
+              <div className="tile is-child tile-is-white">
+
+                <div className="field pb-0">
+                  <label className="label">Constraints</label>
+
+                  <Constraint />
+
+                </div>
+
               </div>
             </div>
           </div>
@@ -228,7 +244,10 @@ const TaxonomyPage: FC = (props) => {
       <div className="title">
         Taxonomy
 
-        <button className="button is-success is-outlined is-pulled-right" onClick={() => setActiveConcept(undefined)}> Add concept </button>
+        <div className="buttons is-pulled-right">
+          <button className="button is-success is-outlined" onClick={() => {}} disabled> Visualize </button>
+          <button className="button is-success is-outlined" onClick={() => setActiveConcept(undefined)}> Add concept </button>
+        </div>
 
         <div className="border" />
       </div>
