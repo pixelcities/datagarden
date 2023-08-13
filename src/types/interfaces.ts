@@ -176,6 +176,7 @@ export interface ConceptA {
   description?: string, // dc:description
   subject?: string, // dc:subject
   creator?: string, // dc:creator
+  constraints?: Rule[]
 }
 
 export interface Concept {
@@ -267,3 +268,19 @@ export interface MPC {
   partitions?: string[],
   values?: string[]
 }
+
+
+export type NumericOperator =
+  "IS NOT NULL" |
+  ">" |
+  ">=" |
+  "<" |
+  "<="
+
+export interface Rule {
+  name: string,
+  condition: string,
+  operator: NumericOperator,
+  values: string[],
+}
+

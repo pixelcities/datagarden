@@ -32,7 +32,9 @@ export type {
   Content,
   NotificationMsg,
   Subscription,
-  MPC
+  MPC,
+  NumericOperator,
+  Rule
 } from './interfaces'
 
 export {

@@ -1,28 +1,53 @@
-import React, { FC, useRef, useMemo, useState, useLayoutEffect } from 'react'
+import React, { FC, useRef, useMemo, useState, useEffect, useLayoutEffect } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCheck } from '@fortawesome/free-solid-svg-icons'
 
-import Dropdown from 'components/Dropdown'
-import { DataType } from 'types'
+import { DataType, NumericOperator, Rule } from 'types'
 
 
 interface ConstraintProps {
+  conceptName: string,
   dataType?: DataType,
-  rule?: unknown,
-  maxWidth?: number
+  rule?: Rule,
+  onChange: (rule: Rule) => void,
+  onDelete: () => void
 }
 
 interface NumericConstraintProps {
-  rule?: unknown,
+  conceptName: string,
+  rule?: Rule,
+  onChange: (rule: Rule) => void,
+  onDelete: () => void,
   onClose: () => void
 }
 
-const NumericConstraint: FC<NumericConstraintProps> = ({ onClose }) => {
-  const [name, setName] = useState("")
-  const [op, setOp] = useState("")
-  const [value, setValue] = useState("")
+const NumericConstraint: FC<NumericConstraintProps> = ({ conceptName, rule, onChange, onDelete, onClose }) => {
+  const [name, setName] = useState(rule?.name || "")
+  const [op, setOp] = useState<NumericOperator>(rule?.operator || "IS NOT NULL")
+  const [value, setValue] = useState<string>((rule?.values && rule.values.length > 0) ? rule.values[0] : "")
 
-  const handleUpdate = () => {}
+  useEffect(() => {
+    if (op === "IS NOT NULL") {
+      setValue("")
+    }
+  }, [ op ])
+
+  const handleUpdate = () => {
+    const values = (value !== "") ? [value] : []
+
+    onChange({
+      name: name,
+      operator: op,
+      values: values,
+      condition: [op, ...values].join(" ")
+    })
+    onClose()
+  }
+
+  const handleDelete = () => {
+    onDelete()
+    onClose()
+  }
 
   return (
     <div className="modal is-active">
@@ -44,26 +69,32 @@ const NumericConstraint: FC<NumericConstraintProps> = ({ onClose }) => {
 
           <div className="field has-addons is-horizontal pb-0">
             <p className="control my-1 mx-1 pt-1">
-              must be
+              <span className="is-italic"> { conceptName } </span> must
             </p>
 
             <p className="control my-1 mx-1">
               <span className="select">
                 <select onChange={(e: any) => setOp(e.target.value)} value={op}>
-                  <option> {"greater than"} </option>
-                  <option> {"less than"} </option>
+                  <option value={"IS NOT NULL"}> {"not be empty"} </option>
+                  <option value={">"}> {"be greater than"} </option>
+                  <option value={">="}> {"be greater than or equal to"} </option>
+                  <option value={"<"}> {"be less than"} </option>
+                  <option value={"<="}> {"be less than or equal to"} </option>
                 </select>
               </span>
             </p>
 
-            <p className="control my-1 mx-1">
-              <input className="input" type="text" style={{borderColor: "#f5f5f5"}} value={value} onChange={(e: any) => setValue(e.target.value)} />
-            </p>
+            { op !== "IS NOT NULL" &&
+              <p className="control my-1 mx-1">
+                <input className="input" type="text" style={{borderColor: "#f5f5f5"}} value={value} onChange={(e: any) => setValue(e.target.value)} />
+              </p>
+            }
           </div>
 
           <div className="field is-grouped is-grouped-right">
-            <div className="control">
-              <input type="submit" className="button is-primary" value="Update" />
+            <div className="control buttons">
+              <div className="button is-danger" onClick={handleDelete}> Delete </div>
+              <div className="button is-primary" onClick={handleUpdate}> Update </div>
             </div>
           </div>
         </div>
@@ -75,10 +106,10 @@ const NumericConstraint: FC<NumericConstraintProps> = ({ onClose }) => {
   )
 }
 
-const Constraint: FC<ConstraintProps> = ({ dataType, rule }) => {
+const Constraint: FC<ConstraintProps> = ({ conceptName, dataType, rule, onChange, onDelete }) => {
   const ref = useRef<HTMLDivElement | null>(null)
 
-  const name = "My rule"
+  const name = rule?.name || "My rule"
 
   const [ready, setReady] = useState(false)
   const [maxWidth, setMaxWidth] = useState<undefined | number>()
@@ -106,7 +137,7 @@ const Constraint: FC<ConstraintProps> = ({ dataType, rule }) => {
 
   return (
     <>
-      { modalIsActive && <NumericConstraint onClose={() => setModalIsActive(false)} /> }
+      { modalIsActive && <NumericConstraint conceptName={conceptName} rule={rule} onChange={onChange} onClose={() => setModalIsActive(false)} onDelete={onDelete} /> }
 
       <div ref={ref}>
         <div className="tags has-addons are-medium is-clickable" style={{flexWrap: "nowrap"}} onClick={() => setModalIsActive(true)}>

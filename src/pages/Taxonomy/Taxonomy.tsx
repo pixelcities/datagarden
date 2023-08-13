@@ -2,7 +2,7 @@ import React, { FC, Component, useMemo, useState } from 'react'
 import { RouteComponentProps } from 'react-router'
 import { Route, Link } from "react-router-dom"
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faSearch, faBook, faProjectDiagram } from '@fortawesome/free-solid-svg-icons'
+import { faPlus, faSearch, faBook, faProjectDiagram } from '@fortawesome/free-solid-svg-icons'
 
 import Navbar from 'components/Navbar'
 import Sidebar from 'components/Sidebar'
@@ -13,7 +13,7 @@ import Constraint from 'components/Constraint'
 import { useAppSelector, useAppDispatch } from 'hooks'
 import { selectActiveDataSpace, selectConcepts } from 'state/selectors'
 import { createConcept, updateConcept } from 'state/actions'
-import { ConceptA } from 'types'
+import { ConceptA, Rule } from 'types'
 
 import { emptyTaxonomy, loadTaxonomy, Taxonomy } from 'utils/taxonomy'
 
@@ -49,6 +49,7 @@ const ConceptDetail: FC<ConceptDetailI> = ({ concept, taxonomy }) => {
   const [dataType, setDataType] = useState(concept?.dataType)
   const [aggregateFn, setAggregateFn] = useState(concept?.aggregateFn)
   const [broader, setBroader] = useState(concept?.broader || [])
+  const [constraints, setConstraints] = useState<(Rule | undefined)[]>(concept?.constraints || [])
 
   const handleSubmit = (e: any) => {
     e.preventDefault()
@@ -62,7 +63,8 @@ const ConceptDetail: FC<ConceptDetailI> = ({ concept, taxonomy }) => {
       dataType: dataType,
       aggregateFn: aggregateFn,
       description: description,
-      broader: broader
+      broader: broader,
+      constraints: constraints.filter((x): x is Rule => !!x)
     })
 
     if (action) {
@@ -78,10 +80,39 @@ const ConceptDetail: FC<ConceptDetailI> = ({ concept, taxonomy }) => {
     setDataType(undefined)
     setAggregateFn(undefined)
     setBroader([])
+    setConstraints([])
   }
 
   const allConcepts = useMemo(() => taxonomy?.list().map(c => [c.id, c.name] as [string, string]) || [], [ taxonomy ])
   const broaderNames = useMemo(() => broader.map(id => [id, taxonomy?.get(id)?.name] as [string, string]), [ broader, taxonomy ])
+
+  const handleAddConstraint = (e: any) => {
+    e.preventDefault()
+
+    setConstraints([...constraints, undefined])
+  }
+
+  const renderConstraints = useMemo(() => {
+    return concept && constraints.map((constraint, i) => {
+      const handleUpdate = (rule: Rule) => {
+        const data = JSON.parse(JSON.stringify(constraints))
+        data[i] = rule
+
+        setConstraints(data)
+      }
+
+      const handleDelete = () => {
+        setConstraints(constraints.filter((_, j) => i !== j))
+      }
+
+      return (
+        <div key={i} className="py-2">
+          <Constraint conceptName={concept.name} rule={constraint} onChange={handleUpdate} onDelete={handleDelete} />
+        </div>
+      )
+    })
+
+  }, [ concept, constraints ])
 
   return (
     <div>
@@ -163,9 +194,17 @@ const ConceptDetail: FC<ConceptDetailI> = ({ concept, taxonomy }) => {
               <div className="tile is-child tile-is-white">
 
                 <div className="field pb-0">
+                  <div className="hover-buttons is-right">
+                    <button className="hover-button is-small" onClick={handleAddConstraint}>
+                      <span className="icon is-small">
+                        <FontAwesomeIcon icon={faPlus} size="sm"/>
+                      </span>
+                    </button>
+                  </div>
+
                   <label className="label">Constraints</label>
 
-                  <Constraint />
+                  { renderConstraints }
 
                 </div>
 
@@ -259,12 +298,6 @@ const TaxonomyPage: FC = (props) => {
             <article className="panel is-primary">
               <p className="panel-heading">
                 { activeConcept ? activeConcept.name : "New" }
-              </p>
-
-              <p className="panel-tabs">
-                <Link to="#all" className="is-active">All</Link>
-                <Link to="#schemas" >Schemas</Link>
-                <Link to="#orgs" >Organisations</Link>
               </p>
 
               <div className="panel-block">
