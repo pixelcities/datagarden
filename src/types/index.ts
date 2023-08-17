@@ -34,6 +34,8 @@ export type {
   Subscription,
   MPC,
   NumericOperator,
+  TextOperator,
+  BasicOperator,
   Rule
 } from './interfaces'
 

@@ -2,29 +2,31 @@ import React, { FC, useRef, useMemo, useState, useEffect, useLayoutEffect } from
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCheck } from '@fortawesome/free-solid-svg-icons'
 
-import { DataType, NumericOperator, Rule } from 'types'
+import { DataType, NumericOperator, TextOperator, BasicOperator, Rule } from 'types'
 
 
 interface ConstraintProps {
   conceptName: string,
-  dataType?: DataType,
+  dataType: DataType,
   rule?: Rule,
   onChange: (rule: Rule) => void,
   onDelete: () => void
 }
 
-interface NumericConstraintProps {
+interface ConstraintModalProps {
   conceptName: string,
+  operations: [string, string][],
   rule?: Rule,
   onChange: (rule: Rule) => void,
   onDelete: () => void,
   onClose: () => void
 }
 
-const NumericConstraint: FC<NumericConstraintProps> = ({ conceptName, rule, onChange, onDelete, onClose }) => {
+const ConstraintModal: FC<ConstraintModalProps> = ({ conceptName, operations, rule, onChange, onDelete, onClose }) => {
   const [name, setName] = useState(rule?.name || "")
-  const [op, setOp] = useState<NumericOperator>(rule?.operator || "IS NOT NULL")
+  const [op, setOp] = useState<NumericOperator | TextOperator | BasicOperator>(rule?.operator || "IS NOT NULL")
   const [value, setValue] = useState<string>((rule?.values && rule.values.length > 0) ? rule.values[0] : "")
+  const [error, setError] = useState("")
 
   useEffect(() => {
     if (op === "IS NOT NULL") {
@@ -33,7 +35,12 @@ const NumericConstraint: FC<NumericConstraintProps> = ({ conceptName, rule, onCh
   }, [ op ])
 
   const handleUpdate = () => {
-    const values = (value !== "") ? [value] : []
+    if (name === "") {
+      setError("Name cannot be empty")
+      return
+    }
+
+    const values = (value !== "") ? op.indexOf("~") !== -1 ? ["'" + value + "'"] : [value] : []
 
     onChange({
       name: name,
@@ -55,6 +62,14 @@ const NumericConstraint: FC<NumericConstraintProps> = ({ conceptName, rule, onCh
 
       <div className="modal-content">
         <div className="box">
+          { error !== "" &&
+            <article className="message is-danger">
+              <div className="message-header">
+                <p>{ error }</p>
+                <button className="delete" aria-label="delete" onClick={() => setError("")} />
+              </div>
+            </article>
+          }
 
           <div className="field">
             <label className="label">Name</label>
@@ -75,11 +90,13 @@ const NumericConstraint: FC<NumericConstraintProps> = ({ conceptName, rule, onCh
             <p className="control my-1 mx-1">
               <span className="select">
                 <select onChange={(e: any) => setOp(e.target.value)} value={op}>
-                  <option value={"IS NOT NULL"}> {"not be empty"} </option>
-                  <option value={">"}> {"be greater than"} </option>
-                  <option value={">="}> {"be greater than or equal to"} </option>
-                  <option value={"<"}> {"be less than"} </option>
-                  <option value={"<="}> {"be less than or equal to"} </option>
+                  {
+                    operations.map(x => {
+                      return (
+                        <option key={x[0]} value={x[0]}> {x[1]} </option>
+                      )
+                    })
+                  }
                 </select>
               </span>
             </p>
@@ -115,6 +132,35 @@ const Constraint: FC<ConstraintProps> = ({ conceptName, dataType, rule, onChange
   const [maxWidth, setMaxWidth] = useState<undefined | number>()
   const [modalIsActive, setModalIsActive] = useState(false)
 
+  const operations: [string, string][] = useMemo(() => {
+    if (dataType === DataType.String) {
+      return [
+        ["IS NOT NULL", "not be empty"],
+        ["!~*", "not contain"],
+        ["~*", "contain"],
+      ]
+
+    } else if (
+      dataType === DataType.AbsoluteInteger ||
+      dataType === DataType.AbsoluteDecimal ||
+      dataType === DataType.RelativeInteger ||
+      dataType === DataType.RelativeDecimal
+    ) {
+      return [
+        ["IS NOT NULL", "not be empty"],
+        [">", "be greater than"],
+        [">=", "be greater than or equal to"],
+        ["<", "be less than"],
+        ["<=", "be less than or equal to"]
+      ]
+
+    } else {
+      return [
+        ["IS NOT NULL", "not be empty"]
+      ]
+    }
+  }, [ dataType ])
+
   useLayoutEffect(() => {
     const width = ref.current && Math.floor(ref.current.getBoundingClientRect().width / 5) * 5
 
@@ -137,7 +183,7 @@ const Constraint: FC<ConstraintProps> = ({ conceptName, dataType, rule, onChange
 
   return (
     <>
-      { modalIsActive && <NumericConstraint conceptName={conceptName} rule={rule} onChange={onChange} onClose={() => setModalIsActive(false)} onDelete={onDelete} /> }
+      { modalIsActive && <ConstraintModal conceptName={conceptName} operations={operations} rule={rule} onChange={onChange} onClose={() => setModalIsActive(false)} onDelete={onDelete} /> }
 
       <div ref={ref}>
         <div className="tags has-addons are-medium is-clickable" style={{flexWrap: "nowrap"}} onClick={() => setModalIsActive(true)}>

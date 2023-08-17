@@ -88,7 +88,8 @@ import {
 
 import {
   conceptCreated,
-  conceptUpdated
+  conceptUpdated,
+  conceptDeleted
 } from './slices/concepts'
 
 import {
@@ -187,6 +188,7 @@ const createMetadata = recreateAction<typeof metadataCreated>("CreateMetadata")
 const updateMetadata = recreateAction<typeof metadataUpdated>("UpdateMetadata")
 const createConcept = recreateAction<typeof conceptCreated>("CreateConcept")
 const updateConcept = recreateAction<typeof conceptUpdated>("UpdateConcept")
+const deleteConcept = recreateAction<typeof conceptDeleted>("DeleteConcept")
 const createUser = recreateAction<typeof userCreated>("CreateUser")
 const updateUser = recreateAction<typeof userUpdated>("UpdateUser")
 const shareSecret = recreateAction<typeof secretShared>("ShareSecret")
@@ -241,6 +243,7 @@ const events: {[key: string]: ActionCreatorWithPayload<any, string>} = {
   "MetadataUpdated": metadataUpdated,
   "ConceptCreated": conceptCreated,
   "ConceptUpdated": conceptUpdated,
+  "ConceptDeleted": conceptDeleted,
   "UserCreated": userCreated,
   "UserUpdated": userUpdated,
   "UserInvited": userInvited,
@@ -282,6 +285,7 @@ export {
   updateMetadata,
   createConcept,
   updateConcept,
+  deleteConcept,
   createDataURI,
   shareSecret,
   createCollection,

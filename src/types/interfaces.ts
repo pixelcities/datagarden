@@ -277,10 +277,17 @@ export type NumericOperator =
   "<" |
   "<="
 
+export type TextOperator =
+  "IS NOT NULL" |
+  "!~*" |
+  "~*"
+
+export type BasicOperator = "IS NOT NULL"
+
 export interface Rule {
   name: string,
   condition: string,
-  operator: NumericOperator,
+  operator: NumericOperator | TextOperator | BasicOperator,
   values: string[],
 }
 

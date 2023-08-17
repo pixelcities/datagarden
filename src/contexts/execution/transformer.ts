@@ -165,7 +165,7 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
                   const fields = arrow_schema.fields.map((field: any) => {
                     const fullColumn = collection.schema.columns.find(column => field.name === column.id)
                     const maybe_concept = emptyTaxonomy(dataSpace?.key_id).deserialize(concepts[fullColumn?.concept_id ?? ""])
-                    const defaultAggregateFn = maybe_concept ? maybe_concept.aggregateFn : "array_agg"
+                    const defaultAggregateFn = (maybe_concept && maybe_concept.aggregateFn) || "array_agg"
 
                     return {...field, ...{
                       metadata: {
@@ -488,7 +488,7 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
               const fields = arrow_schema.fields.map((field: any) => {
                 const fullColumn = collection.schema.columns.find(column => field.name === column.id)
                 const maybe_concept = emptyTaxonomy(dataSpace?.key_id).deserialize(concepts[fullColumn?.concept_id ?? ""])
-                const defaultAggregateFn = maybe_concept ? maybe_concept.aggregateFn : "array_agg"
+                const defaultAggregateFn = (maybe_concept && maybe_concept.aggregateFn) || "array_agg"
 
                 return {...field, ...{
                   metadata: {

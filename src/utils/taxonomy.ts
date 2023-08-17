@@ -41,6 +41,10 @@ export class Taxonomy implements TaxonomyI {
     return this.list().filter(c => c.narrower !== undefined && c.narrower.length > 0 && (c.broader === undefined || c.broader.length === 0))
   }
 
+  isolated() {
+    return this.list().filter(c => (c.narrower === undefined || c.narrower.length === 0) && (c.broader === undefined || c.broader.length === 0))
+  }
+
   link() {
     for (const c of Object.values(this.concepts)) {
       if (c.broader !== undefined && c.broader.length > 0) {

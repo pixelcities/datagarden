@@ -1,4 +1,4 @@
-import { createSelector, createSlice, createEntityAdapter } from '@reduxjs/toolkit'
+import { createSelector, createSlice, createEntityAdapter, PayloadAction } from '@reduxjs/toolkit'
 import { RootState } from 'state/store'
 import { Concept } from 'types'
 
@@ -11,7 +11,13 @@ const conceptsSlice = createSlice({
   initialState: initialState,
   reducers: {
     conceptCreated: conceptsAdapter.addOne,
-    conceptUpdated: conceptsAdapter.upsertOne
+    conceptUpdated: conceptsAdapter.upsertOne,
+    conceptDeleted(state, action: PayloadAction<{id: string}>) {
+      const ids = state.ids.filter(id => id !== action.payload.id)
+
+      state.ids = ids
+      delete state.entities[action.payload.id]
+    }
   }
 })
 
@@ -21,7 +27,8 @@ export default conceptsSlice.reducer
 // actions
 export const {
   conceptCreated,
-  conceptUpdated
+  conceptUpdated,
+  conceptDeleted
 } = conceptsSlice.actions
 
 
