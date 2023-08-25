@@ -41,6 +41,9 @@ $header-active-color: #eaeaea
         border-left-color: transparent
         background-color: $header-color
 
+        &.is-error
+          border-right: 2px solid $danger
+
         &:focus,
         &:focus-within,
         &:hover
@@ -105,6 +108,14 @@ $header-active-color: #eaeaea
   height: 100px
   width: 400px !important
   z-index: 10
+
+.constraint-popup
+  position: fixed
+  top: 0
+  left: 0
+  z-index: 9
+  min-width: 100px
+  border-left: 4px solid $danger
 
 .table-loader
   position: relative

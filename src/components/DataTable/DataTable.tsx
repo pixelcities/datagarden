@@ -1,4 +1,4 @@
-import React, { FC, useRef, useState, useLayoutEffect } from 'react';
+import React, { FC, useRef, useState, useLayoutEffect, useEffect } from 'react';
 import { useTable as _useTable, useBlockLayout, useResizeColumns } from 'react-table'
 import { FixedSizeList } from 'react-window'
 import { TweenLite } from 'gsap'
@@ -28,10 +28,13 @@ interface DataTableProps {
 const DataTable: FC<DataTableProps> = ({ id, schema, interactiveHeader, style, versionId, isSource, highlightHeader, onHeaderClick }) => {
   const heightRef = useRef<HTMLDivElement | null>(null)
   const popupRef = useRef<HTMLDivElement | null>(null)
+  const constraintRef = useRef<HTMLDivElement | null>(null)
 
   const [dimensions, setDimensions] = useState({height: 0, width: 0});
   const [lastClick, setLastClick] = useState("")
   const [columnId, setColumnId] = useState("")
+  const [constraintErrors, setConstraintErrors] = useState<{[key: string]: string}>({})
+  const [constraintMessage, setConstraintMessage] = useState("")
 
   const { dataFusion } = useDataFusionContext();
 
@@ -83,6 +86,37 @@ const DataTable: FC<DataTableProps> = ({ id, schema, interactiveHeader, style, v
 
     return columnPadding(attributes)
   }, [ dataSpace, schema, concepts ])
+
+  useEffect(() => {
+    (async () => {
+      if (columns) {
+        let errors: {[key: string]: string} = {}
+
+        for (const column of columns) {
+          if (column.Header !== "") {
+            const concept_id = schema.columns.find(c => c.id === column.accessor)?.concept_id
+
+            if (concept_id) {
+              const maybe_concept = emptyTaxonomy(dataSpace?.key_id).deserialize(concepts[concept_id])
+
+              if (maybe_concept && maybe_concept.constraints !== undefined && maybe_concept.constraints.length > 0) {
+                for (const constraint of maybe_concept.constraints) {
+                  const isValid = await dataFusion?.test_constraint(id, column.accessor, constraint.condition)
+
+                  if (!isValid) {
+                    errors[column.accessor] = constraint.name
+                  }
+                }
+              }
+            }
+
+          }
+        }
+
+        setConstraintErrors(errors)
+      }
+    })()
+  }, [ columns, concepts, schema.columns, dataFusion, dataSpace?.key_id, id, versionId ])
 
   const scrollBarSize = React.useMemo(() => scrollbarWidth(), [])
 
@@ -157,6 +191,26 @@ const DataTable: FC<DataTableProps> = ({ id, schema, interactiveHeader, style, v
     }
   }
 
+  const showConstraintError = (e: any, message: string) => {
+    const rect = e.target.getBoundingClientRect()
+
+    TweenLite.set([constraintRef.current], {
+      x: rect.right,
+      y: rect.top,
+      visibility: "visible"
+    })
+
+    setConstraintMessage(message)
+  }
+
+  const hideConstraintError = (e: any) => {
+    TweenLite.set([constraintRef.current], {
+      visibility: "hidden"
+    })
+
+    setConstraintMessage("")
+  }
+
   const renderTable = (
     <div role="table" className="data" {...getTableProps()}>
       <div role="rowgroup" className="thead" style={highlightHeader ? {zIndex: 100, position: "sticky"} : {}}>
@@ -164,10 +218,12 @@ const DataTable: FC<DataTableProps> = ({ id, schema, interactiveHeader, style, v
           <div role="row" className="tr" {...headerGroup.getHeaderGroupProps()}>
             <div role="row" className="index"/>
             {headerGroup.headers.map((column: any) => (
-              <div role="row" className="th"
+              <div role="row" className={"th" + (constraintErrors[column.id] ? " is-error": "")}
                 id={column.id}
                 {...column.getHeaderProps()}
-                onClick={(e) => handleHeaderClick(column.id, e)}
+                onClick={(e) => column.Header !== "" && handleHeaderClick(column.id, e)}
+                onMouseEnter={e => constraintErrors[column.id] && showConstraintError(e, constraintErrors[column.id])}
+                onMouseLeave={constraintErrors[column.id] && hideConstraintError}
               >
                 {column.render('Header')}
                 <div {...column.getResizerProps()} className="resizer" />
@@ -194,6 +250,17 @@ const DataTable: FC<DataTableProps> = ({ id, schema, interactiveHeader, style, v
     <>
       <div ref={popupRef} className="header-popup" style={{visibility: "hidden"}}>
         <HeaderDropdown fieldId={columnId} fieldName={columns && columns.find(c => c.accessor === columnId)?.Header} inputId={id} settings={true} isSource={isSource} />
+      </div>
+
+      <div ref={constraintRef} className="constraint-popup" style={{visibility: "hidden"}}>
+        <div className="box">
+          <p className="has-text-danger hax-text-weight-semibold">
+            Constraint error:
+          </p>
+          <p>
+            { constraintMessage }
+          </p>
+        </div>
       </div>
 
       <div ref={heightRef} style={{position: "absolute", height: (style && "height" in style) ? style.height :"100%", width: "0"}} />
