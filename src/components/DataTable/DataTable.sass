@@ -31,6 +31,9 @@ $header-active-color: #eaeaea
       background-image: url("../../assets/blur.png")
       color: transparent
 
+    &.is-highlight
+      background-color: bulmaLighten($primary, 50%)
+
   .thead
     .th
       &:not(:first-child)
@@ -44,6 +47,9 @@ $header-active-color: #eaeaea
         &.is-error
           border-right: 2px solid $danger
 
+        &.is-highlight
+          background-color: bulmaLighten($primary, 40%)
+
         &:focus,
         &:focus-within,
         &:hover
@@ -51,8 +57,6 @@ $header-active-color: #eaeaea
           border: 2px solid #cecece
           border-width: 1px
           padding: calc(0.5em - 2px) calc(0.75em - 2px)
-
-
 
     .resizer
       display: inline-block

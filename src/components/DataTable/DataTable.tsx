@@ -22,10 +22,13 @@ interface DataTableProps {
   versionId?: number,
   isSource?: boolean,
   highlightHeader?: boolean,
-  onHeaderClick?: (id: string) => void
+  highlightColumn?: string,
+  onHeaderClick?: (id: string) => void,
+  headerMapping?: {[key: string]: string},
+  preview?: boolean
 }
 
-const DataTable: FC<DataTableProps> = ({ id, schema, interactiveHeader, style, versionId, isSource, highlightHeader, onHeaderClick }) => {
+const DataTable: FC<DataTableProps> = ({ id, schema, interactiveHeader, style, versionId, isSource, highlightHeader, highlightColumn, onHeaderClick, headerMapping, preview }) => {
   const heightRef = useRef<HTMLDivElement | null>(null)
   const popupRef = useRef<HTMLDivElement | null>(null)
   const constraintRef = useRef<HTMLDivElement | null>(null)
@@ -42,10 +45,16 @@ const DataTable: FC<DataTableProps> = ({ id, schema, interactiveHeader, style, v
   const dataSpace = useAppSelector(selectActiveDataSpace)
 
   const nrRows = React.useMemo(() => {
-    return dataFusion.nr_rows(id)
+    const rows = dataFusion.nr_rows(id)
+
+    if (preview === true) {
+      return Math.min(rows, 10)
+    } else {
+      return rows
+    }
 
   // eslint-disable-next-line
-  }, [ dataFusion, id, versionId ]);
+  }, [ dataFusion, id, preview, versionId ])
 
   useLayoutEffect(() => {
     if (heightRef.current) {
@@ -75,7 +84,7 @@ const DataTable: FC<DataTableProps> = ({ id, schema, interactiveHeader, style, v
 
       if (column) {
         const maybe_concept = emptyTaxonomy(dataSpace?.key_id).deserialize(concepts[column.concept_id])
-        const name = maybe_concept ? maybe_concept.name : column.id
+        const name = maybe_concept ? maybe_concept.name : headerMapping && headerMapping[column.id] !== undefined ? headerMapping[column.id] : column.id
 
         attributes.push({
           accessor: column.id,
@@ -84,8 +93,8 @@ const DataTable: FC<DataTableProps> = ({ id, schema, interactiveHeader, style, v
       }
     })
 
-    return columnPadding(attributes)
-  }, [ dataSpace, schema, concepts ])
+    return preview === true ? attributes : columnPadding(attributes)
+  }, [ dataSpace, schema, concepts, preview, headerMapping ])
 
   useEffect(() => {
     (async () => {
@@ -153,7 +162,7 @@ const DataTable: FC<DataTableProps> = ({ id, schema, interactiveHeader, style, v
           <div role="row" className="index"> { index } </div>
           {row.cells.map((cell: any) => {
             return (
-              <div role="cell" className="td" {...cell.getCellProps()}>
+              <div role="cell" className={"td" + (cell.column.id === highlightColumn ? " is-highlight" : "")} {...cell.getCellProps()}>
                 {cell.render('Cell')}
               </div>
             )
@@ -161,7 +170,7 @@ const DataTable: FC<DataTableProps> = ({ id, schema, interactiveHeader, style, v
         </div>
       )
     },
-    [ prepareRow, rows, id, dataFusion ]
+    [ prepareRow, rows, id, dataFusion, highlightColumn ]
   )
 
   const handleHeaderClick = (id: string, e: any) => {
@@ -218,7 +227,7 @@ const DataTable: FC<DataTableProps> = ({ id, schema, interactiveHeader, style, v
           <div role="row" className="tr" {...headerGroup.getHeaderGroupProps()}>
             <div role="row" className="index"/>
             {headerGroup.headers.map((column: any) => (
-              <div role="row" className={"th" + (constraintErrors[column.id] ? " is-error": "")}
+              <div role="row" className={"th" + (constraintErrors[column.id] ? " is-error": "") + (column.id === highlightColumn ? " is-highlight" : "")}
                 id={column.id}
                 {...column.getHeaderProps()}
                 onClick={(e) => column.Header !== "" && handleHeaderClick(column.id, e)}
@@ -233,7 +242,7 @@ const DataTable: FC<DataTableProps> = ({ id, schema, interactiveHeader, style, v
         ))}
       </div>
       <FixedSizeList
-        height={dimensions.height-35-scrollBarSize+10} // height - header - scrollbar + buffer
+        height={dimensions.height-35-scrollBarSize+0} // height - header - scrollbar + buffer
         itemCount={nrRows}
         itemSize={35}
         width={totalColumnsWidth+scrollBarSize}
@@ -265,7 +274,7 @@ const DataTable: FC<DataTableProps> = ({ id, schema, interactiveHeader, style, v
 
       <div ref={heightRef} style={{position: "absolute", height: (style && "height" in style) ? style.height :"100%", width: "0"}} />
 
-      <div className="data-container" style={style}>
+      <div key={id} className="data-container" style={style}>
         { renderTable }
       </div>
     </>
