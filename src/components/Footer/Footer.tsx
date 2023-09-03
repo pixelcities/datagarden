@@ -44,6 +44,7 @@ const Footer: FC = () => {
                     Company
                   </h1>
 
+                  <a className="has-text-primary-light is-size-6 is-flex" href="https://pixelcities.io/about"> About </a>
                   <Link className="has-text-primary-light is-size-6 is-flex" to="/privacy"> Privacy </Link>
                   <Link className="has-text-primary-light is-size-6 is-flex" to="/terms"> Terms </Link>
                   <Link className="has-text-primary-light is-size-6 is-flex" to="/contact"> Contact </Link>
