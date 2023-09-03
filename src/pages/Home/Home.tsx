@@ -6,7 +6,6 @@ import { faUserLock, faLaptopHouse, faDatabase, faAngleDown } from '@fortawesome
 import Navbar from 'components/Navbar'
 import LaptopFrame from 'components/LaptopFrame'
 import Footer from 'components/Footer'
-import Section from 'components/Section'
 
 import screenshotBuilder from 'assets/screenshot-builder.png'
 import webm from 'assets/demo.webm'
@@ -36,7 +35,7 @@ const HomeRoute: FC = ({ children }) => {
 }
 
 const LandingPage: FC = () => {
-  // useLayoutEffect(() => window.scrollTo(0, 0))
+  useLayoutEffect(() => window.scrollTo(0, 0))
 
   return (
     <>
