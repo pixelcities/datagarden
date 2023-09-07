@@ -32,8 +32,20 @@ const Navbar: FC = () => {
           </>
         :
           <>
+            <a className="navbar-item" href="https://pixelcities.io/about">
+              <h3 className="is-size-5 px-2" style={{borderBottom: "1px solid white"}}>
+                About
+              </h3>
+            </a>
+
+            <a className="navbar-item" href="https://docs.datagarden.app">
+              <h3 className="is-size-5 px-2" style={{borderBottom: "1px solid white"}}>
+                Docs
+              </h3>
+            </a>
+
             <Link className="navbar-item" to="/pricing">
-              <h3 className="is-size-5 px-2">
+              <h3 className="is-size-5 px-2" style={{borderBottom: "1px solid white"}}>
                 Pricing
               </h3>
             </Link>

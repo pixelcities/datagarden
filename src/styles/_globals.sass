@@ -300,3 +300,24 @@ $colors: indigo, darkviolet, magenta, mediumvioletred, deeppink, crimson, red, o
   @extend .notification
   background-color: white
 
+.updown
+  animation: updown-animation 1.5s ease-in-out infinite
+
+@keyframes updown-animation
+  0%
+    transform: translateY(0)
+  50%
+    transform: translateY(-1rem)
+  0%
+    transform: translateY(0)
+
+.hide
+  animation: hide-animation 1.5s linear 1
+  animation-fill-mode: forwards
+
+@keyframes  hide-animation
+  0%
+    opacity: 1.0
+  100%
+    opacity: 0.0
+
