@@ -1,9 +1,12 @@
 import React, { FC, useMemo, useState } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faAngleLeft, faAngleRight } from '@fortawesome/free-solid-svg-icons'
+import { faAngleLeft, faAngleRight, faCheck, faTimes, faQuestion } from '@fortawesome/free-solid-svg-icons'
 
 import DataTable from 'components/DataTable'
 import ConceptDetail from 'components/ConceptDetail'
+import Dropdown from 'components/Dropdown'
+
+import './ConceptPicker.sass'
 
 
 interface ConceptPickerProps {
@@ -13,7 +16,7 @@ interface ConceptPickerProps {
 }
 
 const ConceptPicker: FC<ConceptPickerProps> = ({ tableId, attributes, onClose }) => {
-  const [activeColumn, setActiveColumn] = useState("")
+  const [activeColumn, setActiveColumn] = useState(attributes[0].id)
 
   const schema = useMemo(() => {
     return {
@@ -117,6 +120,7 @@ const ConceptPicker: FC<ConceptPickerProps> = ({ tableId, attributes, onClose })
               </div>
 
               <div className="column is-half">
+                { /*
                 <div className="box" style={{height: "100%", width: "calc(100% - 1rem)", overflowY: "scroll", backgroundColor: "#f5f5f5"}}>
                   <ConceptDetail
                     concept={undefined}
@@ -125,6 +129,15 @@ const ConceptPicker: FC<ConceptPickerProps> = ({ tableId, attributes, onClose })
                     hideConstraints={true}
                   />
                 </div>
+                */
+                }
+
+                <ConceptChoice
+                  key={activeColumn}
+                  id={activeColumn}
+                  name={headerMapping[activeColumn]}
+                />
+
               </div>
             </div>
 
@@ -144,5 +157,86 @@ const ConceptPicker: FC<ConceptPickerProps> = ({ tableId, attributes, onClose })
     </div>
   )
 }
+
+interface ConceptChoice {
+  id: string,
+  name: string
+}
+
+const ConceptChoice: FC<ConceptChoice> = ({ id, name }) => {
+  const [isAuto, setIsAuto] = useState(true)
+  const [isActive, setIsActive] = useState(1)
+  const [existingIsOk, setExistingIsOk] = useState(false)
+  const [newIsOk, setNewIsOk] = useState(false)
+
+  const handleChoice = (i: 0 | 1) => {
+    setIsActive(i)
+  }
+
+  return (
+    <>
+      <div className={"plaque mb-3" + (isActive === 0 ? " is-active" : "")} onClick={() => handleChoice(0)}>
+        <div className="icon">
+          <span>
+            <FontAwesomeIcon icon={isActive === 0 ? existingIsOk ? faCheck : faQuestion : faTimes} size="sm"/>
+          </span>
+        </div>
+
+        <h3 className="header-label label-size-2">
+          Re-use existing concept
+        </h3>
+
+        <div className="plaque-content">
+          <div className="field is-horizontal">
+            <p className="header-label is-flex is-align-items-center pr-3">
+              {name}:
+            </p>
+            <div style={{position: "relative"}}>
+              <Dropdown
+                items={["1", "2"]}
+                onClick={() => setExistingIsOk(true)}
+                selected={null}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className={"plaque mb-3" + (isActive === 1 ? " is-active" : "")} onClick={() => handleChoice(1)}>
+        <div className="icon">
+          <span>
+            <FontAwesomeIcon icon={isActive === 1 ? newIsOk ? faCheck : faQuestion : faTimes} size="sm"/>
+          </span>
+        </div>
+
+        <h3 className="header-label label-size-2">
+         { isAuto ? "(Auto) " : "" }Create new concept
+        </h3>
+
+        <div className="columns">
+          <div className="column">
+            <div className="field is-horizontal">
+              <p className="header-label pr-3">
+                Title:
+              </p>
+              <input className="input" type="text" value={name} disabled />
+            </div>
+          </div>
+
+          <div className="column">
+            <div className="field is-horizontal">
+              <p className="header-label pr-3">
+                Data Type:
+              </p>
+              <input className="input" type="text" value={"String"} disabled />
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </>
+  )
+}
+
 
 export default ConceptPicker

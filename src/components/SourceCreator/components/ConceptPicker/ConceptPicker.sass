@@ -1,0 +1,59 @@
+.plaque
+  $border-color: rgba(0, 0, 0, 0.03)
+
+  height: 35%
+  width: calc(100% - 2rem)
+  position: relative
+
+  cursor: pointer
+  background-color: hsl(0deg, 0%, 95%)
+
+  border: 2px solid
+  border-radius: 6px
+  border-color: $border-color
+  box-shadow: 0 0.5em 1em -0.125em rgba(0, 0, 0, 0.05), 0 0px 0 1px rgba(0, 0, 0, 0.02)
+  color: hsl(0deg, 0%, 29%)
+  display: block
+  padding: 1.25rem
+
+  .icon
+    position: absolute
+    left: -0.75rem
+    top: 50%
+    transform: translateY(-50%)
+    z-index: 1
+    opacity: 0.8
+
+  .plaque-content
+    position: absolute
+    top: 50%
+    transform: translateY(-50%)
+
+  &:after
+    position: absolute
+    left: -1.25rem
+    top: 50%
+    transform: translateY(-50%)
+    content: ''
+    background-color: hsl(0deg, 0%, 95%)
+
+    // Half circle
+    width: 1.25rem
+    height: 2.5rem
+    border-top-left-radius: calc(1.25rem + 3px)
+    border-bottom-left-radius: calc(1.25rem + 3px)
+    border: 3px solid $border-color
+    border-right: 0
+
+  &:hover
+    background-color: hsl(0deg, 0%, 98%)
+  &:hover:after
+    background-color: hsl(0deg, 0%, 98%)
+
+  &.is-active
+    background-color: hsl(0deg, 0%, 100%)
+    cursor: default
+  &.is-active:after
+    background-color: hsl(0deg, 0%, 100%)
+
+
