@@ -1,7 +1,7 @@
 .plaque
   $border-color: rgba(0, 0, 0, 0.03)
 
-  height: 35%
+  min-height: calc(18px + 0.75rem + +1.5rem + 2.5em + 0.75rem + 2.5em + (1em - 4px)) // header-label + header-pb + column-py + input + field-mb + input + input-py
   width: calc(100% - 2rem)
   position: relative
 
@@ -16,9 +16,9 @@
   display: block
   padding: 1.25rem
 
-  .icon
+  .plaque-icon
     position: absolute
-    left: -0.75rem
+    left: -0.5rem
     top: 50%
     transform: translateY(-50%)
     z-index: 1
@@ -28,6 +28,9 @@
     position: absolute
     top: 50%
     transform: translateY(-50%)
+
+  .input[disabled]
+    pointer-events: none
 
   &:after
     position: absolute
@@ -55,5 +58,4 @@
     cursor: default
   &.is-active:after
     background-color: hsl(0deg, 0%, 100%)
-
 

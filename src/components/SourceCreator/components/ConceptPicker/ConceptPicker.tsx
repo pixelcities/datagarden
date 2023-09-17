@@ -1,6 +1,7 @@
 import React, { FC, useMemo, useState } from 'react'
+import ReactDOM from 'react-dom'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faAngleLeft, faAngleRight, faCheck, faTimes, faQuestion } from '@fortawesome/free-solid-svg-icons'
+import { faAngleLeft, faAngleRight, faAngleDoubleRight, faCheck, faTimes, faQuestion } from '@fortawesome/free-solid-svg-icons'
 
 import DataTable from 'components/DataTable'
 import ConceptDetail from 'components/ConceptDetail'
@@ -73,8 +74,12 @@ const ConceptPicker: FC<ConceptPickerProps> = ({ tableId, attributes, onClose })
 
             <div className="columns mb-0" style={{height: "calc(100% - 4.5rem - 3.125rem - 0.5rem)"}}>
 
-              <div className="column is-half">
-                <div style={{position: "relative", height: "100%", width: "100%"}}>
+              <div className="column is-5">
+                <h2 className="subtitle is-size-6 pl-2 mb-0" style={{height: "1.75rem"}}>
+                  1. Select the column to verify
+                </h2>
+
+                <div style={{position: "relative", height: "calc(100% - 1.75rem)", width: "100%"}}>
                   <DataTable
                     id={tableId}
                     schema={schema}
@@ -119,18 +124,18 @@ const ConceptPicker: FC<ConceptPickerProps> = ({ tableId, attributes, onClose })
 
               </div>
 
-              <div className="column is-half">
-                { /*
-                <div className="box" style={{height: "100%", width: "calc(100% - 1rem)", overflowY: "scroll", backgroundColor: "#f5f5f5"}}>
-                  <ConceptDetail
-                    concept={undefined}
-                    taxonomy={undefined}
-                    onComplete={() => {}}
-                    hideConstraints={true}
-                  />
-                </div>
-                */
-                }
+              <div className="divider is-vertical my-4">
+                <p>
+                  <span>
+                    <FontAwesomeIcon icon={faAngleDoubleRight} size="2x"/>
+                  </span>
+                </p>
+              </div>
+
+              <div className="column">
+                <h2 className="subtitle is-size-6 pl-2">
+                  2. Pick the best action for this column
+                </h2>
 
                 <ConceptChoice
                   key={activeColumn}
@@ -165,24 +170,59 @@ interface ConceptChoice {
 
 const ConceptChoice: FC<ConceptChoice> = ({ id, name }) => {
   const [isAuto, setIsAuto] = useState(true)
-  const [isActive, setIsActive] = useState(1)
+  const [isActive, setIsActive] = useState(0)
   const [existingIsOk, setExistingIsOk] = useState(false)
   const [newIsOk, setNewIsOk] = useState(false)
+  const [createModalIsActive, setCreateModalIsActive] = useState(false)
 
-  const handleChoice = (i: 0 | 1) => {
+  const handleChoice = (i: 1 | 2) => {
     setIsActive(i)
   }
 
+  const createModal = useMemo(() => {
+    return (
+      <Portal>
+        <div className={"modal " + (createModalIsActive ? "is-active" : "")}>
+          <div className="modal-background"/>
+
+          <div className="container">
+            <div className="div is-vcentered">
+              <div style={{position: "relative", width: "50vw", height: "70vh"}}>
+                <div className="box" style={{height: "100%", width: "calc(100% - 1rem)", overflowY: "scroll", backgroundColor: "#f5f5f5"}}>
+                  <h1 className="title is-size-4">
+                    Create new concept
+                  </h1>
+
+                  <ConceptDetail
+                    concept={undefined}
+                    taxonomy={undefined}
+                    onComplete={() => {}}
+                    hideConstraints={true}
+                  />
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+          <button className="modal-close is-large" aria-label="close" onClick={() => setCreateModalIsActive(false)} />
+        </div>
+      </Portal>
+    )
+  }, [ createModalIsActive ])
+
   return (
     <>
-      <div className={"plaque mb-3" + (isActive === 0 ? " is-active" : "")} onClick={() => handleChoice(0)}>
-        <div className="icon">
+      { createModal }
+
+      <div className={"plaque mb-3" + (isActive === 1 ? " is-active" : "")} onClick={() => handleChoice(1)}>
+        <div className="plaque-icon">
           <span>
-            <FontAwesomeIcon icon={isActive === 0 ? existingIsOk ? faCheck : faQuestion : faTimes} size="sm"/>
+            <FontAwesomeIcon icon={isActive === 0 ? faQuestion : isActive === 1 ? existingIsOk ? faCheck : faQuestion : faTimes} size="sm"/>
           </span>
         </div>
 
-        <h3 className="header-label label-size-2">
+        <h3 className="header-label label-size-1 pb-3">
           Re-use existing concept
         </h3>
 
@@ -191,44 +231,66 @@ const ConceptChoice: FC<ConceptChoice> = ({ id, name }) => {
             <p className="header-label is-flex is-align-items-center pr-3">
               {name}:
             </p>
-            <div style={{position: "relative"}}>
+            <div style={{display: "block"}}>
               <Dropdown
                 items={["1", "2"]}
                 onClick={() => setExistingIsOk(true)}
                 selected={null}
+                isDisabled={isActive !== 1}
               />
             </div>
           </div>
         </div>
       </div>
 
-      <div className={"plaque mb-3" + (isActive === 1 ? " is-active" : "")} onClick={() => handleChoice(1)}>
-        <div className="icon">
+      <div className={"plaque mb-3" + (isActive === 2 ? " is-active" : "")} onClick={() => handleChoice(2)}>
+        <div className="plaque-icon">
           <span>
-            <FontAwesomeIcon icon={isActive === 1 ? newIsOk ? faCheck : faQuestion : faTimes} size="sm"/>
+            <FontAwesomeIcon icon={isActive === 0 ? faQuestion : isActive === 2 ? newIsOk ? faCheck : faQuestion : faTimes} size="sm"/>
           </span>
         </div>
 
-        <h3 className="header-label label-size-2">
+        <h3 className="header-label label-size-1 pb-3">
          { isAuto ? "(Auto) " : "" }Create new concept
         </h3>
 
+        <div style={{position: "absolute", top: "10px", right: "10px"}}>
+          <button className="button is-small is-primary is-inverted" onClick={() => {setIsAuto(false); setCreateModalIsActive(true)} } disabled={isActive !== 2}>
+            Edit
+          </button>
+        </div>
+
         <div className="columns">
           <div className="column">
-            <div className="field is-horizontal">
+            <div className="field is-horizontal py-0">
               <p className="header-label pr-3">
                 Title:
               </p>
               <input className="input" type="text" value={name} disabled />
             </div>
+
+            <div className="field is-horizontal py-0">
+              <p className="header-label pr-3">
+                Description
+              </p>
+              <input className="input" type="text" value={"..."} disabled />
+            </div>
+
           </div>
 
           <div className="column">
-            <div className="field is-horizontal">
+            <div className="field is-horizontal py-0">
               <p className="header-label pr-3">
                 Data Type:
               </p>
               <input className="input" type="text" value={"String"} disabled />
+            </div>
+
+            <div className="field is-horizontal py-0">
+              <p className="header-label pr-3">
+                Aggregate:
+              </p>
+              <input className="input" type="text" value={"List"} disabled />
             </div>
           </div>
 
@@ -236,6 +298,10 @@ const ConceptChoice: FC<ConceptChoice> = ({ id, name }) => {
       </div>
     </>
   )
+}
+
+const Portal: FC = ({ children }) => {
+  return ReactDOM.createPortal(children, document.body)
 }
 
 
