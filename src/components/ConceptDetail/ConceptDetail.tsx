@@ -96,7 +96,7 @@ const ConceptDetail: FC<ConceptDetailI> = ({ concept, taxonomy, onComplete, onCh
   }
 
   const allConcepts = useMemo(() => taxonomy?.list().map(c => [c.id, c.name] as [string, string]) || [], [ taxonomy ])
-  const broaderNames = useMemo(() => broader.map(id => [id, taxonomy?.get(id)?.name] as [string, string]), [ broader, taxonomy ])
+  const broaderNames = useMemo(() => broader.map(id => [id, taxonomy?.get(id)?.name ?? ""] as [string, string]), [ broader, taxonomy ])
 
   const handleAddConstraint = (e: any) => {
     e.preventDefault()

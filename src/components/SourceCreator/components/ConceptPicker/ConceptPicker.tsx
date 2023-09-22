@@ -1,16 +1,20 @@
-import React, { FC, useMemo, useState, useEffect, useCallback } from 'react'
+import React, { FC, useMemo, useState, useEffect, useCallback, useRef } from 'react'
 import ReactDOM from 'react-dom'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faAngleLeft, faAngleRight, faAngleDoubleRight, faCheck, faTimes, faQuestion } from '@fortawesome/free-solid-svg-icons'
+import { Mutex } from 'async-mutex'
 
-import { useAppDispatch } from 'hooks'
 import { ConceptA, DataType, SqlTypeMap } from 'types'
+import { useAppDispatch, useAppSelector } from 'hooks'
+import { selectActiveDataSpace, selectConcepts } from 'state/selectors'
 import { sendLocalNotification } from 'state/actions'
 import { useDataFusionContext } from 'contexts'
 
 import DataTable from 'components/DataTable'
 import ConceptDetail from 'components/ConceptDetail'
 import Dropdown from 'components/Dropdown'
+
+import { loadTaxonomy, Taxonomy } from 'utils/taxonomy'
 
 import './ConceptPicker.sass'
 
@@ -25,52 +29,71 @@ const ConceptPicker: FC<ConceptPickerProps> = ({ tableId, attributes, onClose })
   const dispatch = useAppDispatch()
   const { dataFusion } = useDataFusionContext()
 
+  const existingConcepts = useAppSelector(selectConcepts)
+  const dataSpace = useAppSelector(selectActiveDataSpace)
+
   const [activeColumn, setActiveColumn] = useState(attributes[0].id)
   const [concepts, setConcepts] = useState<{[key: string]: ConceptA}>({})
+  const [choices, setChoices] = useState<{[key: string]: 1 | 2}>({})
+  const [isReady, setIsReady] = useState(false)
+
+  const mutex = useMemo(() => new Mutex(), [])
+  const conceptsRef = useRef<{[key: string]: ConceptA}>({})
+
+  const taxonomy = useMemo(() => {
+    if (dataSpace) {
+      return loadTaxonomy(dataSpace.key_id, existingConcepts)
+    }
+  }, [ dataSpace, existingConcepts ])
+
+  const allConcepts = useMemo(() => taxonomy?.list().map(c => [c.id, c.name] as [string, string]) || [], [ taxonomy ])
 
   useEffect(() => {
     (async () => {
-      const tableDescription: any = await dataFusion.describe_table(tableId)
+      if (!isReady) {
+        const tableDescription: any = await dataFusion.describe_table(tableId)
 
-      let concepts: {[key: string]: ConceptA} = {}
+        let concepts: {[key: string]: ConceptA} = {}
 
-      for (let attribute of attributes) {
-        const description = tableDescription.descriptions.find((d: any) => d.name === attribute.id)
+        for (let attribute of attributes) {
+          const description = tableDescription.descriptions.find((d: any) => d.name === attribute.id)
 
-        let dataType = DataType.Other
-        let aggregateFn = "array_agg"
+          let dataType = DataType.Other
+          let aggregateFn = "array_agg"
 
-        if (description) {
-          if (description.data_type.indexOf("Int") !== -1 || description.data_type.indexOf("Float") !== -1) {
-            // Very basic check to auto assign the right aggregate function type
-            if (description.min > 0 && (description.max <= 1 || description.max <= 100)) {
-              dataType = description.data_type.indexOf("Int") !== -1 ? DataType.RelativeInteger : DataType.RelativeDecimal
-              aggregateFn = "avg"
+          if (description) {
+            if (description.data_type.indexOf("Int") !== -1 || description.data_type.indexOf("Float") !== -1) {
+              // Very basic check to auto assign the right aggregate function type
+              if (description.min > 0 && (description.max <= 1 || description.max <= 100)) {
+                dataType = description.data_type.indexOf("Int") !== -1 ? DataType.RelativeInteger : DataType.RelativeDecimal
+                aggregateFn = "avg"
 
-            } else {
-              dataType = description.data_type.indexOf("Int") !== -1 ? DataType.AbsoluteInteger : DataType.AbsoluteDecimal
-              aggregateFn = "sum"
+              } else {
+                dataType = description.data_type.indexOf("Int") !== -1 ? DataType.AbsoluteInteger : DataType.AbsoluteDecimal
+                aggregateFn = "sum"
+              }
+            }
+
+            if (description.data_type === "Utf8") {
+              dataType = DataType.String
             }
           }
 
-          if (description.data_type === "Utf8") {
-            dataType = DataType.String
+          concepts[attribute.id] = {
+            id: crypto.randomUUID(),
+            workspace: "default",
+            name: attribute.name,
+            dataType: dataType,
+            aggregateFn: aggregateFn
           }
         }
 
-        concepts[attribute.id] = {
-          id: crypto.randomUUID(),
-          workspace: "default",
-          name: attribute.name,
-          dataType: dataType,
-          aggregateFn: aggregateFn
-        }
+        conceptsRef.current = concepts
+        setConcepts(concepts)
+        setIsReady(true)
       }
-
-      setConcepts(concepts)
-
     })()
-  }, [ tableId, attributes, dataFusion ])
+  }, [ tableId, attributes, dataFusion, isReady ])
 
   const schema = useMemo(() => {
     return {
@@ -124,41 +147,52 @@ const ConceptPicker: FC<ConceptPickerProps> = ({ tableId, attributes, onClose })
   }
 
   const handleChange = useCallback((id: string, concept: ConceptA, newConcept: ConceptA) => {
-    if (newConcept.dataType && newConcept.dataType !== concept.dataType) {
-      const dataTypeKey = Object.keys(DataType)[Object.values(DataType).indexOf(newConcept.dataType)]
+    mutex.runExclusive(async () => {
+      if (newConcept.dataType && newConcept.dataType !== concept.dataType) {
+        const dataTypeKey = Object.keys(DataType)[Object.values(DataType).indexOf(newConcept.dataType)]
 
-      const cloneId = dataFusion?.clone_table(tableId, "")
-      const query = `SELECT CAST("${id}" AS  ${SqlTypeMap[dataTypeKey]}) AS "${id}" FROM "${tableId}"`
-      dataFusion?.query(tableId, query).then((artifact: any) => {
-        dataFusion?.apply_artifact(cloneId, artifact).then(() => {
-          dataFusion?.merge_table(cloneId, tableId)
-          dataFusion?.move_table(cloneId, tableId)
+        const cloneId = dataFusion?.clone_table(tableId, "")
+        const query = `SELECT CAST("${id}" AS  ${SqlTypeMap[dataTypeKey]}) AS "${id}" FROM "${tableId}"`
+        dataFusion?.query(tableId, query).then((artifact: any) => {
+          dataFusion?.apply_artifact(cloneId, artifact).then(() => {
+            dataFusion?.merge_table(cloneId, tableId)
+            dataFusion?.move_table(cloneId, tableId)
 
-          setConcepts({...concepts, ...{[id]: newConcept}})
+            conceptsRef.current[id] = newConcept
+            setConcepts(JSON.parse(JSON.stringify(conceptsRef.current)))
+          })
+        }).catch(() => {
+          onError("Invalid data type")
         })
-      }).catch(() => {
-        onError("Invalid data type")
-      })
 
-    } else {
-      setConcepts({...concepts, ...{[id]: newConcept}})
-    }
-  }, [ dataFusion, onError, concepts, tableId ])
+      } else {
+        conceptsRef.current[id] = newConcept
+        setConcepts(JSON.parse(JSON.stringify(conceptsRef.current)))
+      }
+    })
+  }, [ dataFusion, onError, tableId, mutex ])
+
+  const handleChoice = useCallback((id: string, choice: 1 | 2) => {
+    setChoices({...choices, ...{[id]: choice}})
+  }, [ choices ])
 
   const renderChoices = useMemo(() => {
     return attributes.map(x => {
       return (
         <ConceptChoice
           key={x.id}
-          id={activeColumn}
-          concept={concepts[activeColumn]}
+          id={x.id}
+          name={x.name}
+          concept={concepts[x.id]}
+          allConcepts={allConcepts}
+          taxonomy={taxonomy}
           isActive={x.id === activeColumn}
-          onCreate={handleChange}
-          onExisting={() => {}}
+          onChoice={handleChoice}
+          onChange={handleChange}
         />
       )
     })
-  }, [ attributes, concepts, activeColumn, handleChange ])
+  }, [ attributes, concepts, activeColumn, handleChange, handleChoice, taxonomy, allConcepts ])
 
   return (
     <div className="container">
@@ -239,7 +273,7 @@ const ConceptPicker: FC<ConceptPickerProps> = ({ tableId, attributes, onClose })
                   2. Pick the best action for this column
                 </h2>
 
-                { renderChoices }
+                { isReady && renderChoices }
 
               </div>
             </div>
@@ -263,22 +297,56 @@ const ConceptPicker: FC<ConceptPickerProps> = ({ tableId, attributes, onClose })
 
 interface ConceptChoiceI {
   id: string,
+  name: string,
   concept: ConceptA | undefined,
+  allConcepts: [string, string][],
+  taxonomy: Taxonomy | undefined,
   isActive: boolean,
-  onCreate: (id: string, concept: ConceptA, newConcept: ConceptA) => void,
-  onExisting: (conceptId: string) => void
+  onChoice: (id: string, choice: 1 | 2) => void,
+  onChange: (id: string, concept: ConceptA, newConcept: ConceptA) => void
 }
 
-const ConceptChoice: FC<ConceptChoiceI> = ({ id, concept, isActive, onCreate, onExisting }) => {
+const ConceptChoice: FC<ConceptChoiceI> = ({ id, name, concept, allConcepts, taxonomy, isActive, onChoice, onChange }) => {
   const [isAuto, setIsAuto] = useState(true)
+  const [isFirst, setIsFirst] = useState(true)
   const [existingIsOk, setExistingIsOk] = useState(false)
   const [createModalIsActive, setCreateModalIsActive] = useState(false)
   const [choice, setChoice] = useState(0)
 
   const newIsOk = !!concept?.name
 
-  const handleChoice = (i: 1 | 2) => {
+  const handleChoice = useCallback((i: 1 | 2) => {
     setChoice(i)
+    onChoice(id, i)
+  }, [ id, onChoice ])
+
+  const selected = useMemo(() => {
+    const maybeId = allConcepts.filter((x: [string, string]) => concept?.id === x[0])
+
+    if (maybeId.length > 0) {
+      return maybeId[0]
+    }
+  }, [ allConcepts, concept ])
+
+  useEffect(() => {
+    if (!selected && isFirst && concept) {
+      const maybeNew = taxonomy?.list().filter(x => x.name.toLowerCase() === concept.name.toLowerCase()) || []
+
+      if (maybeNew.length > 0) {
+        handleChoice(1)
+        onChange(id, concept, maybeNew[0])
+        setIsFirst(false)
+      }
+    }
+  }, [ selected, taxonomy, concept, handleChoice, id, isFirst, onChange ])
+
+  const handleSelect = (item: [string, string]) => {
+    const newConcept = taxonomy?.get(item[0])
+
+    if (concept && newConcept) {
+      onChange(id, concept, newConcept)
+      setExistingIsOk(true)
+    }
   }
 
   const createModal = useMemo(() => {
@@ -286,43 +354,45 @@ const ConceptChoice: FC<ConceptChoiceI> = ({ id, concept, isActive, onCreate, on
       setCreateModalIsActive(false)
 
       if (concept) {
-        onCreate(id, concept, newConcept)
+        onChange(id, concept, newConcept)
       }
     }
 
     return (
       <Portal>
-        <div className={"modal " + (createModalIsActive ? "is-active" : "")}>
-          <div className="modal-background"/>
+        { createModalIsActive &&
+          <div className={"modal " + (createModalIsActive ? "is-active" : "")}>
+            <div className="modal-background"/>
 
-          <div className="container">
-            <div className="div is-vcentered">
-              <div style={{position: "relative", width: "50vw", height: "70vh"}}>
-                <div className="box" style={{height: "100%", width: "calc(100% - 1rem)", overflowY: "scroll", backgroundColor: "#f5f5f5"}}>
-                  <h1 className="title is-size-4">
-                    Create new concept
-                  </h1>
+            <div className="container">
+              <div className="div is-vcentered">
+                <div style={{position: "relative", width: "50vw", height: "70vh"}}>
+                  <div className="box" style={{height: "100%", width: "calc(100% - 1rem)", overflowY: "scroll", backgroundColor: "#f5f5f5"}}>
+                    <h1 className="title is-size-4">
+                      Create new concept
+                    </h1>
 
-                  <ConceptDetail
-                    concept={concept}
-                    taxonomy={undefined}
-                    onComplete={() => {}}
-                    onChange={handleChange}
-                    hideConstraints={true}
-                    isCreate={true}
-                    allowTypeChange={true}
-                  />
+                    <ConceptDetail
+                      concept={concept}
+                      taxonomy={taxonomy}
+                      onComplete={() => {}}
+                      onChange={handleChange}
+                      hideConstraints={true}
+                      isCreate={true}
+                      allowTypeChange={true}
+                    />
+                  </div>
+
                 </div>
-
               </div>
             </div>
-          </div>
 
-          <button className="modal-close is-large" aria-label="close" onClick={() => setCreateModalIsActive(false)} />
-        </div>
+            <button className="modal-close is-large" aria-label="close" onClick={() => setCreateModalIsActive(false)} />
+          </div>
+        }
       </Portal>
     )
-  }, [ createModalIsActive, id, concept, onCreate ])
+  }, [ createModalIsActive, id, concept, onChange, taxonomy ])
 
   if (!isActive) {
     return (
@@ -348,13 +418,14 @@ const ConceptChoice: FC<ConceptChoiceI> = ({ id, concept, isActive, onCreate, on
         <div className="plaque-content">
           <div className="field is-horizontal">
             <p className="header-label is-flex is-align-items-center pr-3">
-              {concept?.name}:
+              {name}:
             </p>
             <div style={{display: "block"}}>
               <Dropdown
-                items={["1", "2"]}
-                onClick={() => setExistingIsOk(true)}
-                selected={null}
+                key={selected ? selected[0] : "empty"}
+                items={allConcepts}
+                selected={selected}
+                onClick={handleSelect}
                 isDisabled={choice !== 1}
               />
             </div>
