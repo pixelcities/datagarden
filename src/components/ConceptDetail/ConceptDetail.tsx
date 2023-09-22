@@ -17,10 +17,13 @@ interface ConceptDetailI {
   concept?: ConceptA,
   taxonomy?: Taxonomy,
   onComplete: (id: string) => void,
-  hideConstraints?: boolean
+  onChange?: (concept: ConceptA) => void,
+  hideConstraints?: boolean,
+  isCreate?: boolean,
+  allowTypeChange?: boolean
 }
 
-const ConceptDetail: FC<ConceptDetailI> = ({ concept, taxonomy, onComplete, hideConstraints }) => {
+const ConceptDetail: FC<ConceptDetailI> = ({ concept, taxonomy, onComplete, onChange, hideConstraints = false, isCreate = false, allowTypeChange = false }) => {
   const dispatch = useAppDispatch()
   const dataSpace = useAppSelector(selectActiveDataSpace)
 
@@ -57,7 +60,7 @@ const ConceptDetail: FC<ConceptDetailI> = ({ concept, taxonomy, onComplete, hide
     }
 
     const id = concept ? concept.id : crypto.randomUUID()
-    const action = emptyTaxonomy(dataSpace?.key_id).serialize({
+    const newConcept = {
       id: id,
       workspace: concept?.workspace || "default",
       name: name,
@@ -66,9 +69,11 @@ const ConceptDetail: FC<ConceptDetailI> = ({ concept, taxonomy, onComplete, hide
       description: description,
       broader: broader,
       constraints: constraints.filter((x): x is Rule => !!x)
-    })
+    }
 
-    if (action) {
+    const action = emptyTaxonomy(dataSpace?.key_id).serialize(newConcept)
+
+    if (action && !onChange) {
       if (concept) {
         dispatch(updateConcept(action))
       } else {
@@ -83,7 +88,11 @@ const ConceptDetail: FC<ConceptDetailI> = ({ concept, taxonomy, onComplete, hide
       }
     }
 
-    onComplete(id)
+    if (onChange) {
+      onChange(newConcept)
+    } else {
+      onComplete(id)
+    }
   }
 
   const allConcepts = useMemo(() => taxonomy?.list().map(c => [c.id, c.name] as [string, string]) || [], [ taxonomy ])
@@ -171,14 +180,15 @@ const ConceptDetail: FC<ConceptDetailI> = ({ concept, taxonomy, onComplete, hide
                       }
                     </label>
 
-                    { concept ?
+                    { concept && !allowTypeChange ?
                       <p className="fineprint-label label-size-3 is-left pt-1">
                         { dataType }
                       </p>
                     :
-                      <Dropdown<[string, DataType]>
-                        items={Object.entries(DataType)}
-                        onClick={item => setDataType(item[1])}
+                      <Dropdown<DataType>
+                        items={Object.values(DataType)}
+                        selected={concept ? concept.dataType : null}
+                        onClick={item => setDataType(item)}
                       />
                     }
 
@@ -266,10 +276,10 @@ const ConceptDetail: FC<ConceptDetailI> = ({ concept, taxonomy, onComplete, hide
         <div className="field is-grouped is-grouped-right">
           <div className="control">
             <div className="buttons">
-              { concept &&
+              { concept && !isCreate &&
                 <div className="button is-danger is-outlined" onClick={handleDelete}> Delete </div>
               }
-              <input type="submit" className="button is-primary is-outlined" value={concept ? "Update concept" : "Create concept"} />
+              <input type="submit" className="button is-primary is-outlined" value={concept && !isCreate ? "Update concept" : "Create concept"} />
             </div>
           </div>
         </div>

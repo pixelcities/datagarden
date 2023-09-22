@@ -39,7 +39,7 @@ const LocalSource: FC<LocalSourceProps> = ({ type, onComplete, onClose }) => {
 
   const [isLoaded, setIsLoaded] = useState<boolean>(false)
   const [name, setName] = useState("")
-  const [attributes, setAttributes] = useState<{id: string, concept_id: string, name: string}[]>([])
+  const [attributes, setAttributes] = useState<{id: string, name: string}[]>([])
 
   const dataURI = useAppSelector(state => selectDataURIById(state, tableId))
   const dataSpace = useAppSelector(selectActiveDataSpace)
@@ -64,7 +64,7 @@ const LocalSource: FC<LocalSourceProps> = ({ type, onComplete, onClose }) => {
 
       const originalSchema = dataFusion.get_schema(tableId)
 
-      let attributes: {id: string, concept_id: string, name: string}[] = []
+      let attributes: {id: string, name: string}[] = []
       let fields = []
 
       for (const field of originalSchema.fields) {
@@ -73,7 +73,6 @@ const LocalSource: FC<LocalSourceProps> = ({ type, onComplete, onClose }) => {
         fields.push({...field, ...{name: id}})
         attributes.push({
           id: id,
-          concept_id: crypto.randomUUID(),
           name: field.name
         })
       }
@@ -139,7 +138,7 @@ const LocalSource: FC<LocalSourceProps> = ({ type, onComplete, onClose }) => {
           }
 
           const concept = taxonomy.serialize({
-            id: attribute.concept_id,
+            id: crypto.randomUUID(), //attribute.concept_id,
             workspace: "default",
             name: attribute.name,
             dataType: dataType,
@@ -214,7 +213,7 @@ const LocalSource: FC<LocalSourceProps> = ({ type, onComplete, onClose }) => {
 
       columns.push({
         id: attribute.id,
-        concept_id: attribute.concept_id,
+        concept_id: crypto.randomUUID(), //attribute.concept_id,
         key_id: key_id,
         lineage: null,
         shares: [

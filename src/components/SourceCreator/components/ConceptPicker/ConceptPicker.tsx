@@ -1,7 +1,12 @@
-import React, { FC, useMemo, useState } from 'react'
+import React, { FC, useMemo, useState, useEffect, useCallback } from 'react'
 import ReactDOM from 'react-dom'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faAngleLeft, faAngleRight, faAngleDoubleRight, faCheck, faTimes, faQuestion } from '@fortawesome/free-solid-svg-icons'
+
+import { useAppDispatch } from 'hooks'
+import { ConceptA, DataType, SqlTypeMap } from 'types'
+import { sendLocalNotification } from 'state/actions'
+import { useDataFusionContext } from 'contexts'
 
 import DataTable from 'components/DataTable'
 import ConceptDetail from 'components/ConceptDetail'
@@ -12,12 +17,60 @@ import './ConceptPicker.sass'
 
 interface ConceptPickerProps {
   tableId: string,
-  attributes: {id: string, concept_id: string, name: string}[],
+  attributes: {id: string, name: string}[],
   onClose: () => void
 }
 
 const ConceptPicker: FC<ConceptPickerProps> = ({ tableId, attributes, onClose }) => {
+  const dispatch = useAppDispatch()
+  const { dataFusion } = useDataFusionContext()
+
   const [activeColumn, setActiveColumn] = useState(attributes[0].id)
+  const [concepts, setConcepts] = useState<{[key: string]: ConceptA}>({})
+
+  useEffect(() => {
+    (async () => {
+      const tableDescription: any = await dataFusion.describe_table(tableId)
+
+      let concepts: {[key: string]: ConceptA} = {}
+
+      for (let attribute of attributes) {
+        const description = tableDescription.descriptions.find((d: any) => d.name === attribute.id)
+
+        let dataType = DataType.Other
+        let aggregateFn = "array_agg"
+
+        if (description) {
+          if (description.data_type.indexOf("Int") !== -1 || description.data_type.indexOf("Float") !== -1) {
+            // Very basic check to auto assign the right aggregate function type
+            if (description.min > 0 && (description.max <= 1 || description.max <= 100)) {
+              dataType = description.data_type.indexOf("Int") !== -1 ? DataType.RelativeInteger : DataType.RelativeDecimal
+              aggregateFn = "avg"
+
+            } else {
+              dataType = description.data_type.indexOf("Int") !== -1 ? DataType.AbsoluteInteger : DataType.AbsoluteDecimal
+              aggregateFn = "sum"
+            }
+          }
+
+          if (description.data_type === "Utf8") {
+            dataType = DataType.String
+          }
+        }
+
+        concepts[attribute.id] = {
+          id: crypto.randomUUID(),
+          workspace: "default",
+          name: attribute.name,
+          dataType: dataType,
+          aggregateFn: aggregateFn
+        }
+      }
+
+      setConcepts(concepts)
+
+    })()
+  }, [ tableId, attributes, dataFusion ])
 
   const schema = useMemo(() => {
     return {
@@ -48,6 +101,18 @@ const ConceptPicker: FC<ConceptPickerProps> = ({ tableId, attributes, onClose })
     return mapping
   }, [ attributes ])
 
+  const onError = useCallback((error: string) => {
+    console.error(error)
+
+    dispatch(sendLocalNotification({
+      id: crypto.randomUUID(),
+      type: "error",
+      message: error,
+      is_urgent: true,
+      is_local: true
+    }))
+  }, [ dispatch ])
+
   const handlePrev = () => {
     const i = attributes.findIndex(x => x.id === activeColumn)
     setActiveColumn(attributes[Math.max(0, i - 1)].id)
@@ -57,6 +122,43 @@ const ConceptPicker: FC<ConceptPickerProps> = ({ tableId, attributes, onClose })
     const i = attributes.findIndex(x => x.id === activeColumn)
     setActiveColumn(attributes[Math.min(attributes.length - 1, i + 1)].id)
   }
+
+  const handleChange = useCallback((id: string, concept: ConceptA, newConcept: ConceptA) => {
+    if (newConcept.dataType && newConcept.dataType !== concept.dataType) {
+      const dataTypeKey = Object.keys(DataType)[Object.values(DataType).indexOf(newConcept.dataType)]
+
+      const cloneId = dataFusion?.clone_table(tableId, "")
+      const query = `SELECT CAST("${id}" AS  ${SqlTypeMap[dataTypeKey]}) AS "${id}" FROM "${tableId}"`
+      dataFusion?.query(tableId, query).then((artifact: any) => {
+        dataFusion?.apply_artifact(cloneId, artifact).then(() => {
+          dataFusion?.merge_table(cloneId, tableId)
+          dataFusion?.move_table(cloneId, tableId)
+
+          setConcepts({...concepts, ...{[id]: newConcept}})
+        })
+      }).catch(() => {
+        onError("Invalid data type")
+      })
+
+    } else {
+      setConcepts({...concepts, ...{[id]: newConcept}})
+    }
+  }, [ dataFusion, onError, concepts, tableId ])
+
+  const renderChoices = useMemo(() => {
+    return attributes.map(x => {
+      return (
+        <ConceptChoice
+          key={x.id}
+          id={activeColumn}
+          concept={concepts[activeColumn]}
+          isActive={x.id === activeColumn}
+          onCreate={handleChange}
+          onExisting={() => {}}
+        />
+      )
+    })
+  }, [ attributes, concepts, activeColumn, handleChange ])
 
   return (
     <div className="container">
@@ -137,11 +239,7 @@ const ConceptPicker: FC<ConceptPickerProps> = ({ tableId, attributes, onClose })
                   2. Pick the best action for this column
                 </h2>
 
-                <ConceptChoice
-                  key={activeColumn}
-                  id={activeColumn}
-                  name={headerMapping[activeColumn]}
-                />
+                { renderChoices }
 
               </div>
             </div>
@@ -163,23 +261,35 @@ const ConceptPicker: FC<ConceptPickerProps> = ({ tableId, attributes, onClose })
   )
 }
 
-interface ConceptChoice {
+interface ConceptChoiceI {
   id: string,
-  name: string
+  concept: ConceptA | undefined,
+  isActive: boolean,
+  onCreate: (id: string, concept: ConceptA, newConcept: ConceptA) => void,
+  onExisting: (conceptId: string) => void
 }
 
-const ConceptChoice: FC<ConceptChoice> = ({ id, name }) => {
+const ConceptChoice: FC<ConceptChoiceI> = ({ id, concept, isActive, onCreate, onExisting }) => {
   const [isAuto, setIsAuto] = useState(true)
-  const [isActive, setIsActive] = useState(0)
   const [existingIsOk, setExistingIsOk] = useState(false)
-  const [newIsOk, setNewIsOk] = useState(false)
   const [createModalIsActive, setCreateModalIsActive] = useState(false)
+  const [choice, setChoice] = useState(0)
+
+  const newIsOk = !!concept?.name
 
   const handleChoice = (i: 1 | 2) => {
-    setIsActive(i)
+    setChoice(i)
   }
 
   const createModal = useMemo(() => {
+    const handleChange = (newConcept: ConceptA) => {
+      setCreateModalIsActive(false)
+
+      if (concept) {
+        onCreate(id, concept, newConcept)
+      }
+    }
+
     return (
       <Portal>
         <div className={"modal " + (createModalIsActive ? "is-active" : "")}>
@@ -194,10 +304,13 @@ const ConceptChoice: FC<ConceptChoice> = ({ id, name }) => {
                   </h1>
 
                   <ConceptDetail
-                    concept={undefined}
+                    concept={concept}
                     taxonomy={undefined}
                     onComplete={() => {}}
+                    onChange={handleChange}
                     hideConstraints={true}
+                    isCreate={true}
+                    allowTypeChange={true}
                   />
                 </div>
 
@@ -209,16 +322,22 @@ const ConceptChoice: FC<ConceptChoice> = ({ id, name }) => {
         </div>
       </Portal>
     )
-  }, [ createModalIsActive ])
+  }, [ createModalIsActive, id, concept, onCreate ])
+
+  if (!isActive) {
+    return (
+      <></>
+    )
+  }
 
   return (
     <>
       { createModal }
 
-      <div className={"plaque mb-3" + (isActive === 1 ? " is-active" : "")} onClick={() => handleChoice(1)}>
+      <div className={"plaque mb-3" + (choice === 1 ? " is-active" : "")} onClick={() => handleChoice(1)}>
         <div className="plaque-icon">
           <span>
-            <FontAwesomeIcon icon={isActive === 0 ? faQuestion : isActive === 1 ? existingIsOk ? faCheck : faQuestion : faTimes} size="sm"/>
+            <FontAwesomeIcon icon={choice === 0 ? faQuestion : choice === 1 ? existingIsOk ? faCheck : faQuestion : faTimes} size="sm"/>
           </span>
         </div>
 
@@ -229,24 +348,24 @@ const ConceptChoice: FC<ConceptChoice> = ({ id, name }) => {
         <div className="plaque-content">
           <div className="field is-horizontal">
             <p className="header-label is-flex is-align-items-center pr-3">
-              {name}:
+              {concept?.name}:
             </p>
             <div style={{display: "block"}}>
               <Dropdown
                 items={["1", "2"]}
                 onClick={() => setExistingIsOk(true)}
                 selected={null}
-                isDisabled={isActive !== 1}
+                isDisabled={choice !== 1}
               />
             </div>
           </div>
         </div>
       </div>
 
-      <div className={"plaque mb-3" + (isActive === 2 ? " is-active" : "")} onClick={() => handleChoice(2)}>
+      <div className={"plaque mb-3" + (choice === 2 ? " is-active" : "")} onClick={() => handleChoice(2)}>
         <div className="plaque-icon">
           <span>
-            <FontAwesomeIcon icon={isActive === 0 ? faQuestion : isActive === 2 ? newIsOk ? faCheck : faQuestion : faTimes} size="sm"/>
+            <FontAwesomeIcon icon={choice === 0 ? faQuestion : choice === 2 ? newIsOk ? faCheck : faQuestion : faTimes} size="sm"/>
           </span>
         </div>
 
@@ -255,7 +374,7 @@ const ConceptChoice: FC<ConceptChoice> = ({ id, name }) => {
         </h3>
 
         <div style={{position: "absolute", top: "10px", right: "10px"}}>
-          <button className="button is-small is-primary is-inverted" onClick={() => {setIsAuto(false); setCreateModalIsActive(true)} } disabled={isActive !== 2}>
+          <button className="button is-small is-primary is-inverted" onClick={() => {setIsAuto(false); setCreateModalIsActive(true)} } disabled={choice !== 2}>
             Edit
           </button>
         </div>
@@ -266,14 +385,14 @@ const ConceptChoice: FC<ConceptChoice> = ({ id, name }) => {
               <p className="header-label pr-3">
                 Title:
               </p>
-              <input className="input" type="text" value={name} disabled />
+              <input className="input" type="text" value={concept?.name || ""} disabled />
             </div>
 
             <div className="field is-horizontal py-0">
               <p className="header-label pr-3">
                 Description
               </p>
-              <input className="input" type="text" value={"..."} disabled />
+              <input className="input" type="text" value={concept?.description || ""} disabled />
             </div>
 
           </div>
@@ -283,14 +402,14 @@ const ConceptChoice: FC<ConceptChoice> = ({ id, name }) => {
               <p className="header-label pr-3">
                 Data Type:
               </p>
-              <input className="input" type="text" value={"String"} disabled />
+              <input className="input" type="text" value={concept?.dataType || ""} disabled />
             </div>
 
             <div className="field is-horizontal py-0">
               <p className="header-label pr-3">
                 Aggregate:
               </p>
-              <input className="input" type="text" value={"List"} disabled />
+              <input className="input" type="text" value={concept?.aggregateFn || ""} disabled />
             </div>
           </div>
 
