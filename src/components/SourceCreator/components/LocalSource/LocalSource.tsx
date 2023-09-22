@@ -8,10 +8,9 @@ import { useKeyStoreContext } from 'contexts'
 import { useAuthContext } from 'contexts';
 
 import { useAppDispatch, useAppSelector } from 'hooks'
-import { createSource, createMetadata, createConcept, createDataURI } from 'state/actions'
+import { createSource, createMetadata, createDataURI } from 'state/actions'
 import { selectDataURIById, selectActiveDataSpace } from 'state/selectors'
-import { Source, DataType } from 'types'
-import { emptyTaxonomy } from 'utils/taxonomy'
+import { Source } from 'types'
 import { signSchema } from 'utils/integrity'
 
 // https://github.com/denoland/deno/issues/12754
@@ -87,7 +86,7 @@ const LocalSource: FC<LocalSourceProps> = ({ type, onComplete, onClose }) => {
     reader.readAsArrayBuffer(f)
   }
 
-  const uploadTable = () => {
+  const uploadTable = (attributes: {id: string, concept_id: string}[]) => {
     if (!user) {
       return
     }
@@ -100,102 +99,58 @@ const LocalSource: FC<LocalSourceProps> = ({ type, onComplete, onClose }) => {
     getDataTokens(uri + `/${tableId}.parquet`, tag, "write").then(tokens => {
       const s3_path = uri.split("s3://")[1] + `/${tableId}.parquet`
 
-      // Get a table description
-      dataFusion.describe_table(tableId).then((tableDescription: any) => {
+      // Publish the title
+      dispatch(createMetadata({
+        id: tableId,
+        workspace: "default",
+        metadata: keyStore?.encrypt_metadata(dataSpace?.key_id, name)
+      }))
 
-        // Publish the title
-        dispatch(createMetadata({
-          id: tableId,
-          workspace: "default",
-          metadata: keyStore?.encrypt_metadata(dataSpace?.key_id, name)
-        }))
-
-        // Publish the concepts
-        const taxonomy = emptyTaxonomy(dataSpace?.key_id)
-
-        for (let attribute of attributes) {
-          const description = tableDescription.descriptions.find((d: any) => d.name === attribute.id)
-
-          let dataType = DataType.Other
-          let aggregateFn = "array_agg"
-
-          if (description) {
-            if (description.data_type.indexOf("Int") !== -1 || description.data_type.indexOf("Float") !== -1) {
-              // Very basic check to auto assign the right aggregate function type
-              if (description.min > 0 && (description.max <= 1 || description.max <= 100)) {
-                dataType = description.data_type.indexOf("Int") !== -1 ? DataType.RelativeInteger : DataType.RelativeDecimal
-                aggregateFn = "avg"
-
-              } else {
-                dataType = description.data_type.indexOf("Int") !== -1 ? DataType.AbsoluteInteger : DataType.AbsoluteDecimal
-                aggregateFn = "sum"
+      // Generate the keys
+      generateColumnsWithKeys(attributes, user.id).then((columns) => {
+        keyStore?.generate_key(16).then((key_id: string) => {
+          const schema = {
+            id: tableId,
+            key_id: key_id,
+            column_order: columns.map(c => c.id),
+            columns: columns,
+            shares: [
+              {
+                type: "owner",
+                principal: user?.id
               }
-            }
-
-            if (description.data_type === "Utf8") {
-              dataType = DataType.String
-            }
-          }
-
-          const concept = taxonomy.serialize({
-            id: crypto.randomUUID(), //attribute.concept_id,
-            workspace: "default",
-            name: attribute.name,
-            dataType: dataType,
-            aggregateFn: aggregateFn
-          })
-
-          if (concept) {
-            dispatch(createConcept(concept))
-          }
-        }
-
-        // Generate the keys
-        generateColumnsWithKeys(attributes, user.id).then((columns) => {
-          keyStore?.generate_key(16).then((key_id: string) => {
-            const schema = {
-              id: tableId,
-              key_id: key_id,
-              column_order: columns.map(c => c.id),
-              columns: columns,
-              shares: [
-                {
-                  type: "owner",
-                  principal: user?.id
-                }
-              ]
-            }
-
-            // TODO: this should be the metadata key when it is shared internally
-            let keymap = [
-              "__FOOTER", key_id, keyStore?.get_key(key_id)
             ]
+          }
 
-            for (let column of columns) {
-              keymap.push(column.id)
-              keymap.push(column.key_id)
-              keymap.push(keyStore?.get_key(column.key_id))
-            }
+          // TODO: this should be the metadata key when it is shared internally
+          let keymap = [
+            "__FOOTER", key_id, keyStore?.get_key(key_id)
+          ]
 
-            // Save the table
-            const table = dataFusion.export_table(tableId)
-            arrow["FS"].writeFile(path, table)
+          for (let column of columns) {
+            keymap.push(column.id)
+            keymap.push(column.key_id)
+            keymap.push(keyStore?.get_key(column.key_id))
+          }
 
-            arrow.write_remote_parquet(path, s3_path, tokens.access_key, tokens.secret_key, tokens.session_token, keymap).then(() => {
-              signSchema(schema, keyStore?.get_key(key_id)).then(signedSchema => {
-                // Save the metadata
-                const source = {
-                  id: tableId,
-                  workspace: "default",
-                  type: type,
-                  uri: [uri, tag] as [string, string],
-                  schema: signedSchema,
-                  is_published: false
-                }
+          // Save the table
+          const table = dataFusion.export_table(tableId)
+          arrow["FS"].writeFile(path, table)
 
-                dispatch(createSource(source))
-                onComplete(source)
-              })
+          arrow.write_remote_parquet(path, s3_path, tokens.access_key, tokens.secret_key, tokens.session_token, keymap).then(() => {
+            signSchema(schema, keyStore?.get_key(key_id)).then(signedSchema => {
+              // Save the metadata
+              const source = {
+                id: tableId,
+                workspace: "default",
+                type: type,
+                uri: [uri, tag] as [string, string],
+                schema: signedSchema,
+                is_published: false
+              }
+
+              dispatch(createSource(source))
+              onComplete(source)
             })
           })
         })
@@ -213,7 +168,7 @@ const LocalSource: FC<LocalSourceProps> = ({ type, onComplete, onClose }) => {
 
       columns.push({
         id: attribute.id,
-        concept_id: crypto.randomUUID(), //attribute.concept_id,
+        concept_id: attribute.concept_id,
         key_id: key_id,
         lineage: null,
         shares: [
@@ -250,6 +205,7 @@ const LocalSource: FC<LocalSourceProps> = ({ type, onComplete, onClose }) => {
         <ConceptPicker
           tableId={tableId}
           attributes={attributes}
+          onComplete={uploadTable}
           onClose={onClose}
         />
       }

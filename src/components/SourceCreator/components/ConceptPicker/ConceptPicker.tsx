@@ -7,7 +7,7 @@ import { Mutex } from 'async-mutex'
 import { ConceptA, DataType, SqlTypeMap } from 'types'
 import { useAppDispatch, useAppSelector } from 'hooks'
 import { selectActiveDataSpace, selectConcepts } from 'state/selectors'
-import { sendLocalNotification } from 'state/actions'
+import { sendLocalNotification, createConcept } from 'state/actions'
 import { useDataFusionContext } from 'contexts'
 
 import DataTable from 'components/DataTable'
@@ -22,10 +22,11 @@ import './ConceptPicker.sass'
 interface ConceptPickerProps {
   tableId: string,
   attributes: {id: string, name: string}[],
+  onComplete: (attributes: {id: string, concept_id: string}[]) => void,
   onClose: () => void
 }
 
-const ConceptPicker: FC<ConceptPickerProps> = ({ tableId, attributes, onClose }) => {
+const ConceptPicker: FC<ConceptPickerProps> = ({ tableId, attributes, onComplete, onClose }) => {
   const dispatch = useAppDispatch()
   const { dataFusion } = useDataFusionContext()
 
@@ -36,9 +37,13 @@ const ConceptPicker: FC<ConceptPickerProps> = ({ tableId, attributes, onClose })
   const [concepts, setConcepts] = useState<{[key: string]: ConceptA}>({})
   const [choices, setChoices] = useState<{[key: string]: 1 | 2}>({})
   const [isReady, setIsReady] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
 
   const mutex = useMemo(() => new Mutex(), [])
   const conceptsRef = useRef<{[key: string]: ConceptA}>({})
+  const choicesRef = useRef<{[key: string]: 1 | 2}>({})
+
+  const finished = Object.keys(choices).length === Object.keys(attributes).length
 
   const taxonomy = useMemo(() => {
     if (dataSpace) {
@@ -146,6 +151,30 @@ const ConceptPicker: FC<ConceptPickerProps> = ({ tableId, attributes, onClose })
     setActiveColumn(attributes[Math.min(attributes.length - 1, i + 1)].id)
   }
 
+  const handlePublish = () => {
+    if (!taxonomy) {
+      console.error("Taxonomy not loaded")
+      return
+    }
+
+    // Publish the new concepts
+    for (const [id, choice] of Object.entries(choices)) {
+      if (choice === 2) {
+        const concept = taxonomy.serialize(concepts[id])
+
+        if (concept) {
+          dispatch(createConcept(concept))
+        }
+      }
+    }
+
+    const newAttributes = Object.entries(concepts).map(([k, v]) => { return {id: k, concept_id: v.id} })
+
+    // Return
+    onComplete(newAttributes)
+    setIsLoading(true)
+  }
+
   const handleChange = useCallback((id: string, concept: ConceptA, newConcept: ConceptA) => {
     mutex.runExclusive(async () => {
       if (newConcept.dataType && newConcept.dataType !== concept.dataType) {
@@ -161,8 +190,10 @@ const ConceptPicker: FC<ConceptPickerProps> = ({ tableId, attributes, onClose })
             conceptsRef.current[id] = newConcept
             setConcepts(JSON.parse(JSON.stringify(conceptsRef.current)))
           })
-        }).catch(() => {
-          onError("Invalid data type")
+        }).catch((e: string) => {
+          if (e.toString().indexOf("Cast error") !== -1) {
+            onError(`Invalid data type for column "${concept.name}" (${newConcept.dataType})`)
+          }
         })
 
       } else {
@@ -173,8 +204,9 @@ const ConceptPicker: FC<ConceptPickerProps> = ({ tableId, attributes, onClose })
   }, [ dataFusion, onError, tableId, mutex ])
 
   const handleChoice = useCallback((id: string, choice: 1 | 2) => {
-    setChoices({...choices, ...{[id]: choice}})
-  }, [ choices ])
+    choicesRef.current[id] = choice
+    setChoices(choicesRef.current)
+  }, [])
 
   const renderChoices = useMemo(() => {
     return attributes.map(x => {
@@ -278,12 +310,14 @@ const ConceptPicker: FC<ConceptPickerProps> = ({ tableId, attributes, onClose })
               </div>
             </div>
 
-            <div className="buttons is-right pr-3" style={{height: "3.125rem"}}>
-              <span className="fineprint-label pr-3 pb-1">
-                Please validate all columns before continuing
-              </span>
+            <div className="buttons is-right pr-5" style={{height: "3.125rem"}}>
+              { !finished &&
+                <span className="fineprint-label pr-3 pb-1">
+                  Please validate all columns before continuing
+                </span>
+              }
 
-              <button className="button is-medium is-primary" disabled>
+              <button className={"button is-medium is-primary" + (isLoading ? " is-loading" : "")} disabled={!finished} onClick={handlePublish}>
                 Publish
               </button>
             </div>
@@ -309,16 +343,8 @@ interface ConceptChoiceI {
 const ConceptChoice: FC<ConceptChoiceI> = ({ id, name, concept, allConcepts, taxonomy, isActive, onChoice, onChange }) => {
   const [isAuto, setIsAuto] = useState(true)
   const [isFirst, setIsFirst] = useState(true)
-  const [existingIsOk, setExistingIsOk] = useState(false)
   const [createModalIsActive, setCreateModalIsActive] = useState(false)
   const [choice, setChoice] = useState(0)
-
-  const newIsOk = !!concept?.name
-
-  const handleChoice = useCallback((i: 1 | 2) => {
-    setChoice(i)
-    onChoice(id, i)
-  }, [ id, onChoice ])
 
   const selected = useMemo(() => {
     const maybeId = allConcepts.filter((x: [string, string]) => concept?.id === x[0])
@@ -333,19 +359,32 @@ const ConceptChoice: FC<ConceptChoiceI> = ({ id, name, concept, allConcepts, tax
       const maybeNew = taxonomy?.list().filter(x => x.name.toLowerCase() === concept.name.toLowerCase()) || []
 
       if (maybeNew.length > 0) {
-        handleChoice(1)
+        setChoice(1)
         onChange(id, concept, maybeNew[0])
         setIsFirst(false)
       }
     }
-  }, [ selected, taxonomy, concept, handleChoice, id, isFirst, onChange ])
+  }, [ selected, taxonomy, concept, setChoice, id, isFirst, onChange ])
+
+  const existingIsOk = !!selected
+  const newIsOk = !!concept?.name
+
+  const existingChoice = choice ===1 && existingIsOk
+  const newChoice = choice === 2 && newIsOk
+
+  useEffect(() => {
+    if (existingChoice) {
+      onChoice(id, 1)
+    } else if (newChoice) {
+      onChoice(id, 2)
+    }
+  }, [ id, existingChoice, newChoice, onChoice ])
 
   const handleSelect = (item: [string, string]) => {
     const newConcept = taxonomy?.get(item[0])
 
     if (concept && newConcept) {
       onChange(id, concept, newConcept)
-      setExistingIsOk(true)
     }
   }
 
@@ -404,7 +443,7 @@ const ConceptChoice: FC<ConceptChoiceI> = ({ id, name, concept, allConcepts, tax
     <>
       { createModal }
 
-      <div className={"plaque mb-3" + (choice === 1 ? " is-active" : "")} onClick={() => handleChoice(1)}>
+      <div className={"plaque mb-3" + (choice === 1 ? " is-active" : "")} onClick={() => setChoice(1)}>
         <div className="plaque-icon">
           <span>
             <FontAwesomeIcon icon={choice === 0 ? faQuestion : choice === 1 ? existingIsOk ? faCheck : faQuestion : faTimes} size="sm"/>
@@ -433,7 +472,7 @@ const ConceptChoice: FC<ConceptChoiceI> = ({ id, name, concept, allConcepts, tax
         </div>
       </div>
 
-      <div className={"plaque mb-3" + (choice === 2 ? " is-active" : "")} onClick={() => handleChoice(2)}>
+      <div className={"plaque mb-3" + (choice === 2 ? " is-active" : "")} onClick={() => setChoice(2)}>
         <div className="plaque-icon">
           <span>
             <FontAwesomeIcon icon={choice === 0 ? faQuestion : choice === 2 ? newIsOk ? faCheck : faQuestion : faTimes} size="sm"/>
