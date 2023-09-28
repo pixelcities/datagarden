@@ -17,6 +17,12 @@ const usersSlice = createSlice({
       if (user) {
         user.last_active_at = action.payload.last_active_at
       }
+    },
+    userDeleted(state, action: PayloadAction<{id: string}>) {
+      const ids = state.ids.filter(id => id !== action.payload.id)
+
+      state.ids = ids
+      delete state.entities[action.payload.id]
     }
   }
 })
@@ -27,7 +33,8 @@ export default usersSlice.reducer
 // actions
 export const {
   userCreated,
-  userUpdated
+  userUpdated,
+  userDeleted
 } = usersSlice.actions
 
 export const login = createAction('users/login', (action) => {

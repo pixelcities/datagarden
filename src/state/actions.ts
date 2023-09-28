@@ -65,7 +65,8 @@ import {
 import {
   login,
   userCreated,
-  userUpdated
+  userUpdated,
+  userDeleted
 } from './slices/users'
 
 import {
@@ -247,6 +248,7 @@ const events: {[key: string]: ActionCreatorWithPayload<any, string>} = {
   "UserCreated": userCreated,
   "UserUpdated": userUpdated,
   "UserInvited": userInvited,
+  "UserDeleted": userDeleted,
   "InviteAccepted": inviteAccepted,
   "InviteConfirmed": inviteConfirmed,
   "InviteCancelled": inviteCancelled,

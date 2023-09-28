@@ -43,6 +43,7 @@ const Settings: FC = (props) => {
 
   const [inviteUserIsActive, setInviteUserIsActive] = useState(false)
   const [confirmUser, setConfirmUser] = useState<UserInvite | undefined>()
+  const [hoverId, setHoverId] = useState("")
 
   const inviteUserHandler = () => {
     setInviteUserIsActive(true)
@@ -64,10 +65,26 @@ const Settings: FC = (props) => {
     }
   }, [ dataSpace?.handle ])
 
+  const removeMember = useCallback((email: string) => {
+    if (dataSpace?.handle && window.confirm(`Are you sure you want to remove "${email}" from this data space?`)) {
+      fetch(process.env.REACT_APP_API_BASE_PATH + `/spaces/${dataSpace?.handle}/remove_member`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": getCSRFToken()
+        },
+        body: JSON.stringify({
+          "email": email
+        })
+      })
+    }
+  }, [ dataSpace?.handle ])
+
   const renderUsers = useMemo(() => {
     return users.map(u => {
       return (
-        <tr key={u.id}>
+        <tr key={u.id} onMouseEnter={() => setHoverId(u.id)} onMouseLeave={() => setHoverId("")}>
           <td className="is-narrow">
             <span className="icon is-medium mt-2">
               <img src={u?.picture || altAsSvg((u?.name || u?.email)?.[0]?.toUpperCase())} className={"is-rounded" + (!u.picture ? " default-icon is-medium bg-" + toColor(u?.id) : "")} alt={(u?.name || u?.email)?.[0]?.toUpperCase()} />
@@ -84,10 +101,15 @@ const Settings: FC = (props) => {
           <td style={{verticalAlign: "middle"}}>
             {u.last_active_at}
           </td>
+          <td className="is-narrow" style={{verticalAlign: "middle"}}>
+            { (user?.role === "owner" && u.role !== "owner" && hoverId === u.id) &&
+              <HoverButton type="delete" onClick={() => removeMember(u.email)} />
+            }
+          </td>
         </tr>
       )
     })
-  }, [ users ])
+  }, [ user?.role, users, hoverId, removeMember ])
 
   const renderUserInvites = useMemo(() => {
     return userInvites
@@ -173,6 +195,7 @@ const Settings: FC = (props) => {
                 <th><span className="header-label label-size-2">Email</span></th>
                 <th><span className="header-label label-size-2">Role</span></th>
                 <th><span className="header-label label-size-2">Last activity</span></th>
+                <th className="is-narrow" style={{minWidth: 56}}></th>
               </tr>
             </thead>
 
