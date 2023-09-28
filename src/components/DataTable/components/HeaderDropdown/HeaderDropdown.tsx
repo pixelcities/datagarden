@@ -85,12 +85,12 @@ const ShareInstance: FC<ShareInstanceProps> = ({ share, updateUser }) => {
   const [{ opacity }, dragRef] = useDrag(
     () => ({
       type: "HeaderDropdown",
-      item: user?.id,
+      item: share.principal,
       end: (e, monitor) => {
         const result: any = monitor.getDropResult()
 
         if (result && result.box) {
-          updateUser(user, result.box)
+          updateUser(share.principal, result.box)
         }
       },
       collect: (monitor) => ({
@@ -111,12 +111,20 @@ const ShareInstance: FC<ShareInstanceProps> = ({ share, updateUser }) => {
   }
 
   return (
-    <div ref={dragRef} key={user?.id} className="panel-block-nb is-button" style={{opacity: opacity, cursor: "grab"}}>
+    <div ref={dragRef} key={share.principal} className="panel-block-nb is-button" style={{opacity: opacity, cursor: "grab"}}>
       <span className="panel-icon">
         <FontAwesomeIcon icon={icon} color={color} size="sm"/>
       </span>
       <p className="fineprint-label label-size-3">
-        {user?.email}
+        { user ?
+          <>
+            { user.email === "[REDACTED]" ? user.name : user.email }
+          </>
+        :
+          <span className="is-italic">
+            { "[inactive user]" }
+          </span>
+        }
       </p>
     </div>
   )
@@ -168,8 +176,8 @@ const ShareOptions: FC<ShareOptionsI> = ({ me, columnId, source, collection }) =
     })
   }, [ schema, keyStore ])
 
-  const setUsers = React.useCallback((column: Column) => (user: User, access: string) => {
-    if (access === "FullAccess" && !(user.id in shares)) {
+  const setUsers = React.useCallback((column: Column) => (user_id: string, access: string) => {
+    if (access === "FullAccess" && !(user_id in shares)) {
       let columns: Column[] = []
       input.schema.columns.forEach((c) => {
         if (c.id !== column?.id) {
@@ -185,16 +193,16 @@ const ShareOptions: FC<ShareOptionsI> = ({ me, columnId, source, collection }) =
           lineage: column.lineage,
           shares: [...column.shares ?? [], {
             type: "full",
-            principal: user.id
+            principal: user_id
           }]
         })
 
         if (schemaIsValid) {
-          protocol?.encrypt(user.id, keyStore?.get_key(column.key_id)).then((secret: string) => {
+          protocol?.encrypt(user_id, keyStore?.get_key(column.key_id)).then((secret: string) => {
             dispatch(shareSecret({
               key_id: column.key_id,
               owner: me.id,
-              receiver: user.id,
+              receiver: user_id,
               ciphertext: secret
             }))
 
@@ -224,7 +232,7 @@ const ShareOptions: FC<ShareOptionsI> = ({ me, columnId, source, collection }) =
         }
       }
 
-    } else if (access === "Blocked" && user.id in shares) {
+    } else if (access === "Blocked" && user_id in shares) {
       console.log("[WARNING] Removing access requires key rotation and is not yet implemented")
 
       let columns: Column[] = []
@@ -240,7 +248,7 @@ const ShareOptions: FC<ShareOptionsI> = ({ me, columnId, source, collection }) =
           concept_id: column.concept_id,
           key_id: column.key_id,
           lineage: column.lineage,
-          shares: column.shares.filter(s => s.principal !== user.id)
+          shares: column.shares.filter(s => s.principal !== user_id)
         })
 
         if (source && schemaIsValid) {
@@ -279,7 +287,7 @@ const ShareOptions: FC<ShareOptionsI> = ({ me, columnId, source, collection }) =
 
   const renderAllowedUsers = React.useMemo(() => {
     if (column) {
-      return column.shares.map(s => {
+      return column.shares.filter(s => !!s.principal).map(s => {
         return <ShareInstance key={s.principal} share={s} updateUser={setUsers(column)} />
       })
     }

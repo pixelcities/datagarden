@@ -134,10 +134,10 @@ const SourceTable: FC<SourceTableProps> = (props) => {
       const shares = shareSchema?.shares.filter(share => share.type !== "public" && share.principal)
       const columnShares = shareSchema?.columns.reduce<string[]>((acc, column) => [...acc, ...column.shares.map(x => x.principal).filter((x): x is string => !!x)], []) || []
 
-      const handleDelete = (user: User) => {
+      const handleDelete = (principal: string) => {
         if (isCollection && collection && schemaIsValid) {
           signSchema({...collection.schema, ...{
-            shares: collection.schema.shares.filter(share => share.principal !== user.id)
+            shares: collection.schema.shares.filter(share => share.principal !== principal)
           }}, keyStore?.get_key(collection.schema.key_id)).then(signedSchema => {
             dispatch(updateCollection({...collection, ...{
               schema: signedSchema
@@ -146,7 +146,7 @@ const SourceTable: FC<SourceTableProps> = (props) => {
 
         } else if (source && schemaIsValid) {
           signSchema({...source.schema, ...{
-            shares: source.schema.shares.filter(share => share.principal !== user.id)
+            shares: source.schema.shares.filter(share => share.principal !== principal)
           }}, keyStore?.get_key(source.schema.key_id)).then(signedSchema => {
             dispatch(updateSource({...source, ...{
               schema: signedSchema
@@ -158,10 +158,10 @@ const SourceTable: FC<SourceTableProps> = (props) => {
       res = shares?.map(share => {
         const user_share = users.find(u => u.id === share.principal)
 
-        if (share.principal && user_share) {
+        if (share.principal) {
           const canDelete = columnShares.indexOf(share.principal) === -1 && share.type !== "owner"
 
-          return <ShareCard key={share.principal} principal={share.principal} user={user_share} isSelf={user?.id === user_share.id} onDelete={canDelete ? handleDelete : undefined} />
+          return <ShareCard key={share.principal} principal={share.principal} user={user_share} isSelf={user?.id === user_share?.id} onDelete={canDelete ? handleDelete : undefined} />
         }
         return <></>
       })
