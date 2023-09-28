@@ -132,18 +132,43 @@ const SourceTable: FC<SourceTableProps> = (props) => {
       let shareSchema = isCollection ? collection?.schema : source?.schema
 
       const shares = shareSchema?.shares.filter(share => share.type !== "public" && share.principal)
+      const columnShares = shareSchema?.columns.reduce<string[]>((acc, column) => [...acc, ...column.shares.map(x => x.principal).filter((x): x is string => !!x)], []) || []
+
+      const handleDelete = (user: User) => {
+        if (isCollection && collection && schemaIsValid) {
+          signSchema({...collection.schema, ...{
+            shares: collection.schema.shares.filter(share => share.principal !== user.id)
+          }}, keyStore?.get_key(collection.schema.key_id)).then(signedSchema => {
+            dispatch(updateCollection({...collection, ...{
+              schema: signedSchema
+            }}))
+          })
+
+        } else if (source && schemaIsValid) {
+          signSchema({...source.schema, ...{
+            shares: source.schema.shares.filter(share => share.principal !== user.id)
+          }}, keyStore?.get_key(source.schema.key_id)).then(signedSchema => {
+            dispatch(updateSource({...source, ...{
+              schema: signedSchema
+            }}))
+          })
+        }
+      }
+
       res = shares?.map(share => {
         const user_share = users.find(u => u.id === share.principal)
 
         if (share.principal && user_share) {
-          return <ShareCard key={share.principal} principal={share.principal} user={user_share} isSelf={user?.id === user_share.id} />
+          const canDelete = columnShares.indexOf(share.principal) === -1 && share.type !== "owner"
+
+          return <ShareCard key={share.principal} principal={share.principal} user={user_share} isSelf={user?.id === user_share.id} onDelete={canDelete ? handleDelete : undefined} />
         }
         return <></>
       })
     }
 
     return res
-  }, [ source, collection, isCollection, users, user ] )
+  }, [ source, collection, isCollection, users, user, keyStore, schemaIsValid, dispatch ] )
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
