@@ -16,7 +16,7 @@ const ShareCard: FC<ShareCardProps> = (props) => {
     <div key={principal} className="columns mx-0 pt-2 pb-1 share-card">
       <div className="column is-2 py-0">
         <span className="icon is-medium ml-3">
-          <img src={user.picture || altAsSvg((user.name || user.email)?.[0]?.toUpperCase())} className={(!user.picture ? " default-icon is-medium bg-" + toColor(user.id) : "")} alt={(user.name || user.email)?.[0]?.toUpperCase()} />
+          <img src={user.picture || altAsSvg((user.name || user.email)?.[0]?.toUpperCase())} className={"is-rounded" + (!user.picture ? " default-icon is-medium bg-" + toColor(user.id) : "")} alt={(user.name || user.email)?.[0]?.toUpperCase()} />
         </span>
       </div>
       <div className="column is-7 py-0 has-text-left fineprint-label label-size-3 ">

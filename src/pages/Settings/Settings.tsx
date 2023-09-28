@@ -70,7 +70,7 @@ const Settings: FC = (props) => {
         <tr key={u.id}>
           <td className="is-narrow">
             <span className="icon is-medium mt-2">
-              <img src={u?.picture || altAsSvg((u?.name || u?.email)?.[0]?.toUpperCase())} className={(!u.picture ? " default-icon is-medium bg-" + toColor(u?.id) : "")} alt={(u?.name || u?.email)?.[0]?.toUpperCase()} />
+              <img src={u?.picture || altAsSvg((u?.name || u?.email)?.[0]?.toUpperCase())} className={"is-rounded" + (!u.picture ? " default-icon is-medium bg-" + toColor(u?.id) : "")} alt={(u?.name || u?.email)?.[0]?.toUpperCase()} />
             </span>
           </td>
 
