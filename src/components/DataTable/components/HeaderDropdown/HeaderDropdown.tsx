@@ -10,7 +10,7 @@ import { User, Source, Collection, Share, Column } from 'types'
 
 import { useAppDispatch, useAppSelector } from 'hooks'
 import { selectUserById, selectSourceById, selectCollectionById } from 'state/selectors'
-import { shareSecret, updateSource, updateCollection } from 'state/actions'
+import { shareSecret, updateSourceSchema, updateCollectionSchema } from 'state/actions'
 
 import { useAuthContext } from 'contexts';
 import { useKeyStoreContext } from 'contexts'
@@ -210,18 +210,22 @@ const ShareOptions: FC<ShareOptionsI> = ({ me, columnId, source, collection }) =
               signSchema({...schema, ...{
                 columns: columns
               }}, keyStore?.get_key(schema.key_id)).then(signedSchema => {
-                dispatch(updateSource({...source, ...{
+                dispatch(updateSourceSchema({
+                  id: source.id,
+                  workspace: source.workspace,
                   schema: signedSchema
-                }}))
+                }))
               })
 
             } else if (collection) {
               signSchema({...schema, ...{
                 columns: columns
               }}, keyStore?.get_key(schema.key_id)).then(signedSchema => {
-                dispatch(updateCollection({...collection, ...{
+                dispatch(updateCollectionSchema({
+                  id: collection.id,
+                  workspace: collection.workspace,
                   schema: signedSchema
-                }}))
+                }))
               })
             }
 
@@ -255,18 +259,22 @@ const ShareOptions: FC<ShareOptionsI> = ({ me, columnId, source, collection }) =
           signSchema({...schema, ...{
             columns: columns
           }}, keyStore?.get_key(schema.key_id)).then(signedSchema => {
-            dispatch(updateSource({...source, ...{
+            dispatch(updateSourceSchema({
+              id: source.id,
+              workspace: source.workspace,
               schema: signedSchema
-            }}))
+            }))
           })
 
         } else if (collection && schemaIsValid) {
           signSchema({...schema, ...{
             columns: columns
           }}, keyStore?.get_key(schema.key_id)).then(signedSchema => {
-            dispatch(updateCollection({...collection, ...{
+            dispatch(updateCollectionSchema({
+              id: collection.id,
+              workspace: collection.workspace,
               schema: signedSchema
-            }}))
+            }))
           })
         }
       }

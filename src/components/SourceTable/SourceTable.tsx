@@ -5,7 +5,7 @@ import { Mutex } from 'async-mutex'
 
 import { useAppDispatch, useAppSelector } from 'hooks'
 import { selectUsers, selectMetadataById, selectSourceById, selectCollectionById, selectActiveDataSpace, selectDataURIById } from 'state/selectors'
-import { updateSource, deleteSource, updateCollection, updateMetadata, setCollectionColor, shareSecret, sendLocalNotification, createDataURI, updateSourceURI } from 'state/actions'
+import { updateSource, updateSourceSchema, deleteSource, updateCollectionSchema, updateMetadata, setCollectionColor, shareSecret, sendLocalNotification, createDataURI, updateSourceURI } from 'state/actions'
 
 import { Source, Collection, Schema, User } from 'types'
 
@@ -101,29 +101,88 @@ const SourceTable: FC<SourceTableProps> = (props) => {
     }
   }, [ source?.schema, collection?.schema, keyStore ])
 
+  const rotateKeys = async (source: Source, user: User, keyStore: any, protocol: any, dispatch: any) => {
+    const schema_key_id = await keyStore?.generate_key(16)
+
+    for (const share of source.schema.shares) {
+      if (share.principal && share.principal !== user.id) {
+        const receiver = share.principal
+        const ciphertext = await protocol?.encrypt(receiver, keyStore?.get_key(schema_key_id))
+
+        dispatch(shareSecret({
+          key_id: schema_key_id,
+          owner: user.id,
+          receiver: receiver,
+          ciphertext: ciphertext
+        }))
+      }
+    }
+
+    let columns = []
+
+    for (const column of source.schema.columns) {
+      const key_id = await keyStore?.generate_key(16)
+
+      for (const share of column.shares) {
+        if (share.principal && share.principal !== user.id) {
+          const receiver = share.principal
+          const ciphertext = await protocol?.encrypt(receiver, keyStore?.get_key(key_id))
+
+          dispatch(shareSecret({
+            key_id: key_id,
+            owner: user.id,
+            receiver: receiver,
+            ciphertext: ciphertext
+          }))
+        }
+      }
+
+      columns.push({...column, ...{
+        key_id: key_id,
+      }})
+    }
+
+    const schema = {...source.schema, ...{
+      key_id: schema_key_id,
+      columns: columns
+    }}
+
+    const signedSchema = await signSchema(JSON.parse(JSON.stringify(schema)), keyStore?.get_key(schema_key_id))
+
+    dispatch(updateSourceSchema({
+      id: source.id,
+      workspace: source.workspace,
+      schema: signedSchema
+    }))
+
+    return signedSchema
+  }
+
   useEffect(() => {
     mutex.runExclusive(async () => {
-      if (uploadId && source && dataURI && source.uri?.[0] !== dataURI.uri) {
+      if (uploadId && source && dataURI && source.uri?.[0] !== dataURI.uri && user && schemaIsValid) {
         if (dataFusion?.table_exists(uploadId)) {
           const uri = [dataURI.uri, dataURI.tag] as [string, string]
 
           dataFusion?.drop_table(source.id)
           dataFusion?.move_table(uploadId, source.id)
 
-          writeRemoteTable(source.id, uri, source.schema, user, arrow, dataFusion, keyStore).then(() => {
-            setUploadId(null)
-            setVersionId(versionId + 1)
+          rotateKeys(source, user, keyStore, protocol, dispatch).then(schema => {
+            writeRemoteTable(source.id, uri, schema, user, arrow, dataFusion, keyStore).then(() => {
+              setUploadId(null)
+              setVersionId(versionId + 1)
 
-            dispatch(updateSourceURI({
-              id: source.id,
-              workspace: source.workspace,
-              uri: uri
-            }))
+              dispatch(updateSourceURI({
+                id: source.id,
+                workspace: source.workspace,
+                uri: uri
+              }))
+            })
           })
         }
       }
     })
-  }, [ source, versionId, uploadId, dataURI, user, dispatch, arrow, dataFusion, keyStore, mutex ])
+  }, [ source, versionId, uploadId, dataURI, schemaIsValid, user, dispatch, arrow, dataFusion, keyStore, protocol, mutex ])
 
   const renderShares = useMemo(() => {
     let res
@@ -139,18 +198,22 @@ const SourceTable: FC<SourceTableProps> = (props) => {
           signSchema({...collection.schema, ...{
             shares: collection.schema.shares.filter(share => share.principal !== principal)
           }}, keyStore?.get_key(collection.schema.key_id)).then(signedSchema => {
-            dispatch(updateCollection({...collection, ...{
+            dispatch(updateCollectionSchema({
+              id: collection.id,
+              workspace: collection.workspace,
               schema: signedSchema
-            }}))
+            }))
           })
 
         } else if (source && schemaIsValid) {
           signSchema({...source.schema, ...{
             shares: source.schema.shares.filter(share => share.principal !== principal)
           }}, keyStore?.get_key(source.schema.key_id)).then(signedSchema => {
-            dispatch(updateSource({...source, ...{
+            dispatch(updateSourceSchema({
+              id: source.id,
+              workspace: source.workspace,
               schema: signedSchema
-            }}))
+            }))
           })
         }
       }
@@ -231,9 +294,11 @@ const SourceTable: FC<SourceTableProps> = (props) => {
           signSchema({...collection.schema, ...{
             shares: [...collection.schema.shares, share]
           }}, keyStore?.get_key(collection.schema.key_id)).then(signedSchema => {
-            dispatch(updateCollection({...collection, ...{
+            dispatch(updateCollectionSchema({
+              id: collection.id,
+              workspace: collection.workspace,
               schema: signedSchema
-            }}))
+            }))
           })
         }
 
