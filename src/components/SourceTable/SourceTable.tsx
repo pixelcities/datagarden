@@ -101,8 +101,12 @@ const SourceTable: FC<SourceTableProps> = (props) => {
     }
   }, [ source?.schema, collection?.schema, keyStore ])
 
-  const rotateKeys = async (source: Source, user: User, keyStore: any, protocol: any, dispatch: any) => {
+  const rotateKeys = async (source: Source, collection: Collection | undefined, user: User, keyStore: any, protocol: any, dispatch: any) => {
+    let keymap: {[key: string]: string} = {}
+    let shareHistory: string[] = []
+
     const schema_key_id = await keyStore?.generate_key(16)
+    keymap[source.schema.key_id] = schema_key_id
 
     for (const share of source.schema.shares) {
       if (share.principal && share.principal !== user.id) {
@@ -115,6 +119,8 @@ const SourceTable: FC<SourceTableProps> = (props) => {
           receiver: receiver,
           ciphertext: ciphertext
         }))
+
+        shareHistory.push(receiver + schema_key_id)
       }
     }
 
@@ -122,6 +128,7 @@ const SourceTable: FC<SourceTableProps> = (props) => {
 
     for (const column of source.schema.columns) {
       const key_id = await keyStore?.generate_key(16)
+      keymap[column.key_id] = key_id
 
       for (const share of column.shares) {
         if (share.principal && share.principal !== user.id) {
@@ -134,6 +141,8 @@ const SourceTable: FC<SourceTableProps> = (props) => {
             receiver: receiver,
             ciphertext: ciphertext
           }))
+
+          shareHistory.push(receiver + key_id)
         }
       }
 
@@ -155,6 +164,64 @@ const SourceTable: FC<SourceTableProps> = (props) => {
       schema: signedSchema
     }))
 
+    // Also update the linked collection schema, if it exists
+    if (collection) {
+      for (const share of collection.schema.shares) {
+        if (share.principal && share.principal !== user.id) {
+          const receiver = share.principal
+          const ciphertext = await protocol?.encrypt(receiver, keyStore?.get_key(schema_key_id))
+
+          if (shareHistory.indexOf(receiver + schema_key_id) === -1) {
+            dispatch(shareSecret({
+              key_id: schema_key_id,
+              owner: user.id,
+              receiver: receiver,
+              ciphertext: ciphertext
+            }))
+          }
+        }
+      }
+
+      let columns = []
+
+      for (const column of collection.schema.columns) {
+        const key_id = keymap[column.key_id]
+
+        for (const share of column.shares) {
+          if (share.principal && share.principal !== user.id) {
+            const receiver = share.principal
+            const ciphertext = await protocol?.encrypt(receiver, keyStore?.get_key(key_id))
+
+            if (shareHistory.indexOf(receiver + key_id) === -1) {
+              dispatch(shareSecret({
+                key_id: key_id,
+                owner: user.id,
+                receiver: receiver,
+                ciphertext: ciphertext
+              }))
+            }
+          }
+        }
+
+        columns.push({...column, ...{
+          key_id: key_id,
+        }})
+      }
+
+      const collectionSchema = {...collection.schema, ...{
+        key_id: schema_key_id,
+        columns: columns
+      }}
+
+      const signedCollectionSchema = await signSchema(JSON.parse(JSON.stringify(collectionSchema)), keyStore?.get_key(schema_key_id))
+
+      dispatch(updateCollectionSchema({
+        id: collection.id,
+        workspace: collection.workspace,
+        schema: signedCollectionSchema
+      }))
+    }
+
     return signedSchema
   }
 
@@ -167,7 +234,7 @@ const SourceTable: FC<SourceTableProps> = (props) => {
           dataFusion?.drop_table(source.id)
           dataFusion?.move_table(uploadId, source.id)
 
-          rotateKeys(source, user, keyStore, protocol, dispatch).then(schema => {
+          rotateKeys(source, collection, user, keyStore, protocol, dispatch).then(schema => {
             writeRemoteTable(source.id, uri, schema, user, arrow, dataFusion, keyStore).then(() => {
               setUploadId(null)
               setVersionId(versionId + 1)
@@ -182,7 +249,7 @@ const SourceTable: FC<SourceTableProps> = (props) => {
         }
       }
     })
-  }, [ source, versionId, uploadId, dataURI, schemaIsValid, user, dispatch, arrow, dataFusion, keyStore, protocol, mutex ])
+  }, [ source, collection, versionId, uploadId, dataURI, schemaIsValid, user, dispatch, arrow, dataFusion, keyStore, protocol, mutex ])
 
   const renderShares = useMemo(() => {
     let res
@@ -360,7 +427,10 @@ const SourceTable: FC<SourceTableProps> = (props) => {
           const data = new Uint8Array(buf)
           const tempId = (source.type === "csv") ? dataFusion.load_csv(data, "") : dataFusion.load_sheet(data, "")
 
-          const originalSchema = dataFusion.get_schema(source.id)
+          const _schema = dataFusion.get_schema(source.id)
+          const orderedFields = _schema.fields.sort((a: any, b: any) => schema.column_order.indexOf(a.name) > schema.column_order.indexOf(b.name))
+
+          const originalSchema = {..._schema, ...{fields: orderedFields}}
           const newSchema = dataFusion.get_schema(tempId)
 
           const originalTypes: string[] = originalSchema.fields.map((field: any) => field.type.name)
@@ -418,7 +488,7 @@ const SourceTable: FC<SourceTableProps> = (props) => {
         </div>
       </div>
     )
-  }, [ source, dispatch, dataFusion ])
+  }, [ source, schema, dispatch, dataFusion ])
 
   const renderDelete = useMemo(() => {
     const handleDelete = (source: Source | undefined) => {

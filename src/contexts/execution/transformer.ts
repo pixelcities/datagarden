@@ -671,9 +671,21 @@ const execute = async (id: string, wal: WAL, fragments: string[], useArtifacts: 
 
 const rebuildSchema = async (id: string, target: Collection, oldId: string, old: Schema, extraShares: Share[], fragments: string[], taskMeta: {[key: string]: any}, user: User, metadata: any, dataSpace: DataSpace | undefined, keyStore: any, protocol: any) => {
   let schema: Schema
+  let rotateSchema: Schema | undefined
   let actions: any[] = []
   let meta = JSON.parse(JSON.stringify(taskMeta))
   let updated = false
+
+  if ("rotate_schema" in taskMeta) {
+    rotateSchema = meta["rotate_schema"]
+
+    if (rotateSchema) {
+      const schemaIsValid = await verifySchema(rotateSchema, keyStore?.get_key(rotateSchema.key_id))
+      if (!schemaIsValid) {
+        throw new Error("Invalid schema signature")
+      }
+    }
+  }
 
   if ("schema" in taskMeta) {
     schema = meta["schema"]
@@ -686,48 +698,76 @@ const rebuildSchema = async (id: string, target: Collection, oldId: string, old:
   } else {
     const key_id = await keyStore?.generate_key(16)
 
-    // Merge the optional extra shares from other schemas
-    let shares: Share[] = JSON.parse(JSON.stringify(old.shares))
-    for (const share of extraShares) {
-      if (!shares.find(s => s.principal === share.principal)) {
-        shares.push(share)
+    // If the rotate schema is present, this collection already exists but is being refreshed. The old
+    // schema is used to get the shares of the collection, so that they aren't reset on update.
+    if (rotateSchema) {
+      for (const share of rotateSchema.shares) {
+        if (share.principal && share.principal !== user.id) {
+          const receiver = share.principal
+          const ciphertext = await protocol?.encrypt(receiver, keyStore?.get_key(key_id))
+
+          actions.push(shareSecret({
+            key_id: key_id,
+            owner: user.id,
+            receiver: receiver,
+            ciphertext: ciphertext
+          }))
+        }
       }
-    }
 
-    // Re-share the schema key with everyone
-    for (const share of shares) {
-      if (share.principal && share.principal !== user.id) {
-        const receiver = share.principal
-        const ciphertext = await protocol?.encrypt(receiver, keyStore?.get_key(key_id))
+      schema = {
+        id: target.id,
+        key_id: key_id,
+        column_order: [],
+        columns: [],
+        shares: JSON.parse(JSON.stringify(rotateSchema.shares)),
+        tag: ''
+      }
 
-        actions.push(shareSecret({
-          key_id: key_id,
-          owner: user.id,
-          receiver: receiver,
-          ciphertext: ciphertext
+    } else {
+      // Merge the optional extra shares from other schemas
+      let shares: Share[] = JSON.parse(JSON.stringify(old.shares))
+      for (const share of extraShares) {
+        if (!shares.find(s => s.principal === share.principal)) {
+          shares.push(share)
+        }
+      }
+
+      // Re-share the schema key with everyone
+      for (const share of shares) {
+        if (share.principal && share.principal !== user.id) {
+          const receiver = share.principal
+          const ciphertext = await protocol?.encrypt(receiver, keyStore?.get_key(key_id))
+
+          actions.push(shareSecret({
+            key_id: key_id,
+            owner: user.id,
+            receiver: receiver,
+            ciphertext: ciphertext
+          }))
+        }
+      }
+
+      schema = {
+        id: target.id,
+        key_id: key_id,
+        column_order: [],
+        columns: [],
+        shares: shares,
+        tag: ''
+      }
+
+      // Re-publish the title under the new id
+      const maybe_title = metadata[oldId]
+      if (maybe_title && !(target.id in metadata)) {
+        const title = keyStore?.decrypt_metadata(dataSpace?.key_id, maybe_title)
+
+        actions.push(createMetadata({
+          id: target.id,
+          workspace: target.workspace,
+          metadata: keyStore?.encrypt_metadata(dataSpace?.key_id, title)
         }))
       }
-    }
-
-    schema = {
-      id: target.id,
-      key_id: key_id,
-      column_order: [],
-      columns: [],
-      shares: shares,
-      tag: ''
-    }
-
-    // Re-publish the title under the new id
-    const maybe_title = metadata[oldId]
-    if (maybe_title && !(target.id in metadata)) {
-      const title = keyStore?.decrypt_metadata(dataSpace?.key_id, maybe_title)
-
-      actions.push(createMetadata({
-        id: target.id,
-        workspace: target.workspace,
-        metadata: keyStore?.encrypt_metadata(dataSpace?.key_id, title)
-      }))
     }
 
     updated = true
@@ -743,11 +783,13 @@ const rebuildSchema = async (id: string, target: Collection, oldId: string, old:
   let columns = []
 
   for (const column of old_columns) {
-    const id = crypto.randomUUID()
+    const rotateColumn = rotateSchema?.columns.find(c => c.lineage === column.id)
+
+    const id = rotateColumn ? rotateColumn.id : crypto.randomUUID()
     const key_id = await keyStore?.generate_key(16)
 
     // Re-share the column key
-    for (const share of column.shares) {
+    for (const share of rotateColumn?.shares || column.shares) {
       if (share.principal && share.principal !== user.id) {
         const receiver = share.principal
         const ciphertext = await protocol?.encrypt(receiver, keyStore?.get_key(key_id))
@@ -761,7 +803,7 @@ const rebuildSchema = async (id: string, target: Collection, oldId: string, old:
       }
     }
 
-    columns.push({...column, ...{
+    columns.push({...(rotateColumn || column), ...{
       id: id,
       key_id: key_id,
       lineage: column.id
