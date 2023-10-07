@@ -41,6 +41,13 @@ const hashSchema = (schema: UnverifiedSchema | Schema): Buffer => {
   return objectHash(schema, {encoding: "buffer", excludeKeys: (k: string) => k === "tag" || k === "lineage", unorderedArrays: true})
 }
 
+type AnyObject = {[key: string]: any}
+type AnyObjectWTag = AnyObject & {tag: string}
+
+const hashAnyObject = (obj: AnyObject | AnyObjectWTag): Buffer => {
+  return objectHash(obj, {encoding: "buffer", excludeKeys: (k: string) => k === "tag", unorderedArrays: true})
+}
+
 /*
  * Use the schema key to sign the JSON schema
  *
@@ -73,3 +80,14 @@ export const verifySchema = (schema: Schema, secret: string): Promise<boolean> =
   return verify(hashSchema(schema), tag, secret)
 }
 
+export const signObject = (obj: AnyObject | AnyObjectWTag, secret: string): Promise<AnyObjectWTag> => {
+  return sign(hashAnyObject(obj), secret).then(tag => {
+    return {...obj, ...{tag: tag}}
+  })
+}
+
+export const verifyObject = (obj: AnyObjectWTag, secret: string): Promise<boolean> => {
+  const tag = obj.tag
+
+  return verify(hashAnyObject(obj), tag, secret)
+}

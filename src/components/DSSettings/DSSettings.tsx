@@ -24,6 +24,7 @@ const DSSettings: FC<DSSettingsProps> = ({ isActive, onClose, dataSpace, role })
 
   const [isLoading, setIsLoading] = useState(true)
   const [subscription, setSubscription] = useState<Subscription | null>(null)
+  const [rotateModalIsActive, setRotateModalIsActive] = useState(false)
 
   const { user } = useAuthContext()
   const userRole = ds?.handle !== "trial" ? role || user?.role : "collaborator"
@@ -239,6 +240,28 @@ const DSSettings: FC<DSSettingsProps> = ({ isActive, onClose, dataSpace, role })
     </>
   )
 
+  const renderRotate = (
+    <>
+      <div className="columns">
+        <div className="column is-two-thirds">
+          <h3 className="has-text-weight-semibold">
+            Rotate data space keys
+          </h3>
+
+          <p>
+            This impacts all active users.
+          </p>
+        </div>
+
+        <div className="column">
+          <div className="button mt-1 is-success is-pulled-right" onClick={() => setRotateModalIsActive(true)}>
+            Rotate
+          </div>
+        </div>
+      </div>
+    </>
+  )
+
   // TODO: Handle info prompt with current cost + valid_to
   return (
     <>
@@ -267,6 +290,11 @@ const DSSettings: FC<DSSettingsProps> = ({ isActive, onClose, dataSpace, role })
                         <div className="divider mt-0"/>
                       </>
                     }
+
+                    { renderRotate }
+
+                    <div className="divider mt-0"/>
+
                     { renderDelete }
                   </>
                 :
@@ -281,7 +309,40 @@ const DSSettings: FC<DSSettingsProps> = ({ isActive, onClose, dataSpace, role })
 
          <button className="modal-close is-large" aria-label="close" onClick={onClose}></button>
       </div>
+
+      { rotateModalIsActive &&
+        <RotateModal />
+      }
     </>
+  )
+}
+
+const RotateModal: FC = () => {
+  const [isActive, setIsActive] = useState(false)
+
+  useEffect(() => {
+    if (window.confirm("Are you sure you want to rotate all the internal keys?")) {
+      setIsActive(true)
+    }
+  }, [])
+
+  return (
+    <div className={"modal " + (isActive ? "is-active" : "")}>
+      <div className="modal-background"></div>
+      <div className="modal-content" style={{width: "33rem"}}>
+        <div className="box">
+          <h2 className="subtitle has-text-centered pb-2">
+            Rotating keys
+          </h2>
+
+          <div className="spinner" />
+
+          <p className="has-text-centered pt-5">
+            Do not close this tab or window.
+          </p>
+        </div>
+      </div>
+    </div>
   )
 }
 

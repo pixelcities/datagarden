@@ -9,8 +9,10 @@ import NotificationsBar from 'components/NotificationsBar'
 import Section from 'components/Section'
 import Footer from 'components/Footer'
 
+import { useAuthContext } from 'contexts'
 import { useKeyStoreContext } from 'contexts'
 import { getCSRFToken } from 'utils/getCSRFToken'
+import { signObject } from 'utils/integrity'
 
 
 class CheckoutRoute extends Component<RouteComponentProps> {
@@ -35,6 +37,7 @@ const Checkout: FC<RouteComponentProps> = ({ location }) => {
   const isComplete = checkoutId !== null
 
   const history = useHistory()
+  const { user } = useAuthContext()
   const { keyStore } = useKeyStoreContext()
 
   const [step, setStep] = useState(isComplete ? 3 : 0)
@@ -123,34 +126,39 @@ const Checkout: FC<RouteComponentProps> = ({ location }) => {
   }
 
   const submitRequest = () => {
-    setIsLoading(true)
+    if (user) {
+      setIsLoading(true)
 
-    keyStore?.generate_key(32).then((key_id: string) => {
-      fetch(process.env.REACT_APP_API_BASE_PATH + `/spaces/${handle}/create`, {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRF-Token": getCSRFToken()
-        },
-        body: JSON.stringify({
-          "name": name,
-          "key_id": key_id,
-          "plan": plan.toLowerCase(),
-          "interval": interval
+      keyStore?.generate_key(32).then((key_id: string) => {
+        signObject({users: [user.id], tag: undefined}, keyStore?.get_key(key_id)).then((signedManifest) => {
+          fetch(process.env.REACT_APP_API_BASE_PATH + `/spaces/${handle}/create`, {
+            method: "POST",
+            credentials: "include",
+            headers: {
+              "Content-Type": "application/json",
+              "X-CSRF-Token": getCSRFToken()
+            },
+            body: JSON.stringify({
+              "name": name,
+              "key_id": key_id,
+              "manifest": signedManifest,
+              "plan": plan.toLowerCase(),
+              "interval": interval
+            })
+          }).then((response) => {
+            if (!response.ok) {
+              return Promise.reject(response)
+            } else {
+              return response.json()
+            }
+          }).then(({ uri }) => {
+            window.location.href = uri
+          }).catch((e) => {
+            console.log(e);
+          })
         })
-      }).then((response) => {
-        if (!response.ok) {
-          return Promise.reject(response)
-        } else {
-          return response.json()
-        }
-      }).then(({ uri }) => {
-        window.location.href = uri
-      }).catch((e) => {
-        console.log(e);
       })
-    })
+    }
   }
 
   const renderCost = useMemo(() => {
@@ -346,7 +354,7 @@ const Checkout: FC<RouteComponentProps> = ({ location }) => {
               </div>
 
               <div className="field">
-                <button className={"button is-primary is-fullwidth" + (isLoading ? " is-loading" : "")} onClick={submitRequest}>
+                <button className={"button is-primary is-fullwidth" + (!user || isLoading ? " is-loading" : "")} onClick={submitRequest}>
                   Continue to payment
                 </button>
               </div>

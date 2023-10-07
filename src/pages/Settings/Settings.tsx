@@ -15,6 +15,7 @@ import { selectUsers, selectUserInvites, selectActiveDataSpace, selectPages } fr
 import { shareSecret } from 'state/actions'
 import { altAsSvg, toColor } from 'utils/helpers'
 import { getCSRFToken } from 'utils/getCSRFToken'
+import { signObject, verifyObject } from 'utils/integrity'
 
 
 class SettingsRoute extends Component<RouteComponentProps> {
@@ -167,6 +168,7 @@ const Settings: FC = (props) => {
       { confirmUser && (
         <ConfirmModal
           newMember={confirmUser}
+          userIds={users.map(u => u.id)}
           isActive={!!confirmUser}
           onClose={() => setConfirmUser(undefined)}
         />
@@ -176,7 +178,9 @@ const Settings: FC = (props) => {
         Team Management
 
         { user?.role === "owner" &&
-          <button className="button is-success is-outlined is-pulled-right" onClick={inviteUserHandler}> Invite new members </button>
+          <div className="buttons is-pulled-right">
+            <button className="button is-success is-outlined" onClick={inviteUserHandler}> Invite new members </button>
+          </div>
         }
 
         <div className="border" />
@@ -298,11 +302,12 @@ const InviteModal: FC<InviteModalProps> = ({ isActive, onClose }) => {
 
 interface ConfirmModalProps {
   newMember: UserInvite,
+  userIds: string[],
   isActive: boolean,
   onClose: () => void
 }
 
-const ConfirmModal: FC<ConfirmModalProps> = ({ newMember, isActive, onClose }) => {
+const ConfirmModal: FC<ConfirmModalProps> = ({ newMember, userIds, isActive, onClose }) => {
   const dispatch = useAppDispatch()
   const dataSpace = useAppSelector(selectActiveDataSpace)
   const pages = useAppSelector(selectPages)
@@ -311,6 +316,52 @@ const ConfirmModal: FC<ConfirmModalProps> = ({ newMember, isActive, onClose }) =
   const { keyStore, protocol, keyStoreIsReady } = useKeyStoreContext()
 
   const [fingerprint, setFingerprint] = useState<string | undefined>()
+
+  const updateManifest = useCallback((userId: string) => {
+    if (dataSpace?.handle) {
+      fetch(process.env.REACT_APP_API_BASE_PATH + `/spaces/${dataSpace?.handle}`, {
+        method: "GET",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json"
+        }
+      }).then((response) => {
+        if (!response.ok) {
+          return Promise.reject(response)
+        } else {
+          return response.json()
+        }
+      }).then(({ manifest }) => {
+        verifyObject(manifest, keyStore?.get_key(dataSpace?.key_id)).then(ok => {
+          if (!ok) {
+            throw new Error("Invalid manifest signature")
+          }
+
+          const newManifest = {
+            users: [
+              ...manifest.users.filter((id: string) => userIds.indexOf(id) !== -1), // Remove any old users, we only care about adding users
+              userId
+            ],
+            tag: undefined
+          }
+
+          signObject(newManifest, keyStore?.get_key(dataSpace?.key_id)).then((signedManifest) => {
+            fetch(process.env.REACT_APP_API_BASE_PATH + `/spaces/${dataSpace?.handle}/manifest`, {
+              method: "PUT",
+              credentials: "include",
+              headers: {
+                "Content-Type": "application/json",
+                "X-CSRF-Token": getCSRFToken()
+              },
+              body: JSON.stringify({
+                "manifest": signedManifest
+              })
+            })
+          })
+        })
+      })
+    }
+  }, [ userIds, dataSpace, keyStore ])
 
   useEffect(() => {
     if (!fingerprint && user && newMember.id && newMember.id !== "" && keyStoreIsReady) {
@@ -362,6 +413,8 @@ const ConfirmModal: FC<ConfirmModalProps> = ({ newMember, isActive, onClose }) =
           }))
         }
       }
+
+      updateManifest(newMember.id)
 
       await fetch(process.env.REACT_APP_API_BASE_PATH + `/spaces/${dataSpace.handle}/confirm_member`, {
         method: "POST",
