@@ -104,6 +104,15 @@ class WebSocket {
             this.ds?.on("event", (e: any) => { this.eventId = e.id; this.callback(e) })
             this.user?.on("event", this.callback)
 
+            // Special callback to leave channel when the owner triggered a key rotation
+            this.user?.on("mgmt", ({ action }) => {
+              if (action === "rotate") {
+                this.leaveDsChannel()
+                resetState(handle)
+                window.location.href = "/"
+              }
+            })
+
             this.ds?.push("init", {"type": "secrets"})
             this.ds?.push("init", {"type": "tasks"})
             this.ds?.push("init", {"type": "notifications"})

@@ -1,23 +1,31 @@
-import React, { FC, Component, useMemo, useState } from 'react'
+import React, { FC, Component, useMemo, useState, useEffect } from 'react'
 import { RouteComponentProps } from 'react-router'
 import { Route } from "react-router-dom"
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faLock, faLockOpen } from '@fortawesome/free-solid-svg-icons'
+import { Mutex } from 'async-mutex'
 
 import Navbar from 'components/Navbar'
 import Section from 'components/Section'
 
+import { useAppSelector, useAppDispatch } from 'hooks'
+import { selectActiveDataSpace } from 'state/selectors'
+import { rotateKeys } from 'utils/rotate'
+
+import { useAuthContext } from 'contexts'
 import { useKeyStoreContext } from 'contexts'
 
-class KeyStoreRoute extends Component<RouteComponentProps> {
-  parentPath = (this.props.match.params as any).path;
 
+class KeyStoreRoute extends Component<RouteComponentProps> {
   render() {
+    const parentPath = this.props.match.path
+
     return (
       <div>
         <Navbar />
 
-        <Route path={this.parentPath} component={KeyStore} />
+        <Route path={parentPath + "/rotate"} component={RotateModal} />
+        <Route path={parentPath} component={KeyStore} />
       </div>
     )
   }
@@ -92,6 +100,51 @@ const Key: FC<{id: string}> = ({ id }) => {
 
       <div className="column is-10 py-0 px-0">
         <p className={isLocked ? "has-text-weight-semibold" : ""}> { value } </p>
+      </div>
+    </div>
+  )
+}
+
+const RotateModal: FC = () => {
+  const dispatch = useAppDispatch()
+
+  const [isActive, setIsActive] = useState(false)
+
+  const mutex = useMemo(() => new Mutex(), [])
+
+  const { user } = useAuthContext()
+  const { keyStore, protocol } = useKeyStoreContext()
+  const dataSpace = useAppSelector(selectActiveDataSpace)
+
+  useEffect(() => {
+    if (!isActive && dataSpace && user && keyStore && protocol && mutex) {
+      if (window.confirm("Are you sure you want to rotate all the internal keys?")) {
+        setIsActive(true)
+
+        rotateKeys(dataSpace, user, keyStore, protocol, dispatch, mutex)
+      } else {
+        window.location.href = "/"
+      }
+    }
+  }, [ isActive, dataSpace, user, keyStore, protocol, dispatch, mutex ])
+
+  return (
+    <div className="modal is-active">
+      <div className="modal-background"></div>
+      <div className="modal-content" style={{width: "33rem"}}>
+        { isActive &&
+          <div className="box">
+            <h2 className="subtitle has-text-centered pb-2">
+              Rotating keys
+            </h2>
+
+            <div className="spinner" />
+
+            <p className="has-text-centered pt-5">
+              Do not close this tab or window.
+            </p>
+          </div>
+        }
       </div>
     </div>
   )

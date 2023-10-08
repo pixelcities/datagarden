@@ -1,7 +1,8 @@
 import React, { FC, useMemo, useCallback, useState, useEffect } from 'react'
 
-import { useAppDispatch } from 'hooks'
+import { useAppSelector, useAppDispatch } from 'hooks'
 import { updateTransformerWAL, sendLocalNotification } from 'state/actions'
+import { selectActiveDataSpace } from 'state/selectors'
 
 import { Schema, Identifier, WAL, ConceptA } from 'types'
 
@@ -38,6 +39,8 @@ const PrivatiseTransformer: FC<PrivatiseTransformerProps> = ({ id, wal, tableId,
   const { keyStore } = useKeyStoreContext()
   const { dataFusion } = useDataFusionContext()
 
+  const dataSpace = useAppSelector(selectActiveDataSpace)
+
   const onError = useCallback((error: string) => {
     console.log(error)
 
@@ -53,7 +56,7 @@ const PrivatiseTransformer: FC<PrivatiseTransformerProps> = ({ id, wal, tableId,
   // Rebuild state
   useEffect(() => {
     if (tableId && startup && wal && !!wal.data) {
-      const data = JSON.parse(keyStore?.decrypt_metadata(schema.key_id, wal.data))
+      const data = JSON.parse(keyStore?.decrypt_metadata(dataSpace?.key_id, wal.data))
 
       const weights: [string, number][] = data["weights"]
       const weightsObj = weights.reduce((acc, [k, v]) => Object.assign(acc, {[k]: v}), {})
@@ -65,7 +68,7 @@ const PrivatiseTransformer: FC<PrivatiseTransformerProps> = ({ id, wal, tableId,
       setReplay(true)
       setIsDisabled(true)
     }
-  }, [ tableId, schema.key_id, startup, wal, keyStore ])
+  }, [ tableId, schema.key_id, startup, wal, keyStore, dataSpace?.key_id ])
 
   const execute = useCallback(async () => {
     if (tableId && epsilon) {
@@ -107,7 +110,7 @@ const PrivatiseTransformer: FC<PrivatiseTransformerProps> = ({ id, wal, tableId,
       identifiers[1+i] = {"id": schema.column_order[i], "type": "column"}
     }
 
-    const data = keyStore?.encrypt_metadata(schema.key_id, JSON.stringify({
+    const data = keyStore?.encrypt_metadata(dataSpace?.key_id, JSON.stringify({
       epsilon: epsilon,
       weights: Object.entries(columnWeights)
     }))

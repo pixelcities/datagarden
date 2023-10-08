@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faMinus, faPlus } from '@fortawesome/free-solid-svg-icons'
 
 import { useAppSelector, useAppDispatch } from 'hooks'
-import { selectSignaturesByTransformerId } from 'state/selectors'
+import { selectSignaturesByTransformerId, selectActiveDataSpace } from 'state/selectors'
 import { createMPC, approveTransformer, updateTransformerWAL, sendLocalNotification } from 'state/actions'
 
 import Dropdown from 'components/Dropdown'
@@ -46,6 +46,7 @@ const MPCTransformer: FC<MPCTransformerProps> = ({ id, wal, tableId, leftId, rig
   const { keyStore, protocol } = useKeyStoreContext()
   const { dataFusion } = useDataFusionContext()
 
+  const dataSpace = useAppSelector(selectActiveDataSpace)
   const signatures = useAppSelector(state => selectSignaturesByTransformerId(state, id))
 
   const isLocked = useMemo(() => (wal && wal.transactions.length > 0), [ wal ])
@@ -202,7 +203,7 @@ const MPCTransformer: FC<MPCTransformerProps> = ({ id, wal, tableId, leftId, rig
       randomArray.push(Number(random))
     }
 
-    const data = keyStore?.encrypt_metadata(schema.key_id, JSON.stringify({
+    const data = keyStore?.encrypt_metadata(dataSpace?.key_id, JSON.stringify({
       selected: selectedColumns.map(x => x![0]),
       groups: groupClauses.map(x => x![0]),
       output: outputColumn![0],
