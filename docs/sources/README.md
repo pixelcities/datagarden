@@ -10,6 +10,7 @@ Sources show a preview of the data, and they cannot be edited on their own. The 
 - Granting access
 - Changing *column* shares
 - Publishing
+- Updating data
 - Deleting
 
 ### Title
@@ -23,15 +24,9 @@ To control access to the source, you can invite other collaborators. Inviting a 
 the metadata of the source, and allows them to execute all of the actions mentioned in this chapter, with the exception
 of changing *column* shares.
 
-> **Warning**: It is not currently possible to remove collaborators from a source. Keep an eye on our roadmap to see when this
-> feature becomes available.
-
 ### Changing *column* shares
 Granting access to a column will share the underlying encryption key. This means it is impossible to gain access to the
 data of a column other than by one of your collaborators with access to the key sharing it with you.
-
-> **Warning**: While you can unshare a column again, it will not rotate the encryption keys. Keep an eye on our roadmap to
-> see when this feature becomes available.
 
 ### Publishing
 By publishing a source, it becomes available for use in the workflow builder. It does not become available to more users
@@ -39,6 +34,11 @@ than it was already shared with, meaning that only those users can see it pop up
 
 You can unpublish a source at anytime, but this merely removes it from the sources tab in the workflow builder. Any
 sources that have already been used will continue to exist on the canvas.
+
+### Updating data
+Updating the data requires that the exact same source layout (columns and data types) is used. Once verified, it will override
+the source with the new data, and trigger any downstream transformers to be recomputed. The encryption keys are automatically
+rotated when data is updated.
 
 ### Deleting
 By deleting the source, the source metadata is immediatly deleted. The data itself is marked for deletion, and will be

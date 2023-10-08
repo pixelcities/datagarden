@@ -56,6 +56,14 @@ wait for you to come online and instruct any datasets that need updating. The re
 the browser on the users' devices, which we believe have become fast enough for most general purpose data processing
 tasks.
 
+### Key rotation
+Whenever datasets are updated, all the keys are automatically rotated and re-shared. This mostly comes into play whenever
+a collaborator's access is revoked from a dataset. At this point the server will no longer allow them to access the
+encrypted data, but they technically still have access to the encryption keys. However, we deem this acceptable as they also
+had access to the data itself and they could simply own a plaintext copy of the data. Only when the data changes, does it
+become important that old keys no longer have access to new data, which is why the keys are only rotated when the data
+changes.
+
 ## Secret sharing
 As previously mentioned, the Signal Protocol <sup>[3](https://github.com/signalapp/libsignal/tree/main/rust/protocol)</sup>
 is used to support end-to-end encrypted messaging. Authenticated users can pull pre-key bundles from the server when
