@@ -11,4 +11,6 @@ release:
 	npm run build
 
 	npm run sign public/index.html
+	git add package-lock.json npm-shrinkwrap.json public/index.html
+	git commit -m "Release $(VERSION)"
 	git tag -a $(VERSION) -m ""
