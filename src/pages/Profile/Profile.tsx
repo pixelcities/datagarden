@@ -10,16 +10,17 @@ import { useKeyStoreContext } from 'contexts'
 import { getCSRFToken } from 'utils/getCSRFToken'
 
 const Profile: FC = () => {
-  const history = useHistory();
-  const { user } = useAuthContext();
-  const { keyStore } = useKeyStoreContext();
+  const history = useHistory()
+
+  const { user } = useAuthContext()
+  const { keyStore } = useKeyStoreContext()
 
   const [email, setEmail] = useState("")
   const [currentPassword, setCurrentPassword] = useState("")
   const [newPassword, setNewPassword] = useState("")
   const [confirmNewPassword, setConfirmNewPassword] = useState("")
   const [confirmEmailPassword, setConfirmEmailPassword] = useState("")
-  const [name, setName] = useState(user?.name || "")
+  const [name, setName] = useState("")
   const [fileName, setFileName] = useState("")
   const [picture, setPicture] = useState<string | undefined>(undefined)
   const [error, setError] = useState("")

@@ -10,6 +10,7 @@ import sourceReducer from './slices/sources'
 import organisationReducer from './slices/organisations'
 import uiReducer from './slices/ui'
 import userReducer from './slices/users'
+import userInviteReducer from './slices/invites'
 import dataspaceReducer from './slices/dataspaces'
 import metadataReducer from './slices/metadata'
 import conceptReducer from './slices/concepts'
@@ -19,6 +20,7 @@ import taskReducer from './slices/tasks'
 import contentReducer from './slices/content'
 import pageReducer from './slices/pages'
 import notificationReducer from './slices/notifications'
+import mpcReducer from './slices/mpc'
 
 
 const rootReducer = combineReducers({
@@ -30,6 +32,7 @@ const rootReducer = combineReducers({
   organisations: organisationReducer,
   ui: uiReducer,
   users: userReducer,
+  userInvites: userInviteReducer,
   dataspaces: dataspaceReducer,
   metadata: metadataReducer,
   concepts: conceptReducer,
@@ -38,7 +41,8 @@ const rootReducer = combineReducers({
   tasks: taskReducer,
   content: contentReducer,
   pages: pageReducer,
-  notifications: notificationReducer
+  notifications: notificationReducer,
+  mpc: mpcReducer
 })
 
 const store = configureStore({

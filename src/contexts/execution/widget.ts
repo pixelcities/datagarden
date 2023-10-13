@@ -4,12 +4,13 @@ import { ExecutionError, DataSpace, User, Task, Content, Page, Share } from 'typ
 import { RootState } from 'state/store'
 import { publishWidget, updateContent } from 'state/actions'
 import { toASCII } from 'utils/helpers'
-import { renderDonut, renderHistogram, wrapChartContent } from 'utils/charts'
+import { renderDonut, renderHistogram, renderBar, renderLine, renderArea, wrapChartContent } from 'utils/charts'
+import { renderChoropleth } from 'utils/maps'
 
 import { loadRemoteTable } from 'utils/loadRemoteTable'
 
 export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: EnhancedStore<RootState>, keyStore: any, arrow: any, dataFusion: any) => {
-  return new Promise<{actions: any[], metadata: {[key: string]: any}}>((resolve, reject) => {
+  return new Promise<{actions: any[], metadata: {[key: string]: any}, completed_fragments?: string[]}>((resolve, reject) => {
     const instruction = task.task["instruction"]
     const widget_id = task.task["widget_id"]
 
@@ -49,9 +50,17 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
 
         let svg = ''
         if (settings.type === "Histogram") {
-          svg = renderHistogram(data, settings.columnId, settings.xLabel, settings.yLabel, parseInt(settings.nrBins)).outerHTML
+          svg = renderHistogram(data, settings.columnId, settings.xLabel, settings.yLabel, settings.color, parseInt(settings.nrBins)).outerHTML
         } else if (settings.type === "Donut") {
           svg = renderDonut(data, settings.nameColumnId, settings.valueColumnId).outerHTML
+        } else if (settings.type === "Bar") {
+          svg = renderBar(data, settings.nameColumnId, settings.valueColumnId, settings.xLabel, settings.yLabel, settings.yFormat, settings.color, settings.sort).outerHTML
+        } else if (settings.type === "Line") {
+          svg = renderLine(data, settings.timeColumnId, settings.valueColumnId, settings.xLabel, settings.yLabel, settings.color).outerHTML
+        } else if (settings.type === "Area") {
+          svg = renderArea(data, settings.timeColumnId, settings.valueColumnId, settings.xLabel, settings.yLabel, settings.color).outerHTML
+        } else if (settings.type === "Choropleth") {
+          svg = renderChoropleth(data, settings.classification, parseInt(settings.nrClasses), settings.nameColumnId, settings.valueColumnId, settings.geomColumnId, settings.legendTitle, settings.valueFormat, settings.colorRamp, settings.transform).outerHTML
         }
 
         if (content.length > 0) {

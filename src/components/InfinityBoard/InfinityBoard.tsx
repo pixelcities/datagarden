@@ -129,7 +129,7 @@ const InfinityBoard: FC = (props) => {
           />
         )
 
-      } else if (component.type === "chart") {
+      } else if (component.type === "chart" || component.type === "map") {
         return (
           <DWidget
             key={component.id}
@@ -162,19 +162,24 @@ const InfinityBoard: FC = (props) => {
 
   const renderConnectors = useMemo(() => {
     return connectedComponents.map(component => {
-      return component.targets.map(target =>
-        <ConnectedConnector
-          key={component.id + target}
-          ref={dragRefs}
-          sourceA={component.id}
-          sourceB={target}
-          offset={offset}
-          zoom={zoom}
-          windowDimensions={dimensions}
-        />
-      )
+      return component.targets.map(target => {
+        const targetPosition = components.find(x => x.id === target)?.position ?? []
+
+        return (
+          <ConnectedConnector
+            key={component.id + target}
+            ref={dragRefs}
+            sourceA={component.id}
+            sourceB={target}
+            offset={offset}
+            zoom={zoom}
+            positions={[component.position, targetPosition]}
+            windowDimensions={dimensions}
+          />
+        )
+      })
     })
-  }, [ connectedComponents, dragRefs, offset, zoom, dimensions ])
+  }, [ components, connectedComponents, dragRefs, offset, zoom, dimensions ])
 
   const renderModal = useMemo(() => {
     if (activeCollection && activeCollection.is_ready && isAuthorized(user, activeCollection.schema)) {

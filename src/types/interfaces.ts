@@ -22,7 +22,9 @@ export interface UserInterface {
   dimensions: WindowDimensions,
   components: {
     [key: string]: ComponentDimensions
-  }
+  },
+  connectionState: string,
+  isLoading: boolean
 }
 
 export interface Component {
@@ -56,11 +58,12 @@ export interface WAL {
   identifiers: {[key: number]: Identifier},
   values: {[key: number]: string},
   transactions: string[],
-  artifacts: string[]
+  artifacts: string[],
+  data?: string
 }
 
 export interface Collection extends Component {
-  uri: string,
+  uri: [string, string],
   schema: Schema,
   mergedColors?: string[]
 }
@@ -69,7 +72,9 @@ export interface Transformer extends Component {
   collections: string[],
   transformers: string[],
   wal?: WAL,
-  error?: string
+  error?: string,
+  nr_parties?: number,
+  signatures?: string[]
 }
 
 export interface WidgetSettings {
@@ -104,6 +109,7 @@ export interface Column {
   id: string,
   concept_id: string,
   key_id: string,
+  lineage: string | null,
   shares: Share[],
   metadata?: any
 }
@@ -125,7 +131,7 @@ export interface Source {
   workspace: string,
   type: string,
   owner?: string,
-  uri?: string,
+  uri?: [string, string],
   date?: string,
   sizeHint?: string,
   accessHint?: string,
@@ -136,9 +142,19 @@ export interface Source {
 export interface User {
   id: string,
   email: string,
+  role: string,
   name: string,
   picture: string,
+  last_active_at: string,
+  confirmed_at?: Date,
   relation?: string
+}
+
+export interface UserInvite {
+  email: string,
+  role: string,
+  date: string,
+  id?: string
 }
 
 export interface Metadata {
@@ -151,11 +167,16 @@ export interface Metadata {
 export interface ConceptA {
   id: string,
   workspace: string,
-  name: string,
-  dataType?: DataType,
+  name: string, // rdfs:label | dc:title | skos:prefLabel
+  dataType?: DataType, // rdfs:range
   aggregateFn?: string,
-  broader?: string,
-  narrower?: string
+  broader?: string[], // skos:broader
+  narrower?: string[], // skos::narrower
+  related?: string[], // skos:related
+  description?: string, // dc:description
+  subject?: string, // dc:subject
+  creator?: string, // dc:creator
+  constraints?: Rule[]
 }
 
 export interface Concept {
@@ -167,14 +188,17 @@ export interface Concept {
 export interface DataURI {
   id: string,
   workspace?: string,
-  uri?: string
+  type?: string,
+  uri?: string,
+  tag?: string
 }
 
 export interface Secret {
   key_id: string,
   owner: string,
   receiver: string,
-  ciphertext: string
+  ciphertext: string,
+  message_id?: string
 }
 
 export interface Task {
@@ -227,5 +251,43 @@ export interface NotificationMsg {
   is_urgent?: boolean,
   is_read?: boolean,
   is_local?: boolean
+}
+
+export interface Subscription {
+  subscription_id: string,
+  plan_name: string,
+  status: string,
+  cancel_url: string,
+  update_url: string,
+  valid_to?: Date
+}
+
+export interface MPC {
+  id: string,
+  nr_parties?: number,
+  partitions?: string[],
+  values?: string[]
+}
+
+
+export type NumericOperator =
+  "IS NOT NULL" |
+  ">" |
+  ">=" |
+  "<" |
+  "<="
+
+export type TextOperator =
+  "IS NOT NULL" |
+  "!~*" |
+  "~*"
+
+export type BasicOperator = "IS NOT NULL"
+
+export interface Rule {
+  name: string,
+  condition: string,
+  operator: NumericOperator | TextOperator | BasicOperator,
+  values: string[],
 }
 

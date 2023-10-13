@@ -1,6 +1,8 @@
-import React, { useEffect, useMemo, useRef, useCallback, FC } from "react";
+import React, { useEffect, useMemo, useRef, useCallback, FC } from "react"
 import { EnhancedStore } from '@reduxjs/toolkit'
 import { Mutex } from 'async-mutex'
+import * as Sentry from "@sentry/browser"
+
 import { RootState } from 'state/store'
 import { ExecutionError } from 'types'
 import { useAppSelector, useAppDispatch } from 'hooks'
@@ -39,17 +41,31 @@ export const ExecutionProvider: FC<ExecutionProviderI> = ({ store, children }) =
   const taskDispatcher = useCallback(() => {
     if (keyStoreIsReady && user && arrow && dataFusion) {
       // Filter out any previously completed tasks, in case we raced the event roundtrip
-      const newTasks = tasks.filter(t => !taskCache.current.has(t.id))
+      const newTasks = tasks.filter(t => !taskCache.current.has(t.id + t.fragments.join()))
 
       if (newTasks.length >= 1 && !!dataSpace) {
         const task = newTasks[0]
+        const cacheKey = task.id + task.fragments.join()
 
         // Verify that this task is not nearing the task deadline
         if (task.expires_at && task.expires_at > Date.now() + TASK_TTL_BUFFER) {
           mutex.runExclusive(async () => {
-            if (taskCache.current.has(task.id)) {
+            if (taskCache.current.has(cacheKey)) {
               return
             }
+
+            const watchdog = setTimeout(() => {
+              Sentry.captureMessage("Watchdog is reporting task failure and restarting")
+              console.warn("Watchdog is reporting task failure and restarting")
+
+              taskCache.current.add(cacheKey)
+              dispatch(failTask({
+                id: task.id,
+                error: "Timed out"
+              }))
+
+              window.location.reload() // hard reset
+            }, Math.max(task.expires_at! - Date.now(), TASK_TTL_BUFFER))
 
             const result = (() => {
               if (task.type === "protocol") {
@@ -64,13 +80,13 @@ export const ExecutionProvider: FC<ExecutionProviderI> = ({ store, children }) =
             })
 
             return result()
-              .then(({actions, metadata}) => {
+              .then(({actions, metadata, completed_fragments}) => {
                 actions.forEach(action => dispatch(action))
 
-                taskCache.current.add(task.id)
+                taskCache.current.add(cacheKey)
                 dispatch(completeTask({
                   id: task.id,
-                  fragments: task.fragments,
+                  fragments: completed_fragments || task.fragments,
                   metadata: metadata,
                   is_completed: true
                 }))
@@ -101,7 +117,7 @@ export const ExecutionProvider: FC<ExecutionProviderI> = ({ store, children }) =
                     if (errorCount < 3) {
                       taskRetries.current[task.id] = errorCount + 1
                     } else {
-                      taskCache.current.add(task.id)
+                      taskCache.current.add(cacheKey)
                       delete taskRetries.current[task.id]
                       dispatch(failTask({
                         id: task.id,
@@ -114,13 +130,14 @@ export const ExecutionProvider: FC<ExecutionProviderI> = ({ store, children }) =
                   }
 
                 } else {
-                  taskCache.current.add(task.id)
+                  taskCache.current.add(cacheKey)
                   dispatch(failTask({
                     id: task.id,
                     error: message || "Unknown error"
                   }))
                 }
               })
+              .finally(() => clearTimeout(watchdog))
           })
 
         } else { // Task expired

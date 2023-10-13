@@ -1,16 +1,16 @@
 import React, { FC, Component, useCallback, useEffect, useState, useMemo } from 'react'
 import { RouteComponentProps } from 'react-router'
-import { Switch, Route, Link, useParams } from "react-router-dom"
+import { Switch, Route, Link, useParams, useHistory } from "react-router-dom"
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faKey, faPlus, faAlignJustify, faChartBar } from '@fortawesome/free-solid-svg-icons'
+import { faClone, faKey, faPlus, faAlignJustify, faChartBar, faSitemap, faImage } from '@fortawesome/free-solid-svg-icons'
 
 import { useKeyStoreContext } from 'contexts'
 import { useAuthContext } from 'contexts'
 import { useAppSelector, useAppDispatch } from 'hooks'
 import { selectPages, selectPageById, selectContentIdsByPageId, selectMetadataMap, selectMetadataById, selectActiveDataSpace, selectUsers, selectPublishedWidgets } from 'state/selectors'
-import { createPage, setPageOrder, createContent, createMetadata, shareSecret } from 'state/actions'
-import { toASCII } from 'utils/helpers'
+import { createPage, setPageOrder, createContent, createMetadata, shareSecret, sendLocalNotification } from 'state/actions'
 import { wrapChartContent } from 'utils/charts'
+import { getCSRFToken } from 'utils/getCSRFToken'
 
 import Navbar from 'components/Navbar'
 import Sidebar from 'components/Sidebar'
@@ -57,6 +57,8 @@ const Public: FC = (props) => {
   const [height, setHeight] = useState(0)
 
   useEffect(() => {
+    let isCancelled = false
+
     fetch(`${process.env.REACT_APP_CONTENT_HOST}/info/${handle}/${id}`, {
       method: "GET",
     }).then((response) => {
@@ -66,10 +68,14 @@ const Public: FC = (props) => {
         return response.json()
       }
     }).then((data) => {
-      setHeight(data.height)
+      if (!isCancelled) {
+        setHeight(data.height)
+      }
     }).catch((e) => {
       console.log(e);
-    });
+    })
+
+    return () => { isCancelled = true }
   }, [ handle, id ])
 
   return (
@@ -83,13 +89,15 @@ const Public: FC = (props) => {
 
 const Report: FC = (props) => {
   const dispatch = useAppDispatch()
+  const history = useHistory()
 
   const { id } = useParams<{ id: string }>()
-  const { keyStore } = useKeyStoreContext()
+  const { keyStore, keyStoreIsReady } = useKeyStoreContext()
 
   const [addContentIsActive, setAddContentIsActive] = useState(false)
   const [addWidgetIsActive, setAddWidgetIsActive] = useState(false)
   const [title, setTitle] = useState(id)
+  const [pageToken, setPageToken] = useState<string | undefined>()
   const [selectedWidget, setSelectedWidget] = useState<string | undefined>()
   const [selectedSize, setSelectedSize] = useState<string>("Medium")
   const [sortedContent, setSortedContent] = useState<string[]>([])
@@ -102,27 +110,65 @@ const Report: FC = (props) => {
   const widgets = useAppSelector(selectPublishedWidgets)
 
   useEffect(() => {
-    if (titleMetadata) {
+    if (titleMetadata && keyStoreIsReady) {
       setTitle(keyStore?.decrypt_metadata(dataSpace?.key_id, titleMetadata.metadata))
     }
-  }, [ dataSpace, titleMetadata, keyStore ])
+  }, [ dataSpace, titleMetadata, keyStore, keyStoreIsReady ])
+
+  useEffect(() => {
+    if (page?.key_id && keyStoreIsReady && !keyStore.has_key(page?.key_id)) {
+      dispatch(sendLocalNotification({
+        id: crypto.randomUUID(),
+        type: "error",
+        message: "Unauthorized",
+        is_urgent: true,
+        is_local: true
+      }))
+
+      history.goBack()
+    }
+  }, [ page, keyStore, keyStoreIsReady, history, dispatch ])
+
+  useEffect(() => {
+    let isCancelled = false
+
+    fetch(process.env.REACT_APP_API_BASE_PATH + "/users/pagetoken", {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "X-CSRF-Token": getCSRFToken()
+      }
+    }).then((response) => {
+      response.json().then((resp) => {
+        if (!isCancelled) {
+          setPageToken(resp.token)
+        }
+      })
+    }).catch((e) => {
+      console.log(e);
+    })
+
+    return () => { isCancelled = true }
+  }, [])
 
   const widgetTitleMap = useMemo(() => {
     let titleMap: {[key: string]: string} = {}
 
-    widgets.forEach(widget => {
-      const maybe_name = metadata[widget.id]
-      const name = maybe_name ? keyStore?.decrypt_metadata(dataSpace?.key_id, maybe_name) : widget.id;
+    if (keyStoreIsReady) {
+      widgets.forEach(widget => {
+        const maybe_name = metadata[widget.id]
+        const name = maybe_name ? keyStore?.decrypt_metadata(dataSpace?.key_id, maybe_name) : widget.id;
 
-      titleMap[name] = widget.id
-    })
+        titleMap[name] = widget.id
+      })
+    }
 
     return titleMap
-  }, [ widgets, keyStore, metadata, dataSpace?.key_id ])
+  }, [ widgets, keyStore, keyStoreIsReady, metadata, dataSpace?.key_id ])
 
   const handleAddStaticContent = useCallback(() => {
-    if (page) {
-      let initialContent = btoa("<p></p>")
+    if (page && keyStoreIsReady) {
+      let initialContent = btoa(encodeURIComponent("<p></p>"))
 
       if (page.access.filter(x => x.type === "internal").length > 0 && page.key_id) {
         initialContent = keyStore?.encrypt_metadata(page.key_id, "<p></p>")
@@ -140,12 +186,12 @@ const Report: FC = (props) => {
     }
 
     setAddContentIsActive(false)
-  }, [ id, page, keyStore, dispatch ])
+  }, [ id, page, keyStore, keyStoreIsReady, dispatch ])
 
   const handleAddWidgetContent = useCallback((e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
-    if (page) {
+    if (page && keyStoreIsReady) {
       const widgetTitle = selectedWidget ? selectedWidget : Object.keys(widgetTitleMap)[0]
       const widgetId = widgetTitleMap[widgetTitle]
       const widget = widgets.find(widget => widget.id === widgetTitleMap[widgetTitle])
@@ -171,10 +217,8 @@ const Report: FC = (props) => {
           widgetContent = wrapChartContent(widget.content || "", height)
         }
 
-        // Crudely convert to ASCII by just replacing bad characters, as btoa does not like unicode very much.
-        //
-        // TODO: Properly encode / decode unicode text
-        let content = btoa(toASCII(widgetContent))
+        // URI encode it first, as btoa does not like unicode very much.
+        let content = btoa(encodeURIComponent(widgetContent))
 
         if (page.access.filter(x => x.type === "internal").length > 0 && page.key_id) {
           content = keyStore?.encrypt_metadata(page.key_id, widgetContent)
@@ -196,7 +240,7 @@ const Report: FC = (props) => {
 
     setAddContentIsActive(false)
     setAddWidgetIsActive(false)
-  }, [ id, page, widgets, selectedWidget, selectedSize, widgetTitleMap, keyStore, dataSpace?.key_id, dispatch ])
+  }, [ id, page, widgets, selectedWidget, selectedSize, widgetTitleMap, keyStore, keyStoreIsReady, dataSpace?.key_id, dispatch ])
 
   useEffect(() => {
     const contentOrder = page?.content_order ?? []
@@ -227,14 +271,16 @@ const Report: FC = (props) => {
   }, [ id, sortedContent, dispatch ])
 
   const renderContent = useMemo(() => {
-    return sortedContent.map((contentId, i) => {
-      return (
-        <div key={contentId} className="content-block">
-          <Content id={contentId} keyId={page?.key_id} index={i} moveContent={moveContent} />
-        </div>
-      )
-    })
-  }, [ sortedContent, page?.key_id, moveContent ])
+    if (pageToken) {
+      return sortedContent.map((contentId, i) => {
+        return (
+          <div key={contentId} className="content-block">
+            <Content id={contentId} pageToken={pageToken} keyId={page?.key_id} index={i} moveContent={moveContent} />
+          </div>
+        )
+      })
+    }
+  }, [ pageToken, sortedContent, page?.key_id, moveContent ])
 
   const renderAddContent = useMemo(() => {
     return (
@@ -244,16 +290,29 @@ const Report: FC = (props) => {
           <div className="box">
             <p className="buttons">
               <button className="button is-large" onClick={handleAddStaticContent}>
-                <span className="icon is-medium">
+                <span className="icon is-medium has-tooltip-right" data-tooltip="Add text paragraph">
                   <FontAwesomeIcon icon={faAlignJustify} color="#4f4f4f" size="lg"/>
                 </span>
               </button>
 
               <button className="button is-large" onClick={() => setAddWidgetIsActive(true)}>
-                <span className="icon is-medium">
+                <span className="icon is-medium has-tooltip-right" data-tooltip="Add dynamic widget">
                   <FontAwesomeIcon icon={faChartBar} color="#4f4f4f" size="lg"/>
                 </span>
               </button>
+
+              <button className="button is-large" disabled>
+                <span className="icon is-medium has-tooltip-right" data-tooltip="Add image">
+                  <FontAwesomeIcon icon={faImage} color="#4f4f4f" size="lg"/>
+                </span>
+              </button>
+
+              <button className="button is-large" disabled>
+                <span className="icon is-medium has-tooltip-right" data-tooltip="Add (autogenerated) methodology">
+                  <FontAwesomeIcon icon={faSitemap} color="#4f4f4f" size="lg"/>
+                </span>
+              </button>
+
             </p>
           </div>
         </div>
@@ -333,7 +392,7 @@ const Report: FC = (props) => {
         { title }
 
         { !isInternal &&
-          <a className="button is-success is-outlined is-pulled-right" href={"/pages/ds1/" + id} target="_blank" rel="noreferrer">
+          <a className="button is-success is-outlined is-pulled-right" href={"/pages/" + dataSpace.handle + "/" + id} target="_blank" rel="noreferrer">
             Preview
           </a>
         }
@@ -380,7 +439,7 @@ const ReportOverview: FC = (props) => {
 
       return (
         <div key={page.id} className="column is-narrow">
-          <Link to={"/ds1/reports/" + page.id}>
+          <Link to={"/ds/" + dataSpace.handle + "/reports/" + page.id}>
             <ReportCard
               id={page.id}
               title={name}
@@ -506,30 +565,50 @@ const CreateReport: FC<CreateReportProps> = ({ isActive, onClose }) => {
           <div className="box">
 
             <form onSubmit={handleSubmit}>
+              <div className="field pb-0 pt-5">
+                <label id="publish" className="label pb-2"> Title </label>
 
-            <div className="field pb-0 pt-5">
-              <label id="publish" className="label pb-2"> Title </label>
-
-              <div className="control is-fullwidth">
-                <input className="input py-0" type="text" placeholder={title} value={title} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTitle(e.target.value)}/>
-              </div>
-            </div>
-
-            <div className="field pb-0 pt-5">
-              <label id="publish" className="label pb-2"> Access </label>
-
-              <div className="control has-icons-left pb-4" style={{width: "15rem"}}>
-                <div className="select is-fullwidth">
-                  <select onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setAccess([{"type": e.target.value}])} value={(access.length > 0) ? access[0].type : ""}>
-                    <option value="internal">Internal</option>
-                    <option value="public">Public</option>
-                  </select>
-                </div>
-                <div className="icon is-small is-left pb-2">
-                  <FontAwesomeIcon icon={faKey} size="sm"/>
+                <div className="control is-fullwidth">
+                  <input className="input py-0" type="text" placeholder={title} value={title} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTitle(e.target.value)}/>
                 </div>
               </div>
-            </div>
+
+              <div className="columns">
+                <div className="column is-half">
+                  <div className="field pb-0 pt-5">
+                    <label id="publish" className="label pb-2"> Access </label>
+
+                    <div className="control has-icons-left pb-4" style={{width: "15rem"}}>
+                      <div className="select is-fullwidth">
+                        <select onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setAccess([{"type": e.target.value}])} value={(access.length > 0) ? access[0].type : ""}>
+                          <option value="internal">Internal</option>
+                          <option value="public">Public</option>
+                        </select>
+                      </div>
+                      <div className="icon is-small is-left pb-2">
+                        <FontAwesomeIcon icon={faKey} size="sm"/>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="column is-half">
+                  <div className="field pb-0 pt-5">
+                    <label className="label pb-2"> Template </label>
+
+                    <div className="control has-icons-left pb-4" style={{width: "15rem"}}>
+                      <div className="select is-fullwidth">
+                        <select disabled>
+                          <option value="blank">Blank</option>
+                        </select>
+                      </div>
+                      <div className="icon is-small is-left pb-2">
+                        <FontAwesomeIcon icon={faClone} size="sm"/>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
               <div className="field is-grouped is-grouped-right pt-0">
                 <div className="control">

@@ -8,6 +8,7 @@ import AggregateTransformer from './components/AggregateTransformer'
 import FunctionTransformer from './components/FunctionTransformer'
 import PrivatiseTransformer from './components/PrivatiseTransformer'
 import AttributeTransformer from './components/AttributeTransformer'
+import MPCTransformer from './components/MPCTransformer'
 
 
 interface TransformerSettingsProps {
@@ -82,6 +83,14 @@ const TransformerSettings: FC<TransformerSettingsProps> = (props) => {
   } else if (transformerType === "attribute") {
     return (
       <AttributeTransformer
+        schema={props.schemas[0]}
+        {...props}
+      />
+    )
+
+  } else if (transformerType === "mpc") {
+    return (
+      <MPCTransformer
         schema={props.schemas[0]}
         {...props}
       />

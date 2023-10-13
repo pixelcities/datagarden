@@ -8,7 +8,9 @@ const initialState: UserInterface = {
   offset: {x: 0,y: 0},
   coords: {x: 0, y: 0},
   dimensions: {height: 0, width: 0},
-  components: {}
+  components: {},
+  connectionState: "connected",
+  isLoading: false
 }
 
 const uiSlice = createSlice({
@@ -26,6 +28,12 @@ const uiSlice = createSlice({
     },
     setComponentDimensions(state, action: PayloadAction<ComponentDimensions>) {
       state.components[action.payload.id] = action.payload
+    },
+    setConnectionState(state, action: PayloadAction<string>) {
+      state.connectionState = action.payload
+    },
+    setIsLoading(state, action: PayloadAction<boolean>) {
+      state.isLoading = action.payload
     }
   }
 })
@@ -38,7 +46,9 @@ export const {
   setOffset,
   setCoords,
   setWindowDimensions,
-  setComponentDimensions
+  setComponentDimensions,
+  setConnectionState,
+  setIsLoading
 } = uiSlice.actions
 
 
@@ -58,6 +68,16 @@ export const selectCoords = createSelector(
 export const selectWindowDimensions = createSelector(
   uiSelector,
   ui => ui.dimensions
+)
+
+export const selectConnectionState = createSelector(
+  uiSelector,
+  ui => ui.connectionState
+)
+
+export const selectIsLoading = createSelector(
+  uiSelector,
+  ui => ui.isLoading
 )
 
 export const selectComponentDimensionsById = createCachedSelector(

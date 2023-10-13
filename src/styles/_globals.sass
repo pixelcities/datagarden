@@ -84,6 +84,9 @@ $colors: indigo, darkviolet, magenta, mediumvioletred, deeppink, crimson, red, o
   &.is-white
     color: #FFFFFF
 
+  &.is-light
+    color: $primary-light
+
 .button-label
   font-family: "Nunito Sans"
   font-style: normal
@@ -120,6 +123,11 @@ $colors: indigo, darkviolet, magenta, mediumvioletred, deeppink, crimson, red, o
 
   .message-body
     margin-top: -2rem
+
+.hover-buttons
+  &.is-right
+    position: absolute
+    right: 10px
 
 .hover-button
   +unselectable
@@ -177,6 +185,10 @@ $colors: indigo, darkviolet, magenta, mediumvioletred, deeppink, crimson, red, o
     &.bg-#{$i}
       background: lighten(nth($colors, $i), 20%)
 
+@for $i from 1 through length($colors)
+  .background-#{$i}
+    background: nth($colors, $i)
+
 .modal-footer
   position: fixed
   bottom: 3rem
@@ -195,4 +207,120 @@ $colors: indigo, darkviolet, magenta, mediumvioletred, deeppink, crimson, red, o
     background: white
     border-radius: 4px
     box-shadow: 0 1px 5px rgba(0,0,0,0.2)
+
+.content
+  @extend .content
+  &.no-block
+    p
+      margin-bottom: 0rem !important
+  &.no-wrap
+    display: block
+    overflow: scroll
+    white-space: nowrap
+
+.spinner
+  color: transparent !important
+  pointer-events: none
+  height: 3rem
+  &::after
+    @extend %loader
+    +center(3em)
+    position: relative !important
+    height: 3em !important
+    width: 3em !important
+
+.slider
+  -webkit-appearance: none
+  width: 100%
+  height: 10px
+  border-radius: 2.5px
+  background: #eee
+  outline: none
+  opacity: 0.9
+  -webkit-transition: .2s
+  transition: opacity .2s
+
+  &:hover
+    opacity: 1
+
+  &::-webkit-slider-thumb,
+  &::-moz-range-thumb
+    -webkit-appearance: none
+    appearance: none
+    width: 20px
+    height: 20px
+    border-radius: 15%
+    border-color: $primary
+    background: $primary
+    cursor: pointer
+
+  &.is-disabled
+    &::-moz-range-thumb,
+    &::-webkit-slider-thumb
+      border-color: #dbdbdb
+      background: #dbdbdb
+
+.page
+  min-height: calc(100vh - #{$navbar-height})
+
+  // padding top + font + (border padding + border) + padding bottom
+  $page-title-height: calc(3rem + 2rem + 1rem + 2px + 1rem)
+
+  .title
+    height: $page-title-height
+    padding: 3rem 1rem 1rem
+
+    font-family: Nunito Sans
+    font-style: normal
+    font-weight: bold
+    font-size: 24px
+    line-height: 30px
+
+    letter-spacing: 2px
+    text-transform: uppercase
+
+    color: #F8CD30
+
+    .border
+      padding-top: 1rem
+      border-bottom: 2px solid #F8CD30
+
+  .layout-settings
+    padding: 0rem 2rem 1rem
+
+  .main
+    font-size: inherit
+    min-height: calc(100vh - #{$navbar-height} - #{$page-title-height} - 12px)
+
+.seperator
+  border-bottom: 1px solid hsl(0deg, 0%, 93%)
+
+
+.tile-is-white
+  @extend .notification
+  background-color: white
+
+.updown
+  animation: updown-animation 1.5s ease-in-out infinite
+
+@keyframes updown-animation
+  0%
+    transform: translateY(0)
+  50%
+    transform: translateY(-1rem)
+  0%
+    transform: translateY(0)
+
+.hide
+  animation: hide-animation 1.5s linear 1
+  animation-fill-mode: forwards
+
+@keyframes  hide-animation
+  0%
+    opacity: 1.0
+  100%
+    opacity: 0.0
+
+.is-rounded
+  border-radius: $radius-rounded
 

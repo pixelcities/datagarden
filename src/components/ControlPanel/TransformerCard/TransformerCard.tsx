@@ -44,7 +44,7 @@ const TransformerCard: FC<TransformerCardProps> = ({ title, type, tooltip, isDis
         dispatch(createMetadata({
           id: idRef.current.id,
           workspace: "default",
-          metadata: keyStore?.encrypt_metadata(dataSpace?.key_id, `${type} [${new Date().toISOString().split("T")[0]}]`)
+          metadata: keyStore?.encrypt_metadata(dataSpace?.key_id, `${title} [${new Date().toISOString().split("T")[0]}]`)
         }))
 
         dispatch(createTransformer({
@@ -62,7 +62,7 @@ const TransformerCard: FC<TransformerCardProps> = ({ title, type, tooltip, isDis
         opacity: monitor.isDragging() ? 0.5 : 1
       })
     }),
-    []
+    [ dataSpace?.key_id ]
   )
 
   return (
@@ -76,8 +76,8 @@ const TransformerCard: FC<TransformerCardProps> = ({ title, type, tooltip, isDis
           <use href={sprites + "#" + type} style={{color: "black"}} />
         </svg>
 
-        <p className="card-link has-text-centered">
-          { type }
+        <p className="card-link has-text-centered" style={title.indexOf(" ") !== -1 ? {marginTop: "-0.5rem"} : {}}>
+          { title }
         </p>
 
       </div>

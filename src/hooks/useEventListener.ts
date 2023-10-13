@@ -2,7 +2,7 @@ import { useRef, useEffect, RefObject } from 'react'
 
 export default function useEventListener<T extends HTMLElement = HTMLDivElement>(
   eventName: string,
-  element: RefObject<T | null>,
+  element: RefObject<T | null> | null,
   handler: (event: any) => void,
   options?: AddEventListenerOptions
 ) {

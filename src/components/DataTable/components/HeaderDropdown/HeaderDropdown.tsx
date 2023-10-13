@@ -10,7 +10,7 @@ import { User, Source, Collection, Share, Column } from 'types'
 
 import { useAppDispatch, useAppSelector } from 'hooks'
 import { selectUserById, selectSourceById, selectCollectionById } from 'state/selectors'
-import { shareSecret, updateSource, updateCollection } from 'state/actions'
+import { shareSecret, updateSourceSchema, updateCollectionSchema } from 'state/actions'
 
 import { useAuthContext } from 'contexts';
 import { useKeyStoreContext } from 'contexts'
@@ -85,19 +85,19 @@ const ShareInstance: FC<ShareInstanceProps> = ({ share, updateUser }) => {
   const [{ opacity }, dragRef] = useDrag(
     () => ({
       type: "HeaderDropdown",
-      item: user?.id,
+      item: share.principal,
       end: (e, monitor) => {
         const result: any = monitor.getDropResult()
 
         if (result && result.box) {
-          updateUser(user, result.box)
+          updateUser(share.principal, result.box)
         }
       },
       collect: (monitor) => ({
         opacity: monitor.isDragging() ? 0.5 : 1
       })
     }),
-    []
+    [ updateUser ]
   )
 
   let icon = faUserSlash
@@ -111,12 +111,20 @@ const ShareInstance: FC<ShareInstanceProps> = ({ share, updateUser }) => {
   }
 
   return (
-    <div ref={dragRef} key={user?.id} className="panel-block-nb is-button" style={{opacity: opacity, cursor: "grab"}}>
+    <div ref={dragRef} key={share.principal} className="panel-block-nb is-button" style={{opacity: opacity, cursor: "grab"}}>
       <span className="panel-icon">
         <FontAwesomeIcon icon={icon} color={color} size="sm"/>
       </span>
       <p className="fineprint-label label-size-3">
-        {user?.email}
+        { user ?
+          <>
+            { user.email === "[REDACTED]" ? user.name : user.email }
+          </>
+        :
+          <span className="is-italic">
+            { "[inactive user]" }
+          </span>
+        }
       </p>
     </div>
   )
@@ -142,6 +150,7 @@ type ShareOptionsI = ShareSourceOptionsI | ShareCollectionOptionsI
 const ShareOptions: FC<ShareOptionsI> = ({ me, columnId, source, collection }) => {
   const dispatch = useAppDispatch()
   const [schemaIsValid, setSchemaIsValid] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
 
   const { keyStore, protocol } = useKeyStoreContext();
 
@@ -159,6 +168,7 @@ const ShareOptions: FC<ShareOptionsI> = ({ me, columnId, source, collection }) =
   useEffect(() => {
     verifySchema(schema, keyStore?.get_key(schema.key_id)).then(isValid => {
       setSchemaIsValid(isValid)
+      setIsLoading(false)
 
       if (!isValid) {
         console.error("Invalid schema signature")
@@ -166,8 +176,8 @@ const ShareOptions: FC<ShareOptionsI> = ({ me, columnId, source, collection }) =
     })
   }, [ schema, keyStore ])
 
-  const setUsers = React.useCallback((column: Column) => (user: User, access: string) => {
-    if (access === "FullAccess" && !(user.id in shares)) {
+  const setUsers = React.useCallback((column: Column) => (user_id: string, access: string) => {
+    if (access === "FullAccess" && !(user_id in shares)) {
       let columns: Column[] = []
       input.schema.columns.forEach((c) => {
         if (c.id !== column?.id) {
@@ -175,23 +185,24 @@ const ShareOptions: FC<ShareOptionsI> = ({ me, columnId, source, collection }) =
         }
       })
 
-      if (column) {
+      if (column && !!column.shares.find(s => s.principal === me?.id)) {
         columns.push({
           id: column.id,
           concept_id: column.concept_id,
           key_id: column.key_id,
+          lineage: column.lineage,
           shares: [...column.shares ?? [], {
             type: "full",
-            principal: user.id
+            principal: user_id
           }]
         })
 
         if (schemaIsValid) {
-          protocol?.encrypt(user.id, keyStore?.get_key(column.key_id)).then((secret: string) => {
+          protocol?.encrypt(user_id, keyStore?.get_key(column.key_id)).then((secret: string) => {
             dispatch(shareSecret({
               key_id: column.key_id,
               owner: me.id,
-              receiver: user.id,
+              receiver: user_id,
               ciphertext: secret
             }))
 
@@ -199,27 +210,33 @@ const ShareOptions: FC<ShareOptionsI> = ({ me, columnId, source, collection }) =
               signSchema({...schema, ...{
                 columns: columns
               }}, keyStore?.get_key(schema.key_id)).then(signedSchema => {
-                dispatch(updateSource({...source, ...{
+                dispatch(updateSourceSchema({
+                  id: source.id,
+                  workspace: source.workspace,
                   schema: signedSchema
-                }}))
+                }))
               })
 
             } else if (collection) {
               signSchema({...schema, ...{
                 columns: columns
               }}, keyStore?.get_key(schema.key_id)).then(signedSchema => {
-                dispatch(updateCollection({...collection, ...{
+                dispatch(updateCollectionSchema({
+                  id: collection.id,
+                  workspace: collection.workspace,
                   schema: signedSchema
-                }}))
+                }))
               })
             }
+
+            setIsLoading(true)
           })
         } else {
           console.log("[WARNING] Not sharing column because schema signature could not be verified")
         }
       }
 
-    } else if (access === "Blocked" && user.id in shares) {
+    } else if (access === "Blocked" && user_id in shares) {
       console.log("[WARNING] Removing access requires key rotation and is not yet implemented")
 
       let columns: Column[] = []
@@ -229,30 +246,35 @@ const ShareOptions: FC<ShareOptionsI> = ({ me, columnId, source, collection }) =
         }
       })
 
-      if (column) {
+      if (column && !!column.shares.find(s => s.principal === me?.id)) {
         columns.push({
           id: column.id,
           concept_id: column.concept_id,
           key_id: column.key_id,
-          shares: column.shares.filter(s => s.principal !== user.id)
+          lineage: column.lineage,
+          shares: column.shares.filter(s => s.principal !== user_id)
         })
 
         if (source && schemaIsValid) {
           signSchema({...schema, ...{
             columns: columns
           }}, keyStore?.get_key(schema.key_id)).then(signedSchema => {
-            dispatch(updateSource({...source, ...{
+            dispatch(updateSourceSchema({
+              id: source.id,
+              workspace: source.workspace,
               schema: signedSchema
-            }}))
+            }))
           })
 
         } else if (collection && schemaIsValid) {
           signSchema({...schema, ...{
             columns: columns
           }}, keyStore?.get_key(schema.key_id)).then(signedSchema => {
-            dispatch(updateCollection({...collection, ...{
+            dispatch(updateCollectionSchema({
+              id: collection.id,
+              workspace: collection.workspace,
               schema: signedSchema
-            }}))
+            }))
           })
         }
       }
@@ -273,7 +295,7 @@ const ShareOptions: FC<ShareOptionsI> = ({ me, columnId, source, collection }) =
 
   const renderAllowedUsers = React.useMemo(() => {
     if (column) {
-      return column.shares.map(s => {
+      return column.shares.filter(s => !!s.principal).map(s => {
         return <ShareInstance key={s.principal} share={s} updateUser={setUsers(column)} />
       })
     }
@@ -312,16 +334,21 @@ const ShareOptions: FC<ShareOptionsI> = ({ me, columnId, source, collection }) =
         { renderAllowedUsers }
       </div>
 
-      <div className="panel-block" />
-      <div className="panel-block-nb">
-        <p className="header-label">
-          Blocked
-        </p>
-      </div>
-      <div ref={dropRefBlocked} style={{height: 100, borderWidth: "thin", borderStyle: isOverBlocked ? "dashed" : "none"}}>
-        { renderDisallowedUsers }
-      </div>
-
+      { isLoading ? (
+        <div className="spinner pt-3 pb-6" />
+      ) : (
+        <>
+          <div className="panel-block" />
+          <div className="panel-block-nb">
+            <p className="header-label">
+              Blocked
+            </p>
+          </div>
+          <div ref={dropRefBlocked} style={{height: 100, borderWidth: "thin", borderStyle: isOverBlocked ? "dashed" : "none"}}>
+            { renderDisallowedUsers }
+          </div>
+        </>
+      )}
     </>
   )
 }
@@ -337,12 +364,12 @@ const HeaderDropdown: FC<HeaderDropdownProps> = ({ fieldId, fieldName, inputId, 
   const renderDropdown = React.useMemo(() => {
     if (user && settingsActive && isSource && source) {
       return (
-        <ShareOptions me={user} columnId={fieldId} source={source} />
+        <ShareOptions key={fieldId} me={user} columnId={fieldId} source={source} />
       )
 
     } else if (user && settingsActive && collection) {
       return (
-        <ShareOptions me={user} columnId={fieldId} collection={collection} />
+        <ShareOptions key={fieldId} me={user} columnId={fieldId} collection={collection} />
       )
 
     } else {

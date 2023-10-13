@@ -1,6 +1,6 @@
 {
   "name": "datagarden.app",
-  "version": "1.0.3",
+  "version": "0.2.30",
   "private": true,
   "dependencies": {
     "@ericlathrop/phoenix-js-react-hooks": "^0.1.0",
@@ -11,9 +11,10 @@
     "@fortawesome/free-solid-svg-icons": "^5.15.2",
     "@fortawesome/react-fontawesome": "^0.1.14",
     "@pixelcities/arrow-wasm": "^0.1.4",
-    "@pixelcities/datafusion-wasm": "^0.1.1",
-    "@pixelcities/key-x-wasm": "file:../key-x-wasm/pkg",
+    "@pixelcities/datafusion-wasm": "^0.1.6",
+    "@pixelcities/key-x-wasm": "^0.1.11",
     "@reduxjs/toolkit": "^1.7.2",
+    "@sentry/react": "^7.53.1",
     "async-mutex": "^0.3.2",
     "d3": "^7.6.1",
     "gsap": "^3.6.0",
@@ -36,8 +37,8 @@
     "typescript": "^4.2.3"
   },
   "scripts": {
-    "start": "BROWSER=none craco start",
-    "build": "craco build"
+    "start": "BROWSER=none REACT_APP_VERSION=$npm_package_version craco start",
+    "build": "REACT_APP_VERSION=$npm_package_version craco build"
   },
   "eslintConfig": {
     "extends": "react-app"
@@ -61,10 +62,10 @@
   },
   "devDependencies": {
     "@craco/craco": "^7.0.0-alpha.0",
-    "@creativebulma/bulma-badge": "^1.0.1",
     "@creativebulma/bulma-divider": "^1.1.0",
     "@creativebulma/bulma-tooltip": "^1.2.0",
     "@deckar01/bulma-pageloader": "^2.2.1",
+    "@sentry/webpack-plugin": "^2.2.0",
     "@types/d3": "^7.4.0",
     "@types/gsap": "^1.20.2",
     "@types/jest": "^26.0.20",

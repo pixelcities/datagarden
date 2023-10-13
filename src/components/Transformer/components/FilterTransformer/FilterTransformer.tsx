@@ -2,7 +2,7 @@ import React, { FC, useCallback, useEffect, useMemo, useState } from 'react'
 
 import { useAppDispatch, useAppSelector } from 'hooks'
 import { selectActiveDataSpace, selectMetadataMap } from 'state/selectors'
-import { createMetadata, updateTransformerWAL, sendLocalNotification } from 'state/actions'
+import { createMetadata, updateMetadata, updateTransformerWAL, sendLocalNotification } from 'state/actions'
 
 import Dropdown from 'components/Dropdown'
 import { Schema, WAL, ConceptA } from 'types'
@@ -34,12 +34,12 @@ const FilterTransformer: FC<FilterTransformerProps> = ({ id, wal, tableId, leftI
 
   const [column, setColumn] = useState<[string, string] | null>(null)
   const [value, setValue] = useState<string | undefined>()
-  const [valueIsLocked, setValueIsLocked] = useState(false)
   const [filterType, setFilterType] = useState("=")
   const [log, setLog] = useState<WAL>(wal ?? {identifiers: {}, values: {}, transactions: [], artifacts: []})
 
   const [startup, setStartup] = useState(true)
   const [replay, setReplay] = useState(false)
+  const [isDisabled, setIsDisabled] = useState(log.transactions.length === 0)
 
   const { dataFusion } = useDataFusionContext()
   const { keyStore } = useKeyStoreContext()
@@ -47,7 +47,7 @@ const FilterTransformer: FC<FilterTransformerProps> = ({ id, wal, tableId, leftI
   const columnNames: [string, string][] = useMemo(() => Object.entries(columns).map(([id, concept]) => [id, concept.name]), [ columns ])
 
   const onError = useCallback((error: string) => {
-    console.log(error)
+    console.error(error)
 
     dispatch(sendLocalNotification({
       id: crypto.randomUUID(),
@@ -86,7 +86,7 @@ const FilterTransformer: FC<FilterTransformerProps> = ({ id, wal, tableId, leftI
 
       setStartup(false)
       setReplay(true)
-      setValueIsLocked(true)
+      setIsDisabled(true)
     }
   }, [ tableId, startup, wal, columns, metadata, keyStore, dataSpace?.key_id ])
 
@@ -149,40 +149,55 @@ const FilterTransformer: FC<FilterTransformerProps> = ({ id, wal, tableId, leftI
 
   const handleFilter = React.useCallback((e: any) => {
     e.preventDefault()
-    setValueIsLocked(true)
 
     dataFusion?.clone_table(leftId, tableId)
     execute()
       .then((result) => {
         setLog(result)
+        setIsDisabled(false)
       })
       .catch((e) => onError(e ? e.message : "Error executing query"))
   }, [ tableId, leftId, execute, dataFusion, onError ])
 
   const handleFilterType = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setFilterType(e.target.value)
+    setIsDisabled(true)
   }
 
   const handleValue = (e: React.ChangeEvent<HTMLInputElement>) => {
     setValue(e.target.value)
+    setIsDisabled(true)
   }
 
   const handleCommit = () => {
-    // First dispatch the value as metadata, then include it in the log
-    const metadataId = crypto.randomUUID()
-    const nextId = 1
+    let values = wal?.values ?? log.values
 
-    dispatch(createMetadata({
-      id: metadataId,
-      workspace: "default",
-      metadata: keyStore?.encrypt_metadata(dataSpace?.key_id, value)
-    }))
+    // First dispatch the value as metadata, then include it in the log
+    if (Object.keys(values).length === 0) {
+      const metadataId = crypto.randomUUID()
+      const nextId = 1
+
+      dispatch(createMetadata({
+        id: metadataId,
+        workspace: "default",
+        metadata: keyStore?.encrypt_metadata(dataSpace?.key_id, value)
+      }))
+
+      values = {
+        [nextId]: metadataId
+      }
+
+    } else {
+      dispatch(updateMetadata({
+        id: values[1],
+        workspace: "default",
+        metadata: keyStore?.encrypt_metadata(dataSpace?.key_id, value)
+      }))
+    }
 
     // TODO: handle multiple filters / values
     const logWithValues = {...log, ...{
-      values: {...log.values, ...{
-        [nextId]: metadataId
-      }}
+      values: values
     }}
 
     dispatch(updateTransformerWAL({
@@ -202,10 +217,9 @@ const FilterTransformer: FC<FilterTransformerProps> = ({ id, wal, tableId, leftI
         <Dropdown
           key={"dropdown-col-" + (column !== null).toString()}
           items={columnNames}
-          maxWidth={150}
-          onClick={(item) => setColumn(item)}
+          maxWidth={100}
+          onClick={(item) => { setColumn(item); setIsDisabled(true) }}
           selected={column}
-          isDisabled={valueIsLocked}
         />
         <p className="control my-1">
           <span className="select">
@@ -220,11 +234,11 @@ const FilterTransformer: FC<FilterTransformerProps> = ({ id, wal, tableId, leftI
           </span>
         </p>
         <p className="control my-1">
-          <input className="input is-normal" type="text" placeholder={value} onChange={handleValue} disabled={valueIsLocked} />
+          <input className="input is-normal" type="text" placeholder={value} onChange={handleValue} />
         </p>
       </div>
     )
-  }, [ columnNames, column, filterType, value, valueIsLocked ])
+  }, [ columnNames, column, filterType, value ])
 
   if (!tableId) {
     return (
@@ -253,7 +267,7 @@ const FilterTransformer: FC<FilterTransformerProps> = ({ id, wal, tableId, leftI
       </div>
 
       <div className="commit-footer">
-        <button className="button is-primary is-fullwidth" onClick={handleCommit} disabled={log.transactions.length === 0}> Commit </button>
+        <button className="button is-primary is-fullwidth" onClick={handleCommit} disabled={isDisabled}> Commit </button>
       </div>
     </div>
   )

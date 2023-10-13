@@ -5,10 +5,11 @@ import './ColorPicker.sass'
 
 interface ColorPickerProps {
   color?: string,
-  onClick?: (color: string) => void
+  onClick?: (color: string) => void,
+  isDisabled?: boolean
 }
 
-const ColorPicker: FC<ColorPickerProps> = ({ color, onClick }) => {
+const ColorPicker: FC<ColorPickerProps> = ({ color, onClick, isDisabled }) => {
   const [colorCode, setColorCode] = useState(color || "#E42256")
   const [pickerIsActive, setPickerIsActive] = useState(false)
 
@@ -56,7 +57,7 @@ const ColorPicker: FC<ColorPickerProps> = ({ color, onClick }) => {
 
   return (
     <div className="is-relative">
-      <button className="button picker-button" style={{backgroundColor: colorCode}} onClick={() => setPickerIsActive(!pickerIsActive)}>
+      <button className="button picker-button" style={{backgroundColor: colorCode}} onClick={() => setPickerIsActive(!pickerIsActive)} disabled={isDisabled} >
         {colorCode}
       </button>
 

@@ -9,7 +9,7 @@ const saveState = (id: number, state: any) => {
 
   // Filter ephemeral slices
   const filteredState = Object.keys(state)
-    .filter(k => k !== "dataspaces" && k !== "secrets" && k!== "tasks")
+    .filter(k => k !== "dataspaces" && k !== "secrets" && k!== "tasks" && k!== "notifications")
     .reduce((obj, k) => {
       return {...obj, [k]: state[k]}
     }, {})

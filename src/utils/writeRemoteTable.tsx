@@ -1,14 +1,14 @@
 import { Schema, User, Share } from 'types'
 import { getDataTokens } from 'utils/getDataTokens'
 
-export const writeRemoteTable = (tableId: string, uri: string, schema: Schema, user: User | undefined, arrow: any, dataFusion: any, keyStore: any) => {
+export const writeRemoteTable = (tableId: string, uri: [string, string], schema: Schema, user: User | undefined, arrow: any, dataFusion: any, keyStore: any) => {
   return new Promise<void>((resolve, reject) => {
     const fragmentId = crypto.randomUUID()
     const path = `/${fragmentId}`
 
     // Get fresh session tokens
-    getDataTokens(uri + `/${fragmentId}.parquet`, "write").then(tokens => {
-      const s3_path = uri.split("s3://")[1] + `/${fragmentId}.parquet`
+    getDataTokens(uri[0] + `/${fragmentId}.parquet`, uri[1], "write").then(tokens => {
+      const s3_path = uri[0].split("s3://")[1] + `/${fragmentId}.parquet`
       const arrow_schema = dataFusion?.get_schema(tableId)
 
       // Get and prepare the secret keys

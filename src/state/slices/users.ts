@@ -1,4 +1,4 @@
-import { createSelector, createAction, createSlice, createEntityAdapter } from '@reduxjs/toolkit'
+import { createSelector, createAction, createSlice, createEntityAdapter, PayloadAction } from '@reduxjs/toolkit'
 import { RootState } from 'state/store'
 import { User } from 'types'
 
@@ -11,7 +11,19 @@ const usersSlice = createSlice({
   initialState: initialState,
   reducers: {
     userCreated: usersAdapter.addOne,
-    userUpdated: usersAdapter.upsertOne
+    userUpdated: usersAdapter.upsertOne,
+    userActivitySet(state, action: PayloadAction<{id: string, last_active_at: string}>) {
+      const user = state.entities[action.payload.id]
+      if (user) {
+        user.last_active_at = action.payload.last_active_at
+      }
+    },
+    userDeleted(state, action: PayloadAction<{id: string}>) {
+      const ids = state.ids.filter(id => id !== action.payload.id)
+
+      state.ids = ids
+      delete state.entities[action.payload.id]
+    }
   }
 })
 
@@ -21,7 +33,8 @@ export default usersSlice.reducer
 // actions
 export const {
   userCreated,
-  userUpdated
+  userUpdated,
+  userDeleted
 } = usersSlice.actions
 
 export const login = createAction('users/login', (action) => {

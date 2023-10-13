@@ -10,7 +10,7 @@ const dataURISlice = createSlice({
   name: 'dataURI',
   initialState: initialState,
   reducers: {
-    dataURICreated: dataURIAdapter.addOne
+    dataURICreated: dataURIAdapter.upsertOne
   }
 })
 

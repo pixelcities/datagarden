@@ -13,6 +13,7 @@ const secretsSlice = createSlice({
   initialState: initialState,
   reducers: {
     secretShared: secretsAdapter.addOne,
+    deleteLocalSecret: secretsAdapter.removeOne,
   }
 })
 
@@ -21,7 +22,8 @@ export default secretsSlice.reducer
 
 // actions
 export const {
-  secretShared
+  secretShared,
+  deleteLocalSecret
 } = secretsSlice.actions
 
 

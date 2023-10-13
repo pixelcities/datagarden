@@ -2,7 +2,8 @@ import React, { FC, useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCheck } from '@fortawesome/free-solid-svg-icons'
 
-import Chart from './Chart'
+import Chart from './charts/Chart'
+import Maps from './maps/Maps'
 
 import { useAppDispatch, useAppSelector } from 'hooks'
 import { selectMetadataMap, selectConceptMap, selectActiveDataSpace, selectCollectionById, selectWidgetById } from 'state/selectors'
@@ -127,6 +128,18 @@ const Widget: FC<WidgetProps> = ({ id, collection, onClose }) => {
       if (widget?.type === "chart") {
         return (
           <Chart
+            id={id}
+            collectionId={inputId}
+            columnNames={columnNames}
+            schema={inputCollection.schema}
+            settings={widget.settings}
+            access={widget.access}
+            isPublished={widget.is_published}
+          />
+        )
+      } else if (widget?.type === "map") {
+        return (
+          <Maps
             id={id}
             collectionId={inputId}
             columnNames={columnNames}

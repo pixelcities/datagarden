@@ -21,6 +21,7 @@ import {
   transformerTargetAdded,
   transformerInputAdded,
   transformerWALUpdated,
+  transformerApproved,
   transformerDeleted
 } from './slices/transformers'
 
@@ -44,7 +45,9 @@ import {
 import {
   sourceCreated,
   sourceUpdated,
-  sourceDeleted
+  sourceSchemaUpdated,
+  sourceDeleted,
+  sourceURIUpdated
 } from './slices/sources'
 
 import {
@@ -55,14 +58,24 @@ import {
   setOffset,
   setCoords,
   setWindowDimensions,
-  setComponentDimensions
+  setComponentDimensions,
+  setConnectionState,
+  setIsLoading
 } from './slices/ui'
 
 import {
   login,
   userCreated,
-  userUpdated
+  userUpdated,
+  userDeleted
 } from './slices/users'
+
+import {
+  userInvited,
+  inviteAccepted,
+  inviteConfirmed,
+  inviteCancelled
+} from './slices/invites'
 
 import {
   setActiveDataSpace,
@@ -77,7 +90,8 @@ import {
 
 import {
   conceptCreated,
-  conceptUpdated
+  conceptUpdated,
+  conceptDeleted
 } from './slices/concepts'
 
 import {
@@ -85,7 +99,8 @@ import {
 } from './slices/uri'
 
 import {
-  secretShared
+  secretShared,
+  deleteLocalSecret
 } from './slices/secrets'
 
 import {
@@ -116,6 +131,12 @@ import {
   userNotificationSent,
   notificationRead
 } from './slices/notifications'
+
+import {
+  mpcCreated,
+  mpcPartialShared,
+  mpcResultShared
+} from './slices/mpc'
 
 
 const recreateAction = <T extends ActionCreatorWithPayload<any,string>>(type: string): T => {
@@ -150,6 +171,7 @@ const setTransformerIsReady = recreateAction<typeof transformerIsReadySet>("SetT
 const addTransformerTarget = recreateAction<typeof transformerTargetAdded>("AddTransformerTarget")
 const addTransformerInput = recreateAction<typeof transformerInputAdded>("AddTransformerInput")
 const updateTransformerWAL = recreateAction<typeof transformerWALUpdated>("UpdateTransformerWAL")
+const approveTransformer = recreateAction<typeof transformerApproved>("ApproveTransformer")
 const deleteTransformer = recreateAction<typeof transformerDeleted>("DeleteTransformer")
 const createWidget = recreateAction<typeof widgetCreated>("CreateWidget")
 const updateWidget = recreateAction<typeof widgetUpdated>("UpdateWidget")
@@ -162,11 +184,14 @@ const deleteWidget = recreateAction<typeof widgetDeleted>("DeleteWidget")
 const createSource = recreateAction<typeof sourceCreated>("CreateSource")
 const updateSource = recreateAction<typeof sourceUpdated>("UpdateSource")
 const deleteSource = recreateAction<typeof sourceDeleted>("DeleteSource")
+const updateSourceSchema = recreateAction<typeof sourceSchemaUpdated>("UpdateSourceSchema")
+const updateSourceURI = recreateAction<typeof sourceURIUpdated>("UpdateSourceURI")
 const createDataURI = recreateAction<typeof dataURICreated>("CreateDataURI")
 const createMetadata = recreateAction<typeof metadataCreated>("CreateMetadata")
 const updateMetadata = recreateAction<typeof metadataUpdated>("UpdateMetadata")
 const createConcept = recreateAction<typeof conceptCreated>("CreateConcept")
 const updateConcept = recreateAction<typeof conceptUpdated>("UpdateConcept")
+const deleteConcept = recreateAction<typeof conceptDeleted>("DeleteConcept")
 const createUser = recreateAction<typeof userCreated>("CreateUser")
 const updateUser = recreateAction<typeof userUpdated>("UpdateUser")
 const shareSecret = recreateAction<typeof secretShared>("ShareSecret")
@@ -181,6 +206,8 @@ const updateContent = recreateAction<typeof contentUpdated>("UpdateContent")
 const updateContentDraft = recreateAction<typeof contentDraftUpdated>("UpdateContentDraft")
 const deleteContent = recreateAction<typeof contentDeleted>("DeleteContent")
 const markNotificationRead = recreateAction<typeof notificationRead>("MarkNotificationRead")
+const createMPC = recreateAction<typeof mpcCreated>("CreateMPC")
+const shareMPCPartial = recreateAction<typeof mpcPartialShared>("ShareMPCPartial")
 
 const events: {[key: string]: ActionCreatorWithPayload<any, string>} = {
   "CollectionCreated": collectionCreated,
@@ -201,6 +228,7 @@ const events: {[key: string]: ActionCreatorWithPayload<any, string>} = {
   "TransformerInputAdded": transformerInputAdded,
   "TransformerWALUpdated": transformerWALUpdated,
   "TransformerDeleted": transformerDeleted,
+  "TransformerApproved": transformerApproved,
   "WidgetCreated": widgetCreated,
   "WidgetUpdated": widgetUpdated,
   "WidgetPositionSet": widgetPositionSet,
@@ -212,13 +240,21 @@ const events: {[key: string]: ActionCreatorWithPayload<any, string>} = {
   "SourceCreated": sourceCreated,
   "SourceUpdated": sourceUpdated,
   "SourceDeleted": sourceDeleted,
+  "SourceSchemaUpdated": sourceSchemaUpdated,
+  "SourceURIUpdated": sourceURIUpdated,
   "DataURICreated": dataURICreated,
   "MetadataCreated": metadataCreated,
   "MetadataUpdated": metadataUpdated,
   "ConceptCreated": conceptCreated,
   "ConceptUpdated": conceptUpdated,
+  "ConceptDeleted": conceptDeleted,
   "UserCreated": userCreated,
   "UserUpdated": userUpdated,
+  "UserInvited": userInvited,
+  "UserDeleted": userDeleted,
+  "InviteAccepted": inviteAccepted,
+  "InviteConfirmed": inviteConfirmed,
+  "InviteCancelled": inviteCancelled,
   "SecretShared": secretShared,
   "TaskAssigned": taskAssigned,
   "TaskCompleted": taskCompleted,
@@ -232,7 +268,9 @@ const events: {[key: string]: ActionCreatorWithPayload<any, string>} = {
   "ContentDraftUpdated": contentDraftUpdated,
   "ContentDeleted": contentDeleted,
   "UserNotificationSent": userNotificationSent,
-  "NotificationRead": notificationRead
+  "NotificationRead": notificationRead,
+  "MPCCreated": mpcCreated,
+  "MPCResultShared": mpcResultShared
 }
 
 export {
@@ -247,10 +285,13 @@ export {
   createSource,
   updateSource,
   deleteSource,
+  updateSourceURI,
+  updateSourceSchema,
   createMetadata,
   updateMetadata,
   createConcept,
   updateConcept,
+  deleteConcept,
   createDataURI,
   shareSecret,
   createCollection,
@@ -268,6 +309,7 @@ export {
   addTransformerTarget,
   addTransformerInput,
   updateTransformerWAL,
+  approveTransformer,
   deleteTransformer,
   createWidget,
   updateWidget,
@@ -288,6 +330,8 @@ export {
   updateContentDraft,
   deleteContent,
   markNotificationRead,
+  createMPC,
+  shareMPCPartial,
 
   addWorkspace,
   setWorkspacePosition,
@@ -297,7 +341,10 @@ export {
   setCoords,
   setWindowDimensions,
   setComponentDimensions,
+  setConnectionState,
+  setIsLoading,
   sendLocalNotification,
   deleteLocalNotification,
-  deleteLocalTask
+  deleteLocalTask,
+  deleteLocalSecret
 }

@@ -53,6 +53,17 @@ const transformersSlice = createSlice({
         transformer.wal = action.payload.wal
       }
     },
+    transformerApproved(state, action: PayloadAction<{id: string, workspace: string, signatures: string[], nr_parties?: number, }>) {
+      const transformer = state.entities[action.payload.id]
+
+      if (transformer) {
+        transformer.signatures = action.payload.signatures
+
+        if (action.payload.nr_parties) {
+          transformer.nr_parties = action.payload.nr_parties
+        }
+      }
+    },
     transformerDeleted(state, action: PayloadAction<{id: string, workspace: string}>) {
       const ids = state.ids.filter(id => id !== action.payload.id)
 
@@ -75,6 +86,7 @@ export const {
   transformerTargetAdded,
   transformerInputAdded,
   transformerWALUpdated,
+  transformerApproved,
   transformerDeleted
 } = transformersSlice.actions
 
@@ -88,5 +100,10 @@ export const {
 export const selectTransformerIds = createSelector(
   selectTransformers,
   transformers => transformers.map(transformer => transformer.id)
+)
+
+export const selectSignaturesByTransformerId = createSelector(
+  selectTransformerById,
+  transformer => transformer?.signatures
 )
 

@@ -34,6 +34,8 @@ const MergeTransformer: FC<MergeTransformerProps> = ({ id, wal, tableId, leftId,
   const [leftColumn, setLeftColumn] = useState<[string, string] | null>(null)
   const [rightColumn, setRightColumn] = useState<[string, string] | null>(null)
   const [log, setLog] = useState<WAL>(wal ?? {identifiers: {}, values: {}, transactions: [], artifacts: []})
+  const [joinIsDisabled, setJoinIsDisabled] = useState(false)
+  const [isDisabled, setIsDisabled] = useState(log.transactions.length === 0)
 
   const [startup, setStartup] = useState(true)
   const [replay, setReplay] = useState(false)
@@ -49,7 +51,7 @@ const MergeTransformer: FC<MergeTransformerProps> = ({ id, wal, tableId, leftId,
   }, [ rightSchema, columns ])
 
   const onError = useCallback((error: string) => {
-    console.log(error)
+    console.error(error)
 
     dispatch(sendLocalNotification({
       id: crypto.randomUUID(),
@@ -83,11 +85,12 @@ const MergeTransformer: FC<MergeTransformerProps> = ({ id, wal, tableId, leftId,
 
       setStartup(false)
       setReplay(true)
+      setIsDisabled(true)
     }
   }, [ leftId, rightId, startup, wal, columns ])
 
   const execute = React.useCallback(async () => {
-    if (leftId && rightId && leftColumn && rightColumn) {
+    if (leftId && rightId && leftColumn && rightColumn && leftSchema && rightSchema) {
       const leftColumnId = leftColumn[0]
       const rightColumnId = rightColumn[0]
 
@@ -96,6 +99,18 @@ const MergeTransformer: FC<MergeTransformerProps> = ({ id, wal, tableId, leftId,
 
       if (leftDataType && rightDataType && SqlTypeMap[leftDataType] !== SqlTypeMap[rightDataType]) {
         throw new Error(`Cannot compare types "${leftDataType}" and "${rightDataType}"`)
+      }
+
+      const leftShares = leftSchema.shares.map(x => x.principal!)
+      const rightShares = rightSchema.shares.map(x => x.principal!)
+      const leftColumnShares = leftSchema.columns.find(x => x.id === leftColumnId)?.shares.map(x => x.principal!) ?? []
+      const rightColumnShares = rightSchema.columns.find(x => x.id === rightColumnId)?.shares.map(x => x.principal!) ?? []
+
+      const leftOk = leftShares.every(leftShare => leftColumnShares.indexOf(leftShare) !== -1)
+      const rightOk = rightShares.every(rightShare => rightColumnShares.indexOf(rightShare) !== -1)
+
+      if (!(leftOk && rightOk)) {
+        throw new Error("Cannot join: not everyone has access to the join columns")
       }
 
       const isList = dataFusion?.get_schema(tableId).fields
@@ -134,7 +149,7 @@ const MergeTransformer: FC<MergeTransformerProps> = ({ id, wal, tableId, leftId,
       throw new Error("Cannot build query: missing identifier")
     }
 
-  }, [ tableId, leftId, rightId, leftColumn, rightColumn, columns, joinType, log, dataFusion, onComplete ])
+  }, [ tableId, leftId, rightId, leftColumn, rightColumn, columns, leftSchema, rightSchema, joinType, log, dataFusion, onComplete ])
 
   // Replay if old state was loaded
   useEffect(() => {
@@ -147,6 +162,26 @@ const MergeTransformer: FC<MergeTransformerProps> = ({ id, wal, tableId, leftId,
     }
   }, [ leftId, tableId, replay, leftColumn, rightColumn, execute, dataFusion, onError ])
 
+  useEffect(() => {
+    const leftShares = leftSchema.shares.map(x => x.principal!)
+    const rightShares = rightSchema.shares.map(x => x.principal!)
+
+    const leftOk = leftShares.every(leftShare => rightShares.indexOf(leftShare) !== -1)
+    const rightOk = rightShares.every(rightShare => leftShares.indexOf(rightShare) !== -1)
+
+    if (!(leftOk && rightOk)) {
+      setJoinIsDisabled(true)
+
+      dispatch(sendLocalNotification({
+        id: crypto.randomUUID(),
+        type: "error",
+        message: "Not everyone has access to both collections, but should after this operation. Please share the collections explicitly first.",
+        is_urgent: true,
+        is_local: true
+      }))
+    }
+  }, [ leftSchema, rightSchema, dispatch ])
+
   const handleMerge = React.useCallback((e: any) => {
     e.preventDefault()
 
@@ -154,6 +189,7 @@ const MergeTransformer: FC<MergeTransformerProps> = ({ id, wal, tableId, leftId,
     execute()
       .then((result) => {
         setLog(result)
+        setIsDisabled(false)
       })
       .catch((e) => onError(e ? e.message : "Error executing query"))
   }, [ leftId, tableId, execute, setLog, dataFusion, onError ])
@@ -187,7 +223,7 @@ const MergeTransformer: FC<MergeTransformerProps> = ({ id, wal, tableId, leftId,
               key={joinType}
               items={["LEFT JOIN", "INNER JOIN", "FULL JOIN"]}
               maxWidth={200}
-              onClick={item => setJoinType(item)}
+              onClick={item => { setJoinType(item); setIsDisabled(true) }}
               selected={joinType}
             />
           </div>
@@ -198,7 +234,7 @@ const MergeTransformer: FC<MergeTransformerProps> = ({ id, wal, tableId, leftId,
               key={"dropdown-left-" + (leftColumn !== null).toString()}
               items={leftColumns}
               maxWidth={75}
-              onClick={item => setLeftColumn(item)}
+              onClick={item => { setLeftColumn(item); setIsDisabled(true) }}
               selected={leftColumn}
             />
             <span className="icon is-small mx-3 mt-3">
@@ -208,21 +244,21 @@ const MergeTransformer: FC<MergeTransformerProps> = ({ id, wal, tableId, leftId,
               key={"dropdown-right-" + (rightColumn !== null).toString()}
               items={rightColumns}
               maxWidth={75}
-              onClick={item => setRightColumn(item)}
+              onClick={item => { setRightColumn(item); setIsDisabled(true) }}
               selected={rightColumn}
             />
           </div>
 
           <div className="field is-grouped is-grouped-right pt-0">
             <div className="control">
-              <input type="submit" className="button is-text" value="Merge" />
+              <input type="submit" className="button is-text" value="Merge" disabled={joinIsDisabled} />
             </div>
           </div>
         </form>
       </div>
 
       <div className="commit-footer">
-        <button className="button is-primary is-fullwidth" onClick={handleCommit} disabled={log.transactions.length === 0}> Commit </button>
+        <button className="button is-primary is-fullwidth" onClick={handleCommit} disabled={isDisabled}> Commit </button>
       </div>
     </div>
   )

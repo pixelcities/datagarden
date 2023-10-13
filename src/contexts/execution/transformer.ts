@@ -2,16 +2,18 @@ import { EnhancedStore } from '@reduxjs/toolkit'
 
 import { ExecutionError, User, DataSpace, Task, Collection, Schema, Concept, Share, WAL } from 'types'
 import { RootState } from 'state/store'
-import { shareSecret, createMetadata, updateCollectionSchema, updateTransformerWAL } from 'state/actions'
+import { shareSecret, createMetadata, updateCollectionSchema, updateTransformerWAL, shareMPCPartial } from 'state/actions'
 
 import { writeRemoteTable } from 'utils/writeRemoteTable'
 import { loadRemoteTable } from 'utils/loadRemoteTable'
 import { buildQuery } from 'utils/query'
 import { emptyTaxonomy } from 'utils/taxonomy'
 import { signSchema, verifySchema } from 'utils/integrity'
+import { toHex } from 'utils/helpers'
+
 
 export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: EnhancedStore<RootState>, keyStore: any, protocol: any, arrow: any, dataFusion: any) => {
-  return new Promise<{actions: any[], metadata: {[key: string]: any}}>((resolve, reject) => {
+  return new Promise<{actions: any[], metadata: {[key: string]: any}, completed_fragments?: string[]}>((resolve, reject) => {
     const instruction = task.task["instruction"]
     const transformer_id = task.task["transformer_id"]
     const wal: WAL = task.task["wal"]
@@ -22,6 +24,11 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
     const concepts = Object.values(store.getState().concepts.entities).filter((x): x is Concept => !!x).reduce((a: {[key: string]: Concept}, b) => ({...a, [b.id]: b}), {})
 
     if (!transformer) {
+      reject([ExecutionError.Retry, undefined])
+      return
+    }
+
+    if (store.getState().secrets.ids.length > 0) {
       reject([ExecutionError.Retry, undefined])
       return
     }
@@ -43,20 +50,20 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
             return
           }
 
+          // Filter the fragments for this particular table
+          const requestedFragments = fragments.filter(f => collection.schema.column_order.indexOf(f) !== -1)
+
+          // Nothing to do
+          if (requestedFragments.length === 0) {
+            resolve()
+            return
+          }
+
           if (dataFusion?.table_exists(collection.id)) {
             // If the table is already loaded, we still need to validate if it has the right columns
             // in memory. If this table was loaded a long time ago, it could have fewer columns than
             // the current transformer is expecting.
             const fields = dataFusion?.get_schema(collection.id).fields.map((field: any) => field.name)
-
-            // Filter the fragments for this particular table
-            const requestedFragments = fragments.filter(f => collection.schema.column_order.indexOf(f) !== -1)
-
-            // Nothing to do
-            if (requestedFragments.length === 0) {
-              resolve()
-              return
-            }
 
             // Check if all the expected fragements are encountered for
             if (requestedFragments.filter(f => fields.indexOf(f) === -1).length === 0) {
@@ -72,7 +79,7 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
         })
       })).then(() => {
         // Handle transformer tasks with just one input collection
-        if (transformer.type !== "merge" && transformer.type !== "privatise") {
+        if (transformer.type !== "merge" && transformer.type !== "privatise" && transformer.type !== "mpc") {
           const collection = collections[0]
 
           if (collection && target) {
@@ -101,7 +108,7 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
 
               // Optionally drop a column from the schema
               const dropIds = Object.values(wal.identifiers).filter(id => id.type === "column" && id.action === "drop").map(id => id.id)
-              if (dropIds.length > 0) {
+              if (dropIds.length > 0 && !("schema" in task_meta)) {
                 dataFusion?.drop_columns(id, dropIds)
 
                 oldSchema.column_order = oldSchema.column_order.filter(c => dropIds.indexOf(c) === -1)
@@ -110,7 +117,7 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
 
               // Optionally add a column to the schema
               const newColumns = Object.values(wal.identifiers).filter(id => id.type === "column" && id.action === "add")
-              if (newColumns.length > 0) {
+              if (newColumns.length > 0 && !("schema" in task_meta)) {
                 // New columns are never part of the task fragments, so we have to add it here
                 for (const column of newColumns) {
                   fragments.push(column.id)
@@ -123,6 +130,7 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
                     return {
                       id: x.id,
                       concept_id: x.params![0],
+                      lineage: null,
                       key_id: "", // Will be generated later
                       shares: oldSchema.shares // Inherit the schema shares for new (and empty) columns by default
                     }
@@ -132,7 +140,7 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
 
               // Optionally alter a column in the schema
               const alterColumns = Object.values(wal.identifiers).filter(id => id.type === "column" && id.action === "alter")
-              if (alterColumns.length > 0) {
+              if (alterColumns.length > 0 && !("schema" in task_meta)) {
                 oldSchema.columns = oldSchema.columns.map(column => {
                   const alteredColumn = alterColumns.find(id => id.id === column.id)
 
@@ -157,7 +165,7 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
                   const fields = arrow_schema.fields.map((field: any) => {
                     const fullColumn = collection.schema.columns.find(column => field.name === column.id)
                     const maybe_concept = emptyTaxonomy(dataSpace?.key_id).deserialize(concepts[fullColumn?.concept_id ?? ""])
-                    const defaultAggregateFn = maybe_concept ? maybe_concept.aggregateFn : "array_agg"
+                    const defaultAggregateFn = (maybe_concept && maybe_concept.aggregateFn) || "array_agg"
 
                     return {...field, ...{
                       metadata: {
@@ -171,8 +179,19 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
 
                 // Look at the requested fragments, and determine if this requires executing the
                 // real query or if we can simply use the artifact.
-                const identifiers = Object.values(wal.identifiers)
-                const nrFragments = fragments.filter(f => !!identifiers.find(id => id.id === f))
+                let identifiers: string[] = []
+                for (const transaction of wal.transactions) {
+                  for (const match of transaction.matchAll(/%([0-9]+)\$I/g)) {
+                    if (match[1]) {
+                      const identifier = wal.identifiers[Number(match[1])]
+                      if (identifier) {
+                        identifiers.push(identifier.id)
+                      }
+                    }
+                  }
+                }
+
+                const nrFragments = fragments.filter(f => !!identifiers.find(id => id === f))
                 const useArtifacts = nrFragments.length === 0
 
                 execute(id, wal, fragments, useArtifacts, true, dataFusion, metadata, dataSpace, keyStore).then(() => {
@@ -318,11 +337,16 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
               }
 
               const id = dataFusion?.clone_table(collection.id, transformer_id)
+              const cloneId = dataFusion?.clone_table(collection.id, "")
 
               rebuildSchema(id, target, collection.id, collection.schema, [], fragments, task_meta, user, metadata, dataSpace, keyStore, protocol).then(({actions, schema, renames, meta}) => {
+                // Retrieve the epsilon and column budgets
+                const { epsilon, weights } = JSON.parse(keyStore.decrypt_metadata(dataSpace.key_id, wal["data"]))
 
                 // Generate the synthesized table
-                dataFusion?.synthesize_table(collection.id, id, 1.0).then(() => {
+                dataFusion?.synthesize_table(id, cloneId, weights, epsilon).then(() => {
+                  dataFusion?.merge_table(id, cloneId)
+
                   updateSchema(id, fragments, renames, dataFusion)
                   writeRemoteTable(id, task.task["uri"], schema, user, arrow, dataFusion, keyStore).then(() => {
                     resolve({
@@ -334,6 +358,102 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
                     return
                   })
                 })
+              })
+            })
+          }
+
+        } else if (transformer.type === "mpc") {
+          const collection = collections[0]
+
+          if (collection && target) {
+            verifySchema(collection.schema, keyStore.get_key(collection.schema.key_id)).then(schemaIsValid => {
+              if (!schemaIsValid) {
+                reject([ExecutionError.Integrity, "Cannot validate schema integrity"])
+                return
+              }
+
+              const signature = transformer.signatures?.find(x => x.split(":")[0] === user.id)?.split(":")[1] || ""
+              const message = transformer_id + Object.values(wal.identifiers).map(x => x.id).join() + wal.transactions.join()
+
+              protocol?.verify(message, signature, undefined).then((isApproved: boolean) => {
+                if (!isApproved) {
+                  reject([ExecutionError.Integrity, "Transformer unauthorized"])
+                  return
+                }
+
+                const mpcResult = store.getState().mpc.entities[transformer_id]
+                const { selected, groups, output, randoms } = JSON.parse(keyStore.decrypt_metadata(dataSpace.key_id, wal["data"]))
+
+                const ourFragments = fragments.filter(f => selected.indexOf(f) !== -1)
+
+                // Result is in, let's create a collection
+                if (mpcResult && mpcResult.nr_parties && mpcResult.partitions && mpcResult.values && mpcResult.values.length > 0) {
+                  let randomTotals = mpcResult.partitions.map(_ => BigInt(0))
+                  for (let i=0; i < mpcResult.partitions.length; i++) {
+                    for (let j=0; j < mpcResult.nr_parties; j++) {
+                      randomTotals[i] += BigInt(randoms[i * mpcResult.partitions.length + j])
+                    }
+                  }
+
+                  const results = mpcResult.values.map((x, i) => (BigInt(x) - randomTotals[i]).toString())
+
+                  const id = dataFusion?.clone_table(collection.id, transformer_id)
+                  const query = wal.transactions[0].replace(/SUM\(([[0-9I%$]+)\)/, "0")
+
+                  rebuildSchema(id, target, collection.id, collection.schema, [], [...groups, output], task_meta, user, metadata, dataSpace, keyStore, protocol).then(({actions, schema, renames, meta}) => {
+                    dataFusion?.query(id, buildQuery(query, wal, metadata, dataSpace, keyStore)).then(() => {
+                      let row = dataFusion?.get_row(id, 0)
+                      row[output] = results[0]
+                      let rows = [Object.keys(row).join(), Object.values(row).join()]
+
+                      for (let i=1; i < mpcResult.partitions!.length; i++) {
+                        let row = dataFusion?.get_row(id, i)
+                        row[output] = results[i]
+                        rows.push(Object.values(row).join())
+                      }
+                      const csv = rows.join("\n")
+
+                      dataFusion?.drop_table(id)
+                      dataFusion.load_csv(csv, id)
+
+                      updateSchema(id, [...groups, output], renames, dataFusion)
+
+                      writeRemoteTable(id, task.task["uri"], schema, user, arrow, dataFusion, keyStore).then(() => {
+                        resolve({
+                          actions: actions,
+                          metadata: meta
+                        })
+                      })
+                    })
+                  })
+
+                // Just compute our share and send it to the server
+                } else if (ourFragments.length === 1) {
+                  const ourFragment = ourFragments[0]
+                  const id = dataFusion?.clone_table(collection.id, transformer_id)
+                  const offset = selected.indexOf(ourFragment)
+
+                  dataFusion?.query(id, buildQuery(wal.transactions[offset], wal, metadata, dataSpace, keyStore)).then(() => {
+                    computeMPC(id, groups, output, offset, randoms, dataFusion).then(({ values, partitionKeys }) => {
+                      const restFragments = fragments.filter(x => selected.indexOf(x) === -1 && output !== x)
+                      const completedFragments = [...restFragments, ...[ourFragment]]
+
+                      const shareAction = shareMPCPartial({
+                        id: transformer_id,
+                        partitions: partitionKeys,
+                        values: values
+                      })
+
+                      resolve({
+                        actions: [shareAction],
+                        metadata: {},
+                        completed_fragments: completedFragments
+                      })
+                    })
+                  })
+                } else {
+                  reject([ExecutionError.Retry, "Waiting for data"])
+                }
               })
             })
           }
@@ -357,7 +477,7 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
           }
         })
       })).then(() => {
-        if (transformer.type !== "merge" && transformer.type !== "privatise") {
+        if (transformer.type !== "merge" && transformer.type !== "privatise" && transformer.type !== "mpc") {
           const collection = collections[0]
 
           if (collection) {
@@ -368,7 +488,7 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
               const fields = arrow_schema.fields.map((field: any) => {
                 const fullColumn = collection.schema.columns.find(column => field.name === column.id)
                 const maybe_concept = emptyTaxonomy(dataSpace?.key_id).deserialize(concepts[fullColumn?.concept_id ?? ""])
-                const defaultAggregateFn = maybe_concept ? maybe_concept.aggregateFn : "array_agg"
+                const defaultAggregateFn = (maybe_concept && maybe_concept.aggregateFn) || "array_agg"
 
                 return {...field, ...{
                   metadata: {
@@ -418,6 +538,19 @@ export const handleTask = (task: Task, user: User, dataSpace: DataSpace, store: 
 
             })
           }
+
+        } else if (transformer.type === "privatise") {
+          resolve({
+            actions: [
+              updateTransformerWAL({
+                id: transformer_id,
+                workspace: transformer.workspace,
+                wal: wal
+              })
+            ],
+            metadata: {}
+          })
+
         }
       })
     }
@@ -444,6 +577,38 @@ const updateSchema = (id: string, fragments: string[], renames: {[key: string]: 
     dataFusion?.update_schema(id, {...arrow_schema, ...{fields: new_fields}})
   } else {
     dataFusion?.update_schema(id, {...arrow_schema, ...{fields: fields}})
+  }
+}
+
+
+const computeMPC = async (id: string, groups: string[], output: string, offset: number, randoms: string[], dataFusion: any) => {
+  let values = []
+  let partitionKeys = []
+
+  const nrRows = dataFusion?.nr_rows(id)
+
+  for (let i = 0; i < nrRows; i++) {
+    const randomValue = BigInt(randoms[nrRows * i + offset])
+
+    // TODO: Use concept to determine best way to deal with cutoffs (e.g. decimals)
+    const row = dataFusion?.get_row(id, i)
+    const result = row[output]
+    const realValue = BigInt(Math.floor(result))
+
+    values.push((randomValue + realValue).toString())
+
+    if (groups.length > 0) {
+      let groupValue = groups.map(x => row[x].toString()).join()
+      const encoder = new TextEncoder()
+      const bytes = await crypto.subtle.digest("SHA-256", encoder.encode(groupValue))
+
+      partitionKeys.push(toHex(new Uint8Array(bytes)))
+    }
+  }
+
+  return {
+    values: values,
+    partitionKeys: partitionKeys.length === 0 ? ["NONE"] : partitionKeys
   }
 }
 
@@ -491,7 +656,7 @@ const execute = async (id: string, wal: WAL, fragments: string[], useArtifacts: 
 
       // If not, apply the artifact regardless and merge the results.
       } else {
-        await dataFusion?.apply_artifact(cloneId, wal.artifacts[i])
+        await dataFusion?.apply_artifact(cloneId, artifact)
         dataFusion?.merge_table(cloneId, id)
         dataFusion?.move_table(cloneId, id)
       }
@@ -506,9 +671,21 @@ const execute = async (id: string, wal: WAL, fragments: string[], useArtifacts: 
 
 const rebuildSchema = async (id: string, target: Collection, oldId: string, old: Schema, extraShares: Share[], fragments: string[], taskMeta: {[key: string]: any}, user: User, metadata: any, dataSpace: DataSpace | undefined, keyStore: any, protocol: any) => {
   let schema: Schema
+  let rotateSchema: Schema | undefined
   let actions: any[] = []
   let meta = JSON.parse(JSON.stringify(taskMeta))
   let updated = false
+
+  if ("rotate_schema" in taskMeta) {
+    rotateSchema = meta["rotate_schema"]
+
+    if (rotateSchema) {
+      const schemaIsValid = await verifySchema(rotateSchema, keyStore?.get_key(rotateSchema.key_id))
+      if (!schemaIsValid) {
+        throw new Error("Invalid schema signature")
+      }
+    }
+  }
 
   if ("schema" in taskMeta) {
     schema = meta["schema"]
@@ -521,71 +698,98 @@ const rebuildSchema = async (id: string, target: Collection, oldId: string, old:
   } else {
     const key_id = await keyStore?.generate_key(16)
 
-    // Merge the optional extra shares from other schemas
-    let shares: Share[] = JSON.parse(JSON.stringify(old.shares))
-    for (const share of extraShares) {
-      if (!shares.find(s => s.principal === share.principal)) {
-        shares.push(share)
+    // If the rotate schema is present, this collection already exists but is being refreshed. The old
+    // schema is used to get the shares of the collection, so that they aren't reset on update.
+    if (rotateSchema) {
+      for (const share of rotateSchema.shares) {
+        if (share.principal && share.principal !== user.id) {
+          const receiver = share.principal
+          const ciphertext = await protocol?.encrypt(receiver, keyStore?.get_key(key_id))
+
+          actions.push(shareSecret({
+            key_id: key_id,
+            owner: user.id,
+            receiver: receiver,
+            ciphertext: ciphertext
+          }))
+        }
       }
-    }
 
-    // Re-share the schema key with everyone
-    for (const share of shares) {
-      if (share.principal && share.principal !== user.id) {
-        const receiver = share.principal
-        const ciphertext = await protocol?.encrypt(receiver, keyStore?.get_key(key_id))
+      schema = {
+        id: target.id,
+        key_id: key_id,
+        column_order: [],
+        columns: [],
+        shares: JSON.parse(JSON.stringify(rotateSchema.shares)),
+        tag: ''
+      }
 
-        actions.push(shareSecret({
-          key_id: key_id,
-          owner: user.id,
-          receiver: receiver,
-          ciphertext: ciphertext
+    } else {
+      // Merge the optional extra shares from other schemas
+      let shares: Share[] = JSON.parse(JSON.stringify(old.shares))
+      for (const share of extraShares) {
+        if (!shares.find(s => s.principal === share.principal)) {
+          shares.push(share)
+        }
+      }
+
+      // Re-share the schema key with everyone
+      for (const share of shares) {
+        if (share.principal && share.principal !== user.id) {
+          const receiver = share.principal
+          const ciphertext = await protocol?.encrypt(receiver, keyStore?.get_key(key_id))
+
+          actions.push(shareSecret({
+            key_id: key_id,
+            owner: user.id,
+            receiver: receiver,
+            ciphertext: ciphertext
+          }))
+        }
+      }
+
+      schema = {
+        id: target.id,
+        key_id: key_id,
+        column_order: [],
+        columns: [],
+        shares: shares,
+        tag: ''
+      }
+
+      // Re-publish the title under the new id
+      const maybe_title = metadata[oldId]
+      if (maybe_title && !(target.id in metadata)) {
+        const title = keyStore?.decrypt_metadata(dataSpace?.key_id, maybe_title)
+
+        actions.push(createMetadata({
+          id: target.id,
+          workspace: target.workspace,
+          metadata: keyStore?.encrypt_metadata(dataSpace?.key_id, title)
         }))
       }
-    }
-
-    schema = {
-      id: target.id,
-      key_id: key_id,
-      column_order: [],
-      columns: [],
-      shares: shares,
-      tag: ''
-    }
-
-    // Re-publish the title under the new id
-    const maybe_title = metadata[oldId]
-    if (maybe_title && !(target.id in metadata)) {
-      const title = keyStore?.decrypt_metadata(dataSpace?.key_id, maybe_title)
-
-      actions.push(createMetadata({
-        id: target.id,
-        workspace: target.workspace,
-        metadata: keyStore?.encrypt_metadata(dataSpace?.key_id, title)
-      }))
     }
 
     updated = true
   }
 
-  // This transformer task may not be the first, so the fragment could already exist in the schema. Start
-  // with finding the linked concept of the fragments because the fragment (column) id itself will have changed.
-  const concepts = fragments.map(f => old.columns.find(c => c.id === f)?.concept_id)
+  // This transformer task may not be the first, so the fragment could already exist in the schema. Each column
+  // keeps track of it's lineage, which can now be used to filter the columns that have already been created so far.
+  const new_fragments = fragments.filter(f => !schema.columns.find(col => col.lineage === f))
 
-  // Filter out the concepts that are already present in the schema
-  const new_concepts = concepts.filter(conceptId => !schema.columns.find(col => col.concept_id === conceptId))
-
-  // And finally filter the old columns with the concept ids that are left
-  const old_columns = old.columns.filter(c => new_concepts.indexOf(c.concept_id) !== -1)
+  // Filter the old columns with the fragments that are left
+  const old_columns = old.columns.filter(c => new_fragments.indexOf(c.id) !== -1)
 
   let columns = []
 
   for (const column of old_columns) {
-    const id = crypto.randomUUID()
+    const rotateColumn = rotateSchema?.columns.find(c => c.lineage === column.id)
+
+    const id = rotateColumn ? rotateColumn.id : crypto.randomUUID()
     const key_id = await keyStore?.generate_key(16)
 
     // Re-share the column key
-    for (const share of column.shares) {
+    for (const share of rotateColumn?.shares || column.shares) {
       if (share.principal && share.principal !== user.id) {
         const receiver = share.principal
         const ciphertext = await protocol?.encrypt(receiver, keyStore?.get_key(key_id))
@@ -599,9 +803,10 @@ const rebuildSchema = async (id: string, target: Collection, oldId: string, old:
       }
     }
 
-    columns.push({...column, ...{
+    columns.push({...(rotateColumn || column), ...{
       id: id,
-      key_id: key_id
+      key_id: key_id,
+      lineage: column.id
     }})
 
     updated = true
@@ -625,12 +830,13 @@ const rebuildSchema = async (id: string, target: Collection, oldId: string, old:
 
   // After updating the real schema, return a limited one that
   // only includes the fragment columns.
-  schema.columns = schema.columns.filter(col => concepts.indexOf(col.concept_id) !== -1)
-  schema.column_order = schema.columns.map(x => x.id)
+  const miniSchema: Schema = JSON.parse(JSON.stringify(schema))
+  miniSchema.columns = miniSchema.columns.filter(col => fragments.indexOf(col.lineage || "") !== -1)
+  miniSchema.column_order = miniSchema.columns.map(x => x.id)
 
   let renames: {[key: string]: string} = {}
   for (const column of schema.columns) {
-    const old_column = old.columns.find(c => c.concept_id === column.concept_id)
+    const old_column = old.columns.find(c => c.id === column.lineage)
 
     if (old_column) {
       renames[old_column.id] = column.id
@@ -639,7 +845,7 @@ const rebuildSchema = async (id: string, target: Collection, oldId: string, old:
 
   return {
     actions: actions,
-    schema: schema,
+    schema: miniSchema,
     renames: renames,
     meta: meta
   }

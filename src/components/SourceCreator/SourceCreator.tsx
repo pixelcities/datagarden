@@ -6,7 +6,7 @@ import { faGoogleDrive } from '@fortawesome/free-brands-svg-icons'
 
 import { Source } from 'types'
 
-import CsvSource from './components/CsvSource'
+import LocalSource from './components/LocalSource'
 
 interface SourceCreatorProps {
   isActive: boolean,
@@ -21,26 +21,31 @@ const SourceCreator: FC<SourceCreatorProps> = (props) => {
 
 
   const fileTypePicker = (
-    <p className="buttons">
-      <button className="button is-large" onClick={() => setFileType("csv")}>
-        <span className="icon is-medium has-tooltip-right" data-tooltip="Upload a CSV file">
-          <FontAwesomeIcon icon={faFileCsv} color="#4f4f4f" size="lg"/>
-        </span>
-      </button>
+    <div className="modal-content">
+      <div className="box">
 
-      <button className="button is-large" disabled onClick={() => setFileType("spreadsheet")}>
-        <span className="icon is-medium">
-          <FontAwesomeIcon icon={faFileExcel} color="#4f4f4f" size="lg"/>
-        </span>
-      </button>
+        <p className="buttons">
+          <button className="button is-large" onClick={() => setFileType("csv")}>
+            <span className="icon is-medium has-tooltip-right" data-tooltip="Upload a CSV file">
+              <FontAwesomeIcon icon={faFileCsv} color="#4f4f4f" size="lg"/>
+            </span>
+          </button>
 
-      <button className="button is-large" disabled onClick={() => setFileType("gsheet")}>
-        <span className="icon is-medium">
-          <FontAwesomeIcon icon={faGoogleDrive} color="#4f4f4f" size="lg"/>
-        </span>
-      </button>
+          <button className="button is-large" onClick={() => setFileType("spreadsheet")}>
+            <span className="icon is-medium has-tooltip-right" data-tooltip="Upload a spreadsheet">
+              <FontAwesomeIcon icon={faFileExcel} color="#4f4f4f" size="lg"/>
+            </span>
+          </button>
 
-    </p>
+          <button className="button is-large" disabled onClick={() => setFileType("gsheet")}>
+            <span className="icon is-medium">
+              <FontAwesomeIcon icon={faGoogleDrive} color="#4f4f4f" size="lg"/>
+            </span>
+          </button>
+
+        </p>
+      </div>
+    </div>
   )
 
   const handleOnComplete = (source: Source) => {
@@ -55,8 +60,8 @@ const SourceCreator: FC<SourceCreatorProps> = (props) => {
   }
 
   const renderContent = () => {
-    if (fileType === "csv") {
-      return <CsvSource onComplete={handleOnComplete} />
+    if (fileType === "csv" || fileType === "spreadsheet") {
+      return <LocalSource type={fileType} onComplete={handleOnComplete} onClose={handleClose} />
     }
 
     return fileTypePicker
@@ -66,11 +71,8 @@ const SourceCreator: FC<SourceCreatorProps> = (props) => {
     <>
       <div className={"modal " + (isActive ? "is-active" : "")}>
         <div className="modal-background"></div>
-        <div className="modal-content">
-          <div className="box">
-            { renderContent() }
-          </div>
-        </div>
+
+          { renderContent() }
 
          <button className="modal-close is-large" aria-label="close" onClick={handleClose}></button>
       </div>

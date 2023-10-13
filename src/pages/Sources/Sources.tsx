@@ -20,8 +20,6 @@ import { useKeyStoreContext } from 'contexts'
 import listView from 'assets/page-setting-list.svg'
 import iconView from 'assets/page-setting-icon.svg'
 
-import './Sources.sass'
-
 
 class SourcesRoute extends Component<RouteComponentProps> {
   parentPath = (this.props.match.params as any).path;
@@ -64,7 +62,7 @@ const Sources: FC = (props) => {
         <div key={source.id} className="column is-narrow">
           <SourceCard
             title={name}
-            type="csv"
+            type={source.type}
             sourceId={source.id}
             onClick={() => setViewSource(source)}
           />

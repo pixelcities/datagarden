@@ -78,7 +78,7 @@ const Transformer: FC<TransformerProps> = ({id, collections, transformers, wal, 
       })).then(() => {
         setLeftInputId(inputCollections[0].id)
 
-        if (inputCollections.length > 1) {
+        if (inputCollections.length === 2) {
           setRightInputId(inputCollections[1].id)
         }
       }).catch(() => onClose())

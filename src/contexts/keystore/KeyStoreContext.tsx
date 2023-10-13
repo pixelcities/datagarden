@@ -2,8 +2,10 @@ import React, { useRef, useCallback, useState, useEffect, useContext, useMemo, F
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faLock } from '@fortawesome/free-solid-svg-icons'
 import { useLocation } from "react-router-dom"
+import { Mutex } from 'async-mutex'
 
-import { useAppSelector } from 'hooks'
+import { useAppSelector, useAppDispatch } from 'hooks'
+import { deleteLocalSecret } from 'state/actions'
 import { selectSecrets } from 'state/selectors'
 
 import { useAuthContext } from 'contexts'
@@ -24,6 +26,7 @@ const KeyStoreContext = React.createContext<KeyStoreContextI>({});
 
 export const KeyStoreProvider: FC = ({ children }) => {
   const location = useLocation()
+  const dispatch = useAppDispatch()
 
   const [loading, setLoading] = useState<boolean>(false);
   const [keyStore, setKeyStore] = useState<KeyStoreT | undefined>();
@@ -35,23 +38,36 @@ export const KeyStoreProvider: FC = ({ children }) => {
 
   const { isAuthenticated, user } = useAuthContext();
 
+  const mutex = useMemo(() => new Mutex(), [])
+
   const keyCache = useRef<any>(new Set())
   const secrets = useAppSelector(selectSecrets)
 
   useEffect(() => {
     if (isReady) {
-      secrets.forEach(secret => {
-        if (! keyCache.current.has(secret.key_id)) {
-          protocol?.decrypt(secret.owner, secret.ciphertext).then((key: string) => {
-            keyStore?.add_key(secret.key_id, key).then((key_id: string) => {
+      mutex.runExclusive(async () => {
+        for (const secret of secrets) {
+          if (! keyCache.current.has(secret.key_id)) {
+            const key: string = await protocol?.decrypt(secret.owner, secret.message_id || "", secret.ciphertext)
+
+            // Special hello message
+            if (secret.key_id === secret.owner) {
+              keyCache.current.add(secret.key_id)
+              dispatch(deleteLocalSecret(secret.key_id))
+
+            // Key shares
+            } else {
+              const key_id: string = await keyStore?.add_key(secret.key_id, key)
               console.log("Received new key: ", key_id)
+
               keyCache.current.add(key_id)
-            })
-          })
+              dispatch(deleteLocalSecret(key_id))
+            }
+          }
         }
       })
     }
-  }, [ isReady, keyCache, secrets, keyStore, protocol ])
+  }, [ isReady, keyCache, secrets, keyStore, protocol, mutex, dispatch ])
 
   const loadWasm = async () => {
     setLoading(true)
@@ -61,7 +77,7 @@ export const KeyStoreProvider: FC = ({ children }) => {
       integrity: "sha384-QnZMk6bidI8lSALoryKfelDUFFQHNwI82J6anGKykxGEx3wxTWj0FpBKqp2a7+9K"
     }))
 
-    keyStoreRef = new KeyStore()
+    keyStoreRef = new KeyStore(process.env.REACT_APP_API_BASE_PATH)
     setKeyStore(keyStoreRef)
     setProtocol(new Protocol())
     setIsLocked(true)
@@ -70,7 +86,9 @@ export const KeyStoreProvider: FC = ({ children }) => {
   }
 
   useEffect(()=> {
-    loadWasm();
+    if (window.WebAssembly !== undefined) {
+      loadWasm();
+    }
   },[])
 
 
@@ -86,7 +104,7 @@ export const KeyStoreProvider: FC = ({ children }) => {
           setIsLocked(false)
 
           const secret_key = keyStore?.get_named_key("protocol")
-          protocol?.init(secret_key).then(() => {
+          protocol?.init(secret_key, process.env.REACT_APP_API_BASE_PATH).then(() => {
             setIsReady(true)
           })
         }).catch(() => {
@@ -105,7 +123,13 @@ export const KeyStoreProvider: FC = ({ children }) => {
     const skipModal = path === "/logout" ||
       path.startsWith("/auth/local/confirm/") ||
       path.startsWith("/users/profile/confirm_email/") ||
-      path.startsWith("/pages/")
+      path.startsWith("/pages/") ||
+      path.startsWith("/terms") ||
+      path.startsWith("/privacy") ||
+      path.startsWith("/contact") ||
+      path.startsWith("/pricing") ||
+      path.startsWith("/checkout") ||
+      path.startsWith("/error")
 
     return (
       <div className={"modal " + (isActive && !skipModal ? "is-active" : "")}>
@@ -135,6 +159,7 @@ export const KeyStoreProvider: FC = ({ children }) => {
     )
   }, [ isActive, error, location.pathname, handleSubmit, password ])
 
+
   return (
     <KeyStoreContext.Provider value={{keyStore, keyStoreIsReady: isReady, protocol, __setIsReady__: setIsReady}} >
       <div className={"pageloader is-bottom-to-top" + (loading ? " is-active" : "")}>
@@ -142,6 +167,12 @@ export const KeyStoreProvider: FC = ({ children }) => {
           Loading...
         </span>
       </div>
+
+      { window.WebAssembly === undefined && (
+        <div className="notification is-light is-danger" style={{marginTop: "0.7rem"}}>
+          Platform not supported. DataGarden requires WebAssembly to function, which is not enabled on your device.
+        </div>
+      )}
 
       { renderModal }
 

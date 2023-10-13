@@ -8,7 +8,7 @@ import HoverButton from 'components/HoverButton'
 
 import { useKeyStoreContext } from 'contexts'
 import { useAppSelector, useAppDispatch } from 'hooks'
-import { selectContentById } from 'state/selectors'
+import { selectContentById, selectActiveDataSpace } from 'state/selectors'
 import { deleteContent } from 'state/actions'
 
 import './Content.sass'
@@ -16,6 +16,7 @@ import './Content.sass'
 
 interface ContentProps {
   id: string,
+  pageToken: string,
   keyId?: string,
   index: number,
   moveContent: (dragIndex: number, hoverIndex: number) => void
@@ -107,10 +108,11 @@ const Draggable: FC<DragProps> = ({ id, index, moveContent, isActive, children }
   }
 }
 
-const Content: FC<ContentProps> = ({ id, keyId, index, moveContent }) => {
+const Content: FC<ContentProps> = ({ id, pageToken, keyId, index, moveContent }) => {
   const dispatch = useAppDispatch()
   const content = useAppSelector(state => selectContentById(state, id))
-  const { keyStore } = useKeyStoreContext()
+  const dataSpace = useAppSelector(selectActiveDataSpace)
+  const { keyStore, keyStoreIsReady } = useKeyStoreContext()
 
   const iframeRef = useRef<HTMLIFrameElement | null>(null)
 
@@ -181,9 +183,11 @@ const Content: FC<ContentProps> = ({ id, keyId, index, moveContent }) => {
             />
           }
 
-          <div className={"drag-content" + (!isEditing ? " is-active" : "")} style={isEditing ? {display: "none"} : {}}>
-            <iframe ref={iframeRef} title={id} src={process.env.REACT_APP_CONTENT_HOST + "/pages/content/ds1/" + id} sandbox="allow-scripts allow-same-origin" width="100%" height={content?.height ? content?.height : "100%"} scrolling="no" frameBorder="0" onLoad={onLoad} />
-          </div>
+          { (!keyId || (keyStoreIsReady && keyStore?.has_key(keyId))) &&
+            <div className={"drag-content" + (!isEditing ? " is-active" : "")} style={isEditing ? {display: "none"} : {}}>
+              <iframe ref={iframeRef} title={id} src={process.env.REACT_APP_CONTENT_HOST + "/pages/content/" + dataSpace.handle + "/" + id + "?token=" + pageToken} sandbox="allow-scripts allow-same-origin" width="100%" height={content?.height ? content?.height : "100%"} scrolling="no" frameBorder="0" onLoad={onLoad} />
+            </div>
+          }
 
         </div>
       </div>

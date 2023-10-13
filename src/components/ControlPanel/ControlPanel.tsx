@@ -82,7 +82,7 @@ const WorkspaceTab: FC = (props) => {
   const [helpIsActive, setHelpIsActive] = useState(false)
 
   return (
-    <>
+    <div style={{paddingBottom: "1rem", position: "relative", maxHeight: "calc(100% - 5.5em - 5px)", overflowY: "scroll"}}>
       <div className="panel-block-nb">
         <div className="div is-11">
           <p className="header-label">
@@ -101,22 +101,22 @@ const WorkspaceTab: FC = (props) => {
       </div>
       <div className="columns ml-3 is-gapless is-multiline">
         <div className="column is-4 mt-4">
-          <TransformerCard title="Merge" type="merge" tooltip={helpIsActive ? "Merge two collections when both share a column" : undefined} />
+          <TransformerCard title="merge" type="merge" tooltip={helpIsActive ? "Merge two collections when both share a column" : undefined} />
         </div>
         <div className="column is-4 mt-4">
-          <TransformerCard title="Aggregate" type="aggregate" tooltip={helpIsActive ? "Aggregate data" : undefined} />
+          <TransformerCard title="aggregate" type="aggregate" tooltip={helpIsActive ? "Aggregate data" : undefined} />
         </div>
         <div className="column is-4 mt-4">
-          <TransformerCard title="Filter" type="filter" tooltip={helpIsActive ? "Filter data to only keep target rows" : undefined} />
+          <TransformerCard title="filter" type="filter" tooltip={helpIsActive ? "Filter data to only keep target rows" : undefined} />
         </div>
         <div className="column is-4 mt-4">
-          <TransformerCard title="Function" type="function" tooltip={helpIsActive ? "Apply a function or do basic arithmetics on your data" : undefined} />
+          <TransformerCard title="function" type="function" tooltip={helpIsActive ? "Apply a function or do basic arithmetics on your data" : undefined} />
         </div>
         <div className="column is-4 mt-4">
-          <TransformerCard title="Attribute" type="attribute" tooltip={helpIsActive ? "Add or drop columns, or change data types" : undefined} />
+          <TransformerCard title="attribute" type="attribute" tooltip={helpIsActive ? "Add or drop columns, or change data types" : undefined} />
         </div>
         <div className="column is-4 mt-4">
-          <TransformerCard title="Custom" type="custom" tooltip={helpIsActive ? "Advanced SQL query editor" : undefined} />
+          <TransformerCard title="custom" type="custom" tooltip={helpIsActive ? "Advanced SQL query editor" : undefined} />
         </div>
       </div>
 
@@ -127,7 +127,13 @@ const WorkspaceTab: FC = (props) => {
       </div>
       <div className="columns ml-3 is-gapless is-multiline">
         <div className="column is-4 mt-4">
-          <TransformerCard title="Privatise" type="privatise" tooltip={helpIsActive ? "Create a synthetic copy of your original data" : undefined} />
+          <TransformerCard title="synthesize" type="privatise" tooltip={helpIsActive ? "Create a synthetic copy of your original data" : undefined} />
+        </div>
+        <div className="column is-4 mt-4">
+          <TransformerCard title="secure sum" type="mpc" tooltip={helpIsActive ? "Join numeric data with 3 or more parties, securely" : undefined} />
+        </div>
+        <div className="column is-4 mt-4">
+          <TransformerCard title="private join" type="psi" isDisabled={true} />
         </div>
       </div>
 
@@ -138,7 +144,7 @@ const WorkspaceTab: FC = (props) => {
       </div>
       <div className="columns ml-3 is-gapless is-multiline">
         <div className="column is-4 mt-4">
-          <TransformerCard title="Geocode" type="geocode" isDisabled={true} />
+          <TransformerCard title="geocode" type="geocode" isDisabled={true} />
         </div>
       </div>
 
@@ -162,6 +168,10 @@ const WorkspaceTab: FC = (props) => {
         <div className="column is-4 mt-4">
           <WidgetCard title="Chart" type="chart" tooltip={helpIsActive ? "Create and publish charts, to gain insights about your data" : undefined} />
         </div>
+
+        <div className="column is-4 mt-4">
+          <WidgetCard title="Map" type="map" tooltip={helpIsActive ? "Create and publish maps, to gain insights about your data" : undefined} />
+        </div>
       </div>
 
       <div className="panel-block-nb">
@@ -175,12 +185,30 @@ const WorkspaceTab: FC = (props) => {
         </div>
       </div>
 
-    </>
+    </div>
   )
 }
 
+const TemplatesTab: FC = (props) => {
+  return (
+    <>
+      <div style={{position: "relative", maxHeight: "50%"}}>
+        <div className="panel-block-nb">
+          <p className="header-label">
+            Templates
+          </p>
+        </div>
+
+        <div style={{maxHeight: "calc(100% - 2rem)", overflowY: "scroll"}}>
+          <div className="panel-block-nb is-size-7 pl-3"> No templates available </div>
+        </div>
+      </div>
+    </>
+  )
+}
 const ControlPanel: FC = (props) => {
-  const [ activeTab, setActiveTab ] = useState("sources")
+  // Default the active panel to sources if the onboarding is not yet completed, the workspace tab otherwise
+  const [ activeTab, setActiveTab ] = useState(parseInt(localStorage.getItem("onboarding-builder") || "0") !== -1 ? "sources" : "workspace")
   const [ search, setSearch ] = useState("")
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -190,11 +218,11 @@ const ControlPanel: FC = (props) => {
 
   return (
     <>
-      <nav className="panel" style={{height: "100%"}}>
+      <nav className="panel is-relative" style={{height: "100%", width: "100%"}}>
         <p className="panel-tabs">
           <Link id="workspace-intro" to="#workspace" className={"panel-tab-header" + (activeTab === "workspace" ? " is-active" : "")} onClick={() => setActiveTab("workspace")}>Workspace</Link>
           <Link to="#sources" className={"panel-tab-header" + (activeTab === "sources" ? " is-active" : "")} onClick={() => setActiveTab("sources")}>Sources</Link>
-          <Link to="#comments" className={"panel-tab-header" + (activeTab === "comments" ? " is-active" : "")} onClick={() => setActiveTab("comments")}>Comments</Link>
+          <Link to="#templates" className={"panel-tab-header" + (activeTab === "templates" ? " is-active" : "")} onClick={() => setActiveTab("templates")}>Templates</Link>
         </p>
         <div className="panel-block">
           <p className="control has-icons-left">
@@ -211,6 +239,10 @@ const ControlPanel: FC = (props) => {
 
         { activeTab === "workspace" &&
           <WorkspaceTab />
+        }
+
+        { activeTab === "templates" &&
+          <TemplatesTab />
         }
 
       </nav>

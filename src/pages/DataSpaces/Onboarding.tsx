@@ -19,22 +19,6 @@ const Onboarding: FC = () => {
           </p>
         </>
       )
-    },
-    {
-      target: "#trial-space",
-      content: (
-        <>
-          <p className="has-text-justified">
-
-            You have already been invited to a trial data space. When invited to a data space, you receive some
-            secrets that enable you to interact with the environment.
-          </p>
-          <br />
-          <p className="has-text-justified">
-            Note that within a data space other users may see some your personal information, they are your collaborators after all!
-          </p>
-        </>
-      )
     }
   ]
 

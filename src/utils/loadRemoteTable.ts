@@ -4,7 +4,7 @@ import { getDataTokens } from 'utils/getDataTokens'
 
 const mutex = new Mutex()
 
-export const loadRemoteTable = (tableId: string, uri: string, schema: Schema, user: User | undefined, arrow: any, dataFusion: any, keyStore: any, fragments?: string[]) => {
+export const loadRemoteTable = (tableId: string, uri: [string, string], schema: Schema, user: User | undefined, arrow: any, dataFusion: any, keyStore: any, fragments?: string[]) => {
   return new Promise<void>((resolve, reject) => {
     mutex
       .acquire()
@@ -13,15 +13,11 @@ export const loadRemoteTable = (tableId: string, uri: string, schema: Schema, us
 
         if (arrow["FS"].analyzePath(path, false).exists) {
           arrow["FS"].unlink(path)
-
-          resolve()
-          release()
-          return
         }
 
         // Get fresh session tokens
-        getDataTokens(uri, "read").then(tokens => {
-          const s3_path = uri.split("s3://")[1]
+        getDataTokens(uri[0], uri[1], "read").then(tokens => {
+          const s3_path = uri[0].split("s3://")[1]
 
           // Get and prepare the secret keys
           let keymap = [
@@ -46,7 +42,15 @@ export const loadRemoteTable = (tableId: string, uri: string, schema: Schema, us
           arrow.read_remote_parquet(s3_path, path, tokens.access_key, tokens.secret_key, tokens.session_token, keymap).then(() => {
 
             // Move to datafusion
-            dataFusion.load_table(arrow["FS"].readFile(path, {}), tableId)
+            try {
+              dataFusion.load_table(arrow["FS"].readFile(path, {}), tableId)
+            } catch (e) { // Error loading table
+              console.error(e)
+
+              reject()
+              release()
+              return
+            }
 
             resolve()
             release()

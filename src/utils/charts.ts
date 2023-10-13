@@ -76,7 +76,7 @@ export const renderDonut = (data: any, nameColumnId: string, valueColumnId: stri
   return node
 }
 
-export const renderHistogram = (data: any, columnId: string, xLabel: string, yLabel: string, nrBins: number): SVGSVGElement => {
+export const renderHistogram = (data: any, columnId: string, xLabel: string, yLabel: string, color: string, nrBins: number): SVGSVGElement => {
   const x = (d: any) => d[columnId]
   const y = () => 1
 
@@ -126,10 +126,10 @@ export const renderHistogram = (data: any, columnId: string, xLabel: string, yLa
       .attr("y", 10)
       .attr("fill", "currentColor")
       .attr("text-anchor", "start")
-      .text(yLabel));
+      .text(yLabel && yLabel !== "" && "↑" + yLabel))
 
   svg.append("g")
-    .attr("fill", "steelblue")
+    .attr("fill", color || "#3457A6")
     .selectAll("rect")
     .data(bins)
     .join("rect")
@@ -148,7 +148,242 @@ export const renderHistogram = (data: any, columnId: string, xLabel: string, yLa
       .attr("y", 27)
       .attr("fill", "currentColor")
       .attr("text-anchor", "end")
-      .text(xLabel));
+      .text(xLabel && xLabel !== "" && xLabel + " →"));
+
+  return node
+}
+
+export const renderBar = (data: any, nameColumnId: string, valueColumnId: string, xLabel: string, yLabel: string, yFormat: string, color: string, sort: string): SVGSVGElement => {
+  const x = (d: any) => d[nameColumnId]
+  const y = (d: any) => d[valueColumnId]
+
+  // Constants
+  const margin = { top: 25, right: 50, bottom: 50, left: 50 }
+  const xRange = [margin.left, WIDTH - margin.right]
+  const yRange = [HEIGHT - margin.bottom, margin.top]
+  const yType = d3.scaleLinear
+  const xPadding = 0.1
+
+  // Data values
+  const X = d3.map(data, x)
+  const Y = d3.map(data, y)
+
+  // Domains
+  let xDomain: d3.InternSet<number>
+  if (sort === "Ascending") {
+    xDomain = new d3.InternSet(d3.groupSort(data, ([d]) => y(d), x) as number[])
+  } else if (sort === "Descending") {
+    xDomain = new d3.InternSet(d3.groupSort(data, ([d]) => -y(d), x) as number[])
+  } else {
+    xDomain = new d3.InternSet(d3.rollups(data, d => ([d]: any) => y(d), x).map(([k]) => k) as number[])
+  }
+  const yDomain = [0, d3.max(Y)] as number[]
+
+  const I = d3.range(X.length).filter(i => xDomain.has(X[i]))
+
+  // Scales and axes
+  const xScale = d3.scaleBand(xDomain, xRange).padding(xPadding)
+  const yScale = yType(yDomain, yRange)
+  const xAxis = d3.axisBottom(xScale).tickSizeOuter(0)
+  const yAxis = d3.axisLeft(yScale).ticks(HEIGHT / 40, yFormat)
+
+  // Labels
+  const formatValue = yScale.tickFormat(100, yFormat)
+  const yText = (i: number) => `${X[i]}\n${formatValue(Y[i])}`
+
+  // Render
+  const node = document.createElementNS("http://www.w3.org/2000/svg", "svg")
+  const svg = d3.select(node)
+    .append("svg")
+    .attr("viewBox", [0, 0, WIDTH, HEIGHT])
+    .attr("style", "max-width: 100%; height: auto; height: intrinsic;")
+
+  svg.append("g")
+    .attr("transform", `translate(${margin.left},0)`)
+    .call(yAxis)
+    .call(g => g.select(".domain").remove())
+    .call(g => g.selectAll(".tick line").clone()
+      .attr("x2", WIDTH - margin.left - margin.right)
+      .attr("stroke-opacity", 0.1))
+    .call(g => g.append("text")
+      .attr("x", -margin.left)
+      .attr("y", 10)
+      .attr("fill", "currentColor")
+      .attr("text-anchor", "start")
+      .text(yLabel && yLabel !== "" && "↑" + yLabel));
+
+  svg.append("g")
+    .attr("fill", color || "#3457A6")
+    .selectAll("rect")
+    .data(I)
+    .join("rect")
+      .attr("x", i => xScale(X[i])!)
+      .attr("y", i => yScale(Y[i]))
+      .attr("height", i => yScale(0) - yScale(Y[i]))
+      .attr("width", xScale.bandwidth())
+    .text(yText)
+
+  svg.append("g")
+    .attr("transform", `translate(0,${HEIGHT - margin.bottom})`)
+    .call(xAxis)
+    .call(g => g.append("text")
+      .attr("x", WIDTH - margin.right)
+      .attr("y", 27)
+      .attr("fill", "currentColor")
+      .attr("text-anchor", "end")
+      .text(xLabel && xLabel !== "" && xLabel + " →"))
+
+  return node
+}
+
+export const renderLine = (data: any, timeColumnId: string, valueColumnId: string, xLabel: string, yLabel: string, color: string): SVGSVGElement => {
+  const x = (d: any) => new Date(d[timeColumnId])
+  const y = (d: any) => d[valueColumnId]
+
+  // Constants
+  const margin = { top: 25, right: 50, bottom: 50, left: 50 }
+  const xRange = [margin.left, WIDTH - margin.right]
+  const yRange = [HEIGHT - margin.bottom, margin.top]
+  const xType = d3.scaleUtc
+  const yType = d3.scaleLinear
+
+  // Data values
+  const X = d3.map(data, x)
+  const Y = d3.map(data, y)
+
+  const I = d3.range(X.length)
+  const D = d3.map(data, (d, i) => X[i].toString() !== "Invalid Date" && !isNaN(Y[i]))
+
+  // Domains
+  const xDomain = d3.extent(X) as Date[]
+  const yDomain = [0, d3.max(Y)] as number[]
+
+  // Scales and axes
+  const xScale = xType(xDomain, xRange)
+  const yScale = yType(yDomain, yRange)
+  const xAxis = d3.axisBottom(xScale).ticks(WIDTH / 80).tickSizeOuter(0)
+  const yAxis = d3.axisLeft(yScale).ticks(HEIGHT / 40, undefined)
+
+  // Line
+  const line = d3.line()
+    .defined((d, i) => D[i])
+    .curve(d3.curveLinear)
+    .x((d, i) => xScale(X[i]))
+    .y((d, i) => yScale(Y[i]))
+
+  // Render
+  const node = document.createElementNS("http://www.w3.org/2000/svg", "svg")
+  const svg = d3.select(node)
+    .append("svg")
+    .attr("viewBox", [0, 0, WIDTH, HEIGHT])
+    .attr("style", "max-width: 100%; height: auto; height: intrinsic;")
+
+   svg.append("g")
+    .attr("transform", `translate(0,${HEIGHT - margin.bottom})`)
+    .call(xAxis)
+    .call(g => g.append("text")
+      .attr("x", WIDTH - margin.right)
+      .attr("y", 27)
+      .attr("fill", "currentColor")
+      .attr("text-anchor", "end")
+      .text(xLabel && xLabel !== "" && xLabel + " →"))
+
+  svg.append("g")
+    .attr("transform", `translate(${margin.left},0)`)
+    .call(yAxis)
+    .call(g => g.select(".domain").remove())
+    .call(g => g.selectAll(".tick line").clone()
+      .attr("x2", WIDTH - margin.left - margin.right)
+      .attr("stroke-opacity", 0.1))
+    .call(g => g.append("text")
+      .attr("x", -margin.left)
+      .attr("y", 10)
+      .attr("fill", "currentColor")
+      .attr("text-anchor", "start")
+      .text(yLabel && yLabel !== "" && "↑" + yLabel))
+
+  svg.append("path")
+    .attr("fill", "none")
+    .attr("stroke", color || "#3457A6")
+    .attr("stroke-width", 1.5)
+    .attr("stroke-linecap", "round")
+    .attr("stroke-linejoin", "round")
+    .attr("stroke-opacity", 1)
+    .attr("d", line(I as any))
+
+  return node
+}
+
+export const renderArea = (data: any, timeColumnId: string, valueColumnId: string, xLabel: string, yLabel: string, color: string): SVGSVGElement => {
+  const x = (d: any) => new Date(d[timeColumnId])
+  const y = (d: any) => d[valueColumnId]
+
+  // Constants
+  const margin = { top: 25, right: 50, bottom: 50, left: 50 }
+  const xRange = [margin.left, WIDTH - margin.right]
+  const yRange = [HEIGHT - margin.bottom, margin.top]
+  const xType = d3.scaleUtc
+  const yType = d3.scaleLinear
+
+  // Data values
+  const X = d3.map(data, x)
+  const Y = d3.map(data, y)
+
+  const I = d3.range(X.length)
+  const D = d3.map(data, (d, i) => X[i].toString() !== "Invalid Date" && !isNaN(Y[i]))
+
+  // Domains
+  const xDomain = d3.extent(X) as Date[]
+  const yDomain = [0, d3.max(Y)] as number[]
+
+  // Scales and axes
+  const xScale = xType(xDomain, xRange)
+  const yScale = yType(yDomain, yRange)
+  const xAxis = d3.axisBottom(xScale).ticks(WIDTH / 80).tickSizeOuter(0)
+  const yAxis = d3.axisLeft(yScale).ticks(HEIGHT / 40, undefined)
+
+  // Area
+  const area = d3.area()
+    .defined((d, i) => D[i])
+    .curve(d3.curveLinear)
+    .x((d, i) => xScale(X[i]))
+    .y0(yScale(0))
+    .y1((d, i) => yScale(Y[i]));
+
+  // Render
+  const node = document.createElementNS("http://www.w3.org/2000/svg", "svg")
+  const svg = d3.select(node)
+    .append("svg")
+    .attr("viewBox", [0, 0, WIDTH, HEIGHT])
+    .attr("style", "max-width: 100%; height: auto; height: intrinsic;")
+
+  svg.append("g")
+    .attr("transform", `translate(${margin.left},0)`)
+    .call(yAxis)
+    .call(g => g.select(".domain").remove())
+    .call(g => g.selectAll(".tick line").clone()
+      .attr("x2", WIDTH - margin.left - margin.right)
+      .attr("stroke-opacity", 0.1))
+    .call(g => g.append("text")
+      .attr("x", -margin.left)
+      .attr("y", 10)
+      .attr("fill", "currentColor")
+      .attr("text-anchor", "start")
+      .text(yLabel && yLabel !== "" && "↑" + yLabel))
+
+  svg.append("path")
+      .attr("fill", color || "#3457A6")
+      .attr("d", area(I as any))
+
+  svg.append("g")
+      .attr("transform", `translate(0,${HEIGHT - margin.bottom})`)
+      .call(xAxis)
+    .call(g => g.append("text")
+      .attr("x", WIDTH - margin.right)
+      .attr("y", 27)
+      .attr("fill", "currentColor")
+      .attr("text-anchor", "end")
+      .text(xLabel && xLabel !== "" && xLabel + " →"))
 
   return node
 }

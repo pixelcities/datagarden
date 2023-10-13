@@ -1,6 +1,6 @@
 import { createSelector, createSlice, createEntityAdapter, PayloadAction } from '@reduxjs/toolkit'
 import { RootState } from 'state/store'
-import { Source, User, Share } from 'types'
+import { Source, User, Share, Schema } from 'types'
 
 const sourcesAdapter = createEntityAdapter<Source>()
 const initialState = sourcesAdapter.getInitialState()
@@ -13,11 +13,23 @@ const sourcesSlice = createSlice({
   reducers: {
     sourceCreated: sourcesAdapter.addOne,
     sourceUpdated: sourcesAdapter.upsertOne,
+    sourceSchemaUpdated(state, action: PayloadAction<{id: string, workspace: string, schema: Schema}>) {
+      const source = state.entities[action.payload.id]
+      if (source) {
+        source.schema = action.payload.schema
+      }
+    },
     sourceDeleted(state, action: PayloadAction<{id: string, workspace: string}>) {
       const ids = state.ids.filter(id => id !== action.payload.id)
 
       state.ids = ids
       delete state.entities[action.payload.id]
+    },
+    sourceURIUpdated(state, action: PayloadAction<{id: string, workspace: string, uri: [string, string]}>) {
+      const source = state.entities[action.payload.id]
+      if (source) {
+        source.uri = action.payload.uri
+      }
     }
   }
 })
@@ -29,9 +41,10 @@ export default sourcesSlice.reducer
 export const {
   sourceCreated,
   sourceUpdated,
-  sourceDeleted
+  sourceSchemaUpdated,
+  sourceDeleted,
+  sourceURIUpdated
 } = sourcesSlice.actions
-
 
 
 // selectors

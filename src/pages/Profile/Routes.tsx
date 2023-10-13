@@ -1,6 +1,9 @@
-import React, { Component } from 'react'
-import { RouteComponentProps } from 'react-router'
-import { Route } from "react-router-dom"
+import React, { FC, useEffect } from 'react'
+import { Route, Switch } from "react-router-dom"
+
+import { useAppDispatch, useAppSelector } from 'hooks'
+import { selectActiveDataSpace } from 'state/selectors'
+import { leaveDataSpace } from 'state/actions'
 
 import Navbar from 'components/Navbar'
 import Footer from 'components/Footer'
@@ -11,53 +14,60 @@ import Logout from './Logout'
 import Profile from './Profile'
 import ConfirmRegistration from './ConfirmRegistration'
 import ConfirmChange from './ConfirmChange'
+import ConfirmInvite from './ConfirmInvite'
 
-class ProfileRoutes extends Component<RouteComponentProps> {
-  render() {
-    const parentPath = this.props.match.path
 
-    if (parentPath === "/login") {
-      return (
-        <div>
+const ProfileRoutes: FC = ({ children }) => {
+  return (
+    <Switch>
+      <Route path="/login">
+        <>
           <Navbar />
-          <Route path={parentPath} component={Login} />
+          <Login />
           <Footer />
-        </div>
-      )
+        </>
+      </Route>
 
-    } else if (parentPath === "/register") {
-      return (
-        <div>
+      <Route path="/register">
+        <>
           <Navbar />
-          <Route path={parentPath} component={Register} />
+          <Register />
           <Footer />
-        </div>
-      )
+        </>
+      </Route>
 
-    } else if (parentPath === "/logout") {
-      return (
-        <Route path={parentPath} component={Logout} />
-      )
+      <Route path="/logout" component={Logout} />
+      <Route path="/auth/local/confirm/:token" component={ConfirmRegistration} />
+      <Route path="/users/profile/confirm_email/:token/:rotation_token" component={ConfirmChange} />
+      <Route path="/spaces/accept_invite/:token" component={ConfirmInvite} />
+      <Route path="/" component={RenderProfile} />
+    </Switch>
+  )
+}
 
-    } else if (parentPath === "/auth/local/confirm/:token") {
-      return (
-        <Route path={parentPath} component={ConfirmRegistration} />
-      )
+const RenderProfile: FC = ({ children }) => {
+  const dispatch = useAppDispatch()
+  const dataSpace = useAppSelector(selectActiveDataSpace)
 
-    } else if (parentPath === "/users/profile/confirm_email/:token/:rotation_token") {
-      return (
-        <Route path={parentPath} component={ConfirmChange} />
-      )
-
-    } else  {
-      return (
-        <div>
-          <Navbar />
-          <Route path={parentPath} component={Profile} />
-        </div>
-      )
+  // Leave any dataSpace before rendering the profile settings
+  useEffect(() => {
+    if (dataSpace) {
+      dispatch(leaveDataSpace())
     }
+  }, [ dataSpace, dispatch ])
+
+  if (!dataSpace) {
+    return (
+      <>
+        <Navbar />
+        <Profile />
+      </>
+    )
   }
+
+  return (
+    <></>
+  )
 }
 
 

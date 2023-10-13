@@ -20,6 +20,7 @@ export type {
   Identifier,
   WAL,
   User,
+  UserInvite,
   Metadata,
   Concept,
   ConceptA,
@@ -29,7 +30,13 @@ export type {
   DataSpace,
   Page,
   Content,
-  NotificationMsg
+  NotificationMsg,
+  Subscription,
+  MPC,
+  NumericOperator,
+  TextOperator,
+  BasicOperator,
+  Rule
 } from './interfaces'
 
 export {

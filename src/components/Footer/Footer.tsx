@@ -1,4 +1,5 @@
 import React, { FC } from 'react'
+import { Link } from "react-router-dom"
 
 import backdropbird from 'assets/footer.svg'
 import logo from 'assets/logo-yellow.svg';
@@ -28,20 +29,34 @@ const Footer: FC = () => {
             </div>
 
             <div className="column is-one-third mx-6">
-              <h1 className="title has-text-right has-text-left-mobile has-text-primary-light is-size-4">
-                Contact
-              </h1>
+              <div className="columns">
+                <div className="column is-half">
+                  <h1 className="title has-text-primary-light is-size-4">
+                    Product
+                  </h1>
 
-              <p className="subtitle has-text-right has-text-left-mobile has-text-primary-light is-size-6">
-                hello@pixelcities.io <br/>
-                +31 970 102 557 92
-              </p>
+                  <a className="has-text-primary-light is-size-6 is-flex" target="_blank" rel="noopener noreferrer" href="https://docs.datagarden.app"> Documentation </a>
+                  <Link className="has-text-primary-light is-size-6 is-flex" to="/pricing"> Pricing </Link>
+                </div>
+
+                <div className="column is-half">
+                  <h1 className="title has-text-primary-light is-size-4">
+                    Company
+                  </h1>
+
+                  <a className="has-text-primary-light is-size-6 is-flex" href="https://pixelcities.io/about"> About </a>
+                  <Link className="has-text-primary-light is-size-6 is-flex" to="/privacy"> Privacy </Link>
+                  <Link className="has-text-primary-light is-size-6 is-flex" to="/terms"> Terms </Link>
+                  <Link className="has-text-primary-light is-size-6 is-flex" to="/contact"> Contact </Link>
+                </div>
+              </div>
             </div>
           </div>
 
         </div>
 
         <br />
+        <p className="fineprint-label has-text-centered is-light"> v{process.env.REACT_APP_VERSION} </p>
       </div>
     </footer>
   )

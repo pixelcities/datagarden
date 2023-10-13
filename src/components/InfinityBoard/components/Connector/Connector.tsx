@@ -90,15 +90,15 @@ interface ConnectedConnectorProps {
   sourceB: string,
   offset: Coords,
   zoom: number,
+  positions: [number[], number[]],
   windowDimensions: WindowDimensions
 }
 
 const ConnectedConnector = forwardRef<{[id: string]: any}, ConnectedConnectorProps>((props, _refs) => {
   const refs: React.MutableRefObject<{[id: string]: any}> = (_refs as React.MutableRefObject<{[id: string]: any}>)
-  const { sourceA, sourceB, offset, zoom, windowDimensions } = props
+  const { sourceA, sourceB, offset, zoom, positions, windowDimensions } = props
 
   const [ pathData, setPathData ] = useState("")
-
 
   const sourceARefs = refs.current?.[sourceA]
   const sourceBRefs = refs.current?.[sourceB]
@@ -131,7 +131,7 @@ const ConnectedConnector = forwardRef<{[id: string]: any}, ConnectedConnectorPro
   sourceACallback?.addEventListener("drag", updateConnectorPath)
   sourceBCallback?.addEventListener("drag", updateConnectorPath)
 
-  useLayoutEffect(() => updateConnectorPath(), [ updateConnectorPath, sourceACallback, sourceBCallback, offset, zoom ])
+  useLayoutEffect(() => updateConnectorPath(), [ updateConnectorPath, sourceACallback, sourceBCallback, offset, zoom, positions ])
 
   return (
     <svg xmlns="http://www.w3.org/2000/svg" style={style} width={windowDimensions.width/zoom} height={windowDimensions.height/zoom}>

@@ -1,4 +1,6 @@
 import React, { FC, useMemo, useCallback, useEffect, useState } from 'react'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faLevelDownAlt } from '@fortawesome/free-solid-svg-icons'
 
 import { useAppDispatch } from 'hooks'
 import { updateTransformerWAL, sendLocalNotification } from 'state/actions'
@@ -181,25 +183,30 @@ const FunctionTransformer: FC<FunctionTransformerProps> = ({ id, wal, tableId, l
             <Dropdown
               key={"dropdown-col-" + (column !== null).toString()}
               items={columnNames}
-              maxWidth={50}
+              maxWidth={150}
               onClick={item => setColumn(item)}
               selected={column}
             />
-            <span className="is-size-4 has-text-weight-bold px-2"> = </span>
+            <span className="icon is-small pl-3 mt-4">
+              <FontAwesomeIcon icon={faLevelDownAlt} size="lg"/>
+            </span>
+          </div>
 
-            <div style={{width: 150}}>
-              { isReplayed ?
-                <abbr title={formula}>
-                  <input className="input" disabled={true} value={formula} />
-                </abbr>
-              :
-                <FormulaBuilder
-                  schema={schema}
-                  onChange={setFormula}
-                />
-              }
+          <div className="field pb-0">
+            <div className="control">
+              <div>
+                { isReplayed ?
+                  <abbr title={formula}>
+                    <textarea className="textarea is-hovered query-font" disabled={true} value={formula} />
+                  </abbr>
+                :
+                  <FormulaBuilder
+                    schema={schema}
+                    onChange={setFormula}
+                  />
+                }
+              </div>
             </div>
-
           </div>
 
           <div className="field is-grouped is-grouped-right pt-0">

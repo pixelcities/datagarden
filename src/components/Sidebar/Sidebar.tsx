@@ -1,7 +1,11 @@
-import React, { FC, useRef, useState } from 'react'
+import React, { FC, useRef, useState, useMemo } from 'react'
 import { Link, useRouteMatch } from "react-router-dom";
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faCog } from '@fortawesome/free-solid-svg-icons'
 
 import { gsap } from 'gsap'
+
+import DSSettings from 'components/DSSettings'
 
 import builderIcon from 'assets/minibar-builder.svg'
 import collapseIcon from 'assets/minibar-collapse.svg'
@@ -12,16 +16,19 @@ import widgetsIcon from 'assets/minibar-widgets.svg'
 
 import './Sidebar.sass'
 
+
 const MINIBAR_WIDTH = "32px"
 const SIDEBAR_WIDTH = "18rem"
 
 interface SidebarProps {
   page: string,
-  isMini: boolean
+  isMini: boolean,
+  isDisabled?: boolean
 }
 
-const Sidebar: FC<SidebarProps> = (props) => {
-  const [ isMini, setMini ] = useState(props.isMini)
+const Sidebar: FC<SidebarProps> = ({ page, isMini, isDisabled = false, children }) => {
+  const [ isMinified, setMini ] = useState(isMini)
+  const [ settingsIsActive, setSettingsIsActive ] = useState(false)
 
   const sidebarRef = useRef<HTMLDivElement | null>(null)
   const mainRef = useRef<HTMLDivElement | null>(null)
@@ -31,7 +38,7 @@ const Sidebar: FC<SidebarProps> = (props) => {
   const basepath = matches ? url.replace(new RegExp(`${matches[1]}$`), "") : ""
 
   const toggleMini = () => {
-    if (isMini) {
+    if (isMinified) {
       setMini(false)
 
       gsap.timeline()
@@ -47,10 +54,29 @@ const Sidebar: FC<SidebarProps> = (props) => {
     }
   }
 
+  const renderSettings = useMemo(() => {
+    return (
+      <div className="bar-footer">
+        <div className={isMinified ? "has-text-centered pl-1" : "has-text-right pr-4"}>
+          <span className="icon" onClick={() => setSettingsIsActive(true)} style={{cursor: "pointer"}}>
+            <FontAwesomeIcon icon={faCog} size="xs" color="white"/>
+          </span>
+        </div>
+      </div>
+    )
+  }, [ isMinified ])
+
   return (
     <>
-      <div className="bar-wrapper" ref={sidebarRef} style={{width: isMini ? MINIBAR_WIDTH : SIDEBAR_WIDTH}}>
-        { isMini ?
+      { settingsIsActive &&
+        <DSSettings
+          isActive={settingsIsActive}
+          onClose={() => setSettingsIsActive(false)}
+        />
+      }
+
+      <div className="bar-wrapper" ref={sidebarRef} style={{width: isMinified ? MINIBAR_WIDTH : SIDEBAR_WIDTH}}>
+        { isMinified ?
           (
             <div className="minibar-section">
               <aside className="menu">
@@ -72,6 +98,8 @@ const Sidebar: FC<SidebarProps> = (props) => {
                   </Link></li>
                 </ul>
               </aside>
+
+              { renderSettings }
             </div>
           ) : (
             <div className="sidebar-section">
@@ -80,32 +108,38 @@ const Sidebar: FC<SidebarProps> = (props) => {
                   <img src={flippedCollapseIcon} alt="" />
                 </div>
                 <ul className="menu-list">
-                  <li><Link className={"button-label" + (props.page === "settings" ? " is-active" : "")} to={basepath + "/settings"}>Team Management</Link></li>
+                  { basepath.indexOf("trial") !== -1 ?
+                    <li><Link  className="button-label" style={{cursor: "default", color: "#a2a2a2"}} to={basepath}>Team Management</Link></li>
+                  :
+                    <li><Link className={"button-label" + (page === "settings" ? " is-active" : "")} to={basepath + "/settings"}>Team Management</Link></li>
+                  }
                 </ul>
                 <ul className="menu-list">
-                  <li><Link className={"button-label" + (["sources", "taxonomy", "builder", "widgets"].includes(props.page) ? " is-active" : "")} to={basepath}>Data Ecosystem</Link></li>
+                  <li><Link className={"button-label" + (["sources", "taxonomy", "builder", "widgets"].includes(page) ? " is-active" : "")} to={basepath}>Data Ecosystem</Link></li>
                   <li>
                     <ul>
-                      <li><Link className={"button-label" + (props.page === "sources" ? " is-active" : "")} to={basepath + "/sources"}>Data Sources</Link></li>
-                      <li><Link className={"button-label"  + (props.page === "taxonomy" ? " is-active" : "")} to={basepath + "/taxonomy"}>Taxonomy</Link></li>
-                      <li><Link className={"button-label" + (props.page === "builder" ? " is-active" : "")} to={basepath}>Pipeline Builder</Link></li>
-                      <li><Link className={"button-label"  + (props.page === "widgets" ? " is-active" : "")} to={basepath + "/widgets"}>Widgets</Link></li>
+                      <li><Link className={"button-label" + (page === "sources" ? " is-active" : "")} to={basepath + "/sources"}>Data Sources</Link></li>
+                      <li><Link className={"button-label"  + (page === "taxonomy" ? " is-active" : "")} to={basepath + "/taxonomy"}>Taxonomy</Link></li>
+                      <li><Link className={"button-label" + (page === "builder" ? " is-active" : "")} to={basepath}>Pipeline Builder</Link></li>
+                      <li><Link className={"button-label"  + (page === "widgets" ? " is-active" : "")} to={basepath + "/widgets"}>Widgets</Link></li>
                     </ul>
                   </li>
                 </ul>
                 <ul className="menu-list">
                   <li><Link className="button-label" style={{cursor: "default", color: "#a2a2a2"}} to={basepath}>Integrations</Link></li>
-                  <li><Link className={"button-label" + (props.page === "reports" ? " is-active": "")} to={basepath + "/reports"}>Reports</Link></li>
+                  <li><Link className={"button-label" + (page === "reports" ? " is-active": "")} to={basepath + "/reports"}>Reports</Link></li>
                 </ul>
               </aside>
+
+              { renderSettings }
             </div>
           )
         }
 
       </div>
 
-      <div ref={mainRef} className="main-section" style={{marginLeft: isMini ? MINIBAR_WIDTH : SIDEBAR_WIDTH}}>
-        { props.children }
+      <div ref={mainRef} className="main-section" style={{marginLeft: isMinified ? MINIBAR_WIDTH : SIDEBAR_WIDTH}}>
+        { children }
       </div>
     </>
 
