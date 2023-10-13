@@ -73,9 +73,7 @@ export const KeyStoreProvider: FC = ({ children }) => {
     setLoading(true)
     setIsReady(false)
 
-    await init(fetch("/static/js/key_x_wasm_bg.wasm", {
-      integrity: "sha384-QnZMk6bidI8lSALoryKfelDUFFQHNwI82J6anGKykxGEx3wxTWj0FpBKqp2a7+9K"
-    }))
+    await init()
 
     keyStoreRef = new KeyStore(process.env.REACT_APP_API_BASE_PATH)
     setKeyStore(keyStoreRef)

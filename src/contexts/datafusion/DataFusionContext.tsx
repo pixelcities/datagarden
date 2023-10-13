@@ -2,6 +2,9 @@ import React, { useState, useEffect, useContext, FC } from "react"
 
 import { useAuthContext } from 'contexts'
 
+import init, { DataFusion} from '@pixelcities/datafusion-wasm'
+import type { DataFusion as DataFusionT } from '@pixelcities/datafusion-wasm'
+
 
 interface DataFusionContextI {
   arrow?: any
@@ -16,8 +19,8 @@ export const DataFusionProvider: FC = ({ children }) => {
   const [loading, setLoading] = useState<boolean>(false)
   const { isAuthenticated } = useAuthContext()
 
-  const [arrow, setArrow] = useState<any>(null)
-  const [dataFusion,setDataFusion]=useState<any>(null)
+  const [arrow, setArrow] = useState<any>()
+  const [dataFusion,setDataFusion]=useState<DataFusionT | undefined>()
 
   // Components that wish to use this context can call these load functions within a useEffect to
   // ensure that all the wasm has loaded. It rarely happens that the first page requires datafusion
@@ -39,10 +42,10 @@ export const DataFusionProvider: FC = ({ children }) => {
     if (isAuthenticated) {
       let isCancelled = false
 
-      const init = async () => {
+      const loadWasm = async () => {
         // Load all the heavy wasm stuff
-        const { DataFusion } = await import("@pixelcities/datafusion-wasm")
         const { Arrow } = await import("@pixelcities/arrow-wasm")
+        await init()
 
         const _arrow = await Arrow()
         const _datafusion = new DataFusion()
@@ -56,7 +59,7 @@ export const DataFusionProvider: FC = ({ children }) => {
         }
       }
 
-      init()
+      loadWasm()
 
       return () => { isCancelled = true }
     }

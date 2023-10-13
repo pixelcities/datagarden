@@ -39,8 +39,7 @@ module.exports = {
       addPlugins(webpackConfig, [
         new CopyPlugin({
           patterns: [
-            { from: "node_modules/@pixelcities/arrow-wasm/arrow_wasm.wasm", to: "static/js/" },
-            { from: "node_modules/@pixelcities/key-x-wasm/key_x_wasm_bg.wasm", to: "static/js/" }
+            { from: "node_modules/@pixelcities/arrow-wasm/arrow_wasm.wasm", to: "static/js/" }
           ]
         })
       ]);
