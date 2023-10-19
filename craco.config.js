@@ -1,7 +1,9 @@
-const { addBeforeLoader, loaderByName, addPlugins } = require('@craco/craco');
+const { addBeforeLoader, loaderByName, addPlugins, getPlugin, pluginByName } = require('@craco/craco');
 
+const fs = require('fs');
 const webpack = require('webpack');
 const CopyPlugin = require("copy-webpack-plugin");
+const HtmlWebpackPlugin = require("html-webpack-plugin");
 const { SubresourceIntegrityPlugin } = require('webpack-subresource-integrity');
 const { sentryWebpackPlugin } = require("@sentry/webpack-plugin");
 
@@ -20,6 +22,20 @@ module.exports = {
       addPlugins(webpackConfig, [
         new SubresourceIntegrityPlugin()
       ]);
+
+      // Alter public/index.html template to align with scripts/sign.ts.
+      //
+      // We utilise the templating options of htmlWebpackPlugin to keep the source index.html constant
+      // and only inject the signature as a template parameter. This works because the content hash is
+      // computed beforehand, which means that the index.html file is not any different when computing
+      // the content hashes for any of the chunks (and in turn integrity hashes) when adding a signature.
+      const { match: htmlWebpackPlugin } = getPlugin(webpackConfig, pluginByName("HtmlWebpackPlugin"));
+
+      // We drop the closing slash to align with "minimize" in scripts/sign.ts
+      htmlWebpackPlugin.userOptions.minify.keepClosingSlash = false;
+      htmlWebpackPlugin.userOptions.templateParameters = {
+        signature: process.env.INJECT_PGP_SIGNATURE ? fs.readFileSync(`datagarden-v${process.env.npm_package_version}.asc`, "utf8") : ""
+      };
 
       // https://github.com/rust-random/getrandom/issues/224
       addPlugins(webpackConfig, [

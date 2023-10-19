@@ -1,9 +1,23 @@
 #!/usr/bin/env node
-/* eslint node: true */
+
+/*
+ * Compute the PGP signature of index.html
+ *
+ * This script will strip comments and minimize an html file, after which the
+ * content is passed to gpg to sign the data. The resulting signature can then
+ * be shared so that users can verify the authenticity of the web page, as long
+ * as it also parses the html file in the same way.
+ *
+ * Basic verification example:
+ *   > curl https://datagarden.app/index.html | grep -o '<html.*' | tr -d '\n' | gpg --verify <SIGNATURE>.asc -
+ *
+ * See also: https://github.com/tasn/webext-signed-pages.
+ */
 
 const fs = require('fs');
 const child_process = require('child_process');
 const Minimize = require('minimize');
+
 
 function errorAbort(text) {
   console.error(text);
@@ -47,18 +61,10 @@ fs.readFile(filename, 'utf8', (err, data) => {
 
   getSignature(content, (signature) => {
     if (outfile) {
-      fs.readFile(outfile, 'utf8', (err, out) => {
-        if (err) {
-          errorAbort(err);
+      fs.writeFile(outfile, signature, 'utf8', (writeErr) => {
+        if (writeErr) {
+          errorAbort(writeErr);
         }
-
-        const result = out.replace('%%%SIGNED_PAGES_PGP_SIGNATURE%%%', signature);
-
-        fs.writeFile(outfile, result, 'utf8', (writeErr) => {
-          if (writeErr) {
-            errorAbort(writeErr);
-          }
-        });
       });
     } else {
       process.stdout.write(signature);

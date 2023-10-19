@@ -19,12 +19,12 @@ jobs:
           node-version: '16.x'
           registry-url: 'https://npm.pkg.github.com'
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --omit=optional
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Build
         run: |
-          npm run build
+          INJECT_PGP_SIGNATURE=true npm run build
           tar czf datagarden-$GITHUB_REF_NAME.tar.gz -C build .
         env:
           REACT_APP_API_BASE_PATH: ${{ vars.API_BASEPATH }}
@@ -39,7 +39,7 @@ jobs:
           name: production-build
           path: build
       - name: Publish release
-        run: gh release create $GITHUB_REF_NAME datagarden-$GITHUB_REF_NAME.tar.gz
+        run: gh release create $GITHUB_REF_NAME datagarden-$GITHUB_REF_NAME.tar.gz datagarden-$GITHUB_REF_NAME.asc
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

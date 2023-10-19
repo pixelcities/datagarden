@@ -4,13 +4,13 @@ release:
 	git checkout -b "release/$(VERSION)"
 
 	rm -rf node_modules
-	npm install
+	npm ci --omit=optional
 	npm shrinkwrap
 
 	npm install
 	npm run build
 
 	npm run sign public/index.html
-	git add package-lock.json npm-shrinkwrap.json public/index.html
+	git add package-lock.json npm-shrinkwrap.json datagarden-v$(VERSION).asc
 	git commit -m "Release $(VERSION)"
 	git tag -a $(VERSION) -m ""
