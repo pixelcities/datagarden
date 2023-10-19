@@ -10,7 +10,7 @@ release:
 	npm install
 	npm run build
 
-	npm run sign public/index.html
+	npm run sign datagarden-v$(VERSION).asc
 	git add package-lock.json npm-shrinkwrap.json datagarden-v$(VERSION).asc
 	git commit -m "Release $(VERSION)"
 	git tag -a $(VERSION) -m ""
