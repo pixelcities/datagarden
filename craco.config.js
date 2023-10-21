@@ -1,20 +1,83 @@
 const { addBeforeLoader, loaderByName, addPlugins, getPlugin, pluginByName } = require('@craco/craco');
 
 const fs = require('fs');
+const path = require('path');
 const webpack = require('webpack');
 const CopyPlugin = require("copy-webpack-plugin");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const { SubresourceIntegrityPlugin } = require('webpack-subresource-integrity');
-const { sentryWebpackPlugin } = require("@sentry/webpack-plugin");
+const { getDebugIdSnippet, sentryUnpluginFactory, stringToUUID } = require('@sentry/bundler-plugin-core');
+
+
+// Patch the sentry webpack plugin
+//
+// The debugId creation that is nowadays needed by sentry to link sourcemaps, is not deterministic and will cause
+// chunk hashes (and ultimately SRI hashes) to divert when compiling.
+//
+// Version 2.8.0 of the plugin no longer uses a raw UUID but feeds the `chunk.hash`, which appears to resolve the issue
+// but in practice this does not work when building on seperate machines. Doing a manual sentry-cli inject works, but that
+// would invalidate all the SRI hashes which is tedious to correct. The simplest fix is to simply feed the UUID creation
+// with the chunk IDs, as it does not matter too much what the UUID is as long as they are different per release but can
+// be reliably reproduced to enable deterministic builds.
+//
+// Source: https://github.com/getsentry/sentry-javascript-bundler-plugins/blob/main/packages/webpack-plugin/src/index.ts
+const patchedSentryWebpackPlugin = (() => {
+  function webpackDebugIdInjectionPlugin() {
+    return {
+      name: "sentry-webpack-debug-id-injection-plugin",
+      webpack(compiler) {
+        compiler.options.plugins = compiler.options.plugins || [];
+        compiler.options.plugins.push(
+          new webpack.BannerPlugin({
+            raw: true,
+            include: /\.(js|ts|jsx|tsx|mjs|cjs)$/,
+            banner: (arg) => {
+              // This is the patched line, ensuring that the debuId is always the same within releases.
+              const debugId = stringToUUID(process.env.npm_package_version + arg.chunk.id);
+              return getDebugIdSnippet(debugId);
+            },
+          })
+        );
+      },
+    };
+  }
+
+  function webpackDebugIdUploadPlugin(upload) {
+    const pluginName = "sentry-webpack-debug-id-upload-plugin";
+    return {
+      name: pluginName,
+      webpack(compiler) {
+        compiler.hooks.afterEmit.tapAsync(pluginName, (compilation, callback) => {
+          const outputPath = compilation.outputOptions.path || path.resolve();
+          const buildArtifacts = Object.keys(compilation.assets).map(
+            (asset) => path.join(outputPath, asset)
+          );
+          void upload(buildArtifacts).then(() => {
+            callback();
+          });
+        });
+      },
+    };
+  }
+
+  var sentryUnplugin = sentryUnpluginFactory({
+    releaseInjectionPlugin: () => { return { name: "sentry-webpack-release-injection-plugin-noop" }},
+    moduleMetadataInjectionPlugin: () => { return { name: "sentry-webpack-module-metadata-injection-plugin-noop" }},
+    debugIdInjectionPlugin: webpackDebugIdInjectionPlugin,
+    debugIdUploadPlugin: webpackDebugIdUploadPlugin
+  });
+
+  return sentryUnplugin.webpack;
+})();
 
 module.exports = {
   webpack: {
     configure: (webpackConfig, { paths }) => {
       webpackConfig.experiments = {
-          asyncWebAssembly: false,
-          lazyCompilation: false,
-          syncWebAssembly: true,
-          topLevelAwait: true,
+        asyncWebAssembly: false,
+        lazyCompilation: false,
+        syncWebAssembly: true,
+        topLevelAwait: true,
       };
 
       webpackConfig.output.crossOriginLoading = "anonymous";
@@ -64,18 +127,24 @@ module.exports = {
         webpackConfig.devtool = "source-map";
 
         addPlugins(webpackConfig, [
-          sentryWebpackPlugin({
+          patchedSentryWebpackPlugin({
             org: "pixelcities",
             project: "datagarden",
             url: process.env.REACT_APP_SENTRY_URL,
             authToken: process.env.REACT_APP_SENTRY_AUTH_TOKEN,
             silent: true,
             telemetry: false,
+            sourcemaps: {
+              assets: []
+            },
             release: {
               name: `datagarden-${process.env.REACT_APP_VERSION}`,
               create: true,
               finalize: false,
+              inject: false,
               uploadLegacySourcemaps: {
+                sourceMapReference: false,
+                rewrite: false,
                 paths: ["build"],
                 ignore: [
                   "craco.config.js",
