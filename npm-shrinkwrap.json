@@ -1,12 +1,12 @@
 {
   "name": "datagarden.app",
-  "version": "0.2.31",
+  "version": "0.3.0",
   "lockfileVersion": 2,
   "requires": true,
   "packages": {
     "": {
       "name": "datagarden.app",
-      "version": "0.2.31",
+      "version": "0.3.0",
       "dependencies": {
         "@ericlathrop/phoenix-js-react-hooks": "^0.1.0",
         "@fortawesome/fontawesome-free": "^5.15.2",
