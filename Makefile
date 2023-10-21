@@ -7,7 +7,7 @@ release:
 	npm ci --omit=optional
 	npm shrinkwrap
 
-	npm install
+	npm install --omit=optional
 	npm run build
 
 	npm run sign datagarden-$(VERSION).asc
