@@ -11,8 +11,9 @@ encryption keys that are used with Parquet Modular Encryption.
 
 ## Preface
 DataGarden is a web application, and as such all the libraries mentioned in this section are run in the browser through
-various WASM ports. There is a [POC](https://github.com/pixelcities/datagarden/tree/feature/subresource-integrity) to
-guarantee the integrity of these libraries.
+various WASM ports. Also see this
+[note](https://github.com/pixelcities/datagarden#a-word-on-guaranteeing-e2ee-and-trust-in-browsers) on how to guarantee
+the integrity of these libraries.
 
 ## Registration
 On registration, your password is used (with the email as salt) in a KDF using argon2

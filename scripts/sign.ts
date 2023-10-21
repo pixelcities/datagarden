@@ -9,7 +9,7 @@
  * as it also parses the html file in the same way.
  *
  * Basic verification example:
- *   > curl https://datagarden.app/index.html | grep -o '<html.*' | tr -d '\n' | gpg --verify <SIGNATURE>.asc -
+ *   > curl -s https://datagarden.app/index.html | grep -o '<html.*' | tr -d '\n' | gpg --verify <SIGNATURE>.asc -
  *
  * See also: https://github.com/tasn/webext-signed-pages.
  */
