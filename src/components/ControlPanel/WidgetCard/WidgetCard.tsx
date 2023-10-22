@@ -1,4 +1,5 @@
-import React, { FC, useRef } from 'react'
+import React, { FC, useRef, useState, useEffect } from 'react'
+import ReactDOM from 'react-dom'
 import { useDrag } from 'react-dnd'
 
 import { useAppDispatch, useAppSelector } from 'hooks'
@@ -27,6 +28,10 @@ const WidgetCard: FC<WidgetCardProps> = ({ title, type, tooltip, isDisabled }) =
   const { keyStore } = useKeyStoreContext();
   const dataSpace = useAppSelector(selectActiveDataSpace)
   const idRef = useRef<{ id: string }>({id: crypto.randomUUID()})
+  const tooltipRef = useRef<HTMLDivElement>(null)
+
+  const [showTooltip, setShowTooltip] = useState<HTMLDivElement | undefined>()
+
 
   const onDrag = () => {
     idRef.current.id = crypto.randomUUID()
@@ -66,12 +71,26 @@ const WidgetCard: FC<WidgetCardProps> = ({ title, type, tooltip, isDisabled }) =
     [ dataSpace?.key_id ]
   )
 
+  useEffect(() => {
+    if (showTooltip) {
+      const rect = showTooltip.getBoundingClientRect()
+
+      if (tooltipRef.current) {
+        tooltipRef.current.style.left = `${rect.right}px`
+        tooltipRef.current.style.top = `${rect.bottom + ((rect.top - rect.bottom) / 2)}px`
+        tooltipRef.current.style.visibility = "visible"
+      }
+    }
+  }, [ showTooltip ] )
+
   return (
     <>
-      <div className={"card-block has-tooltip-right " + (tooltip && tooltip.length > 32 ? "has-tooltip-multiline" : "")}
+      <div
+        className="card-block"
         ref={isDisabled ? null : dragRef}
         style={{opacity: opacity, cursor: (isDisabled ? "default" : "pointer"), backgroundColor: (isDisabled ? "#3c3c3c3d" : "#ffffff")}}
-        data-tooltip={tooltip}
+        onMouseEnter={(e) => setShowTooltip((e.target as HTMLDivElement))}
+        onMouseLeave={() => setShowTooltip(undefined)}
       >
         <svg className="card-icon" xmlns="http://www.w3.org/2000/svg" width={40} height={40}>
           <use href={sprites + "#" + type} style={{color: "black"}} />
@@ -81,9 +100,24 @@ const WidgetCard: FC<WidgetCardProps> = ({ title, type, tooltip, isDisabled }) =
           { type }
         </p>
 
+        { showTooltip &&
+          <Portal>
+            <div
+              ref={tooltipRef}
+              className={"has-tooltip-active has-tooltip-right " + (tooltip && tooltip.length > 32 ? "has-tooltip-multiline" : "")}
+              style={{position: "fixed", top: -999, left: -999}}
+              data-tooltip={tooltip}
+            />
+          </Portal>
+        }
+
       </div>
     </>
   )
+}
+
+const Portal: FC = ({ children }) => {
+  return ReactDOM.createPortal(children, document.body)
 }
 
 export default WidgetCard
