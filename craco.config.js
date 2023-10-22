@@ -95,7 +95,10 @@ module.exports = {
       const { match: htmlWebpackPlugin } = getPlugin(webpackConfig, pluginByName("HtmlWebpackPlugin"));
 
       // We drop the closing slash to align with "minimize" in scripts/sign.ts
-      htmlWebpackPlugin.userOptions.minify.keepClosingSlash = false;
+      if (!!htmlWebpackPlugin.userOptions.minify) {
+        htmlWebpackPlugin.userOptions.minify.keepClosingSlash = false;
+      }
+
       htmlWebpackPlugin.userOptions.templateParameters = {
         signature: process.env.INJECT_PGP_SIGNATURE ? fs.readFileSync(`datagarden-v${process.env.npm_package_version}.asc`, "utf8") : ""
       };
