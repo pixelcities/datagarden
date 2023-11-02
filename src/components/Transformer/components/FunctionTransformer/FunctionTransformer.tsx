@@ -2,15 +2,18 @@ import React, { FC, useMemo, useCallback, useEffect, useState } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faLevelDownAlt } from '@fortawesome/free-solid-svg-icons'
 
-import { useAppDispatch } from 'hooks'
+import { useAppDispatch, useAppSelector } from 'hooks'
+import { selectActiveDataSpace } from 'state/selectors'
 import { updateTransformerWAL, sendLocalNotification } from 'state/actions'
 
 import FormulaBuilder from 'components/FormulaBuilder'
 import Dropdown from 'components/Dropdown'
 import { Schema, WAL, ConceptA } from 'types'
-import { getIdentifiers, buildQuery } from 'utils/query'
+import { getIdentifiers } from 'utils/query'
+import { saveState, loadState, useConst  } from 'utils/helpers'
 
 import { useDataFusionContext } from 'contexts'
+import { useKeyStoreContext } from 'contexts'
 
 
 interface FunctionTransformerProps {
@@ -33,12 +36,18 @@ const FunctionTransformer: FC<FunctionTransformerProps> = ({ id, wal, tableId, l
   const [column, setColumn] = useState<[string, string]| null>(null)
   const [log, setLog] = useState<WAL>(wal ?? {identifiers: {}, values: {}, transactions: [], artifacts: []})
   const [formula, setFormula] = useState("")
+  const [ast, setAst] = useState("")
 
   const [startup, setStartup] = useState(true)
   const [replay, setReplay] = useState(false)
-  const [isReplayed, setIsReplayed] = useState(false)
+
+  const LOAD_STATE = useConst([setColumn, setAst, setFormula])
+  const SAVE_STATE = useConst([column, ast, formula])
 
   const { dataFusion } = useDataFusionContext()
+  const { keyStore } = useKeyStoreContext()
+
+  const dataSpace = useAppSelector(selectActiveDataSpace)
 
   const columnNames: [string, string][] = useMemo(() => Object.entries(columns).map(([id, concept]) => [id, concept.name]), [ columns ])
 
@@ -56,28 +65,15 @@ const FunctionTransformer: FC<FunctionTransformerProps> = ({ id, wal, tableId, l
 
   // Rebuild state
   useEffect(() => {
-    if (tableId && startup && wal && wal.transactions.length > 0) {
-      for (const match of wal.transactions[0].matchAll(/SELECT (.*) AS ([0-9I%$]+)/g)) {
-        if (match[1] && match[2]) {
-          const id = Number(match[2].match(/%([0-9]+)\$I/)![1])
-          const columnId = wal.identifiers[id]?.id
-          const columnName = columns[columnId]?.name
-
-          const query = buildQuery(match[1], wal, undefined, undefined, undefined)
-
-          if (columnName) {
-            setColumn([columnId, columnName])
-            setFormula(query)
-
-            setIsReplayed(true)
-          }
-        }
+    if (tableId && startup && dataSpace?.key_id) {
+      if (wal && wal.transactions.length > 0 && wal.data) {
+        loadState(keyStore?.decrypt_metadata(dataSpace.key_id, wal.data), LOAD_STATE)
+        setReplay(true)
       }
 
       setStartup(false)
-      setReplay(true)
     }
-  }, [ tableId, startup, wal, columns ])
+  }, [ tableId, startup, wal, columns, LOAD_STATE, dataSpace?.key_id, keyStore ])
 
   const execute = React.useCallback(async () => {
     if (tableId && column) {
@@ -125,12 +121,13 @@ const FunctionTransformer: FC<FunctionTransformerProps> = ({ id, wal, tableId, l
         identifiers: identifiers,
         transactions: [transaction],
         artifacts: [artifact],
-        values: {}
+        values: {},
+        data: keyStore?.encrypt_metadata(dataSpace?.key_id, saveState(SAVE_STATE))
       }
     } else {
       throw new Error("Cannot build query: missing identifier")
     }
-  }, [ tableId, schema.column_order, column, formula, log.identifiers, dataFusion, onComplete ])
+  }, [ tableId, schema.column_order, column, formula, log.identifiers, SAVE_STATE, dataSpace, dataFusion, keyStore, onComplete ])
 
   // Replay if old state was loaded
   useEffect(() => {
@@ -195,14 +192,11 @@ const FunctionTransformer: FC<FunctionTransformerProps> = ({ id, wal, tableId, l
           <div className="field pb-0">
             <div className="control">
               <div>
-                { isReplayed ?
-                  <abbr title={formula}>
-                    <textarea className="textarea is-hovered query-font" disabled={true} value={formula} />
-                  </abbr>
-                :
+                { !startup &&
                   <FormulaBuilder
                     schema={schema}
-                    onChange={setFormula}
+                    initialState={ast}
+                    onChange={(ast, f) => { setAst(ast); setFormula(f); }}
                   />
                 }
               </div>

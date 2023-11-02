@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { User, Schema } from 'types'
 
 export {
@@ -86,3 +87,14 @@ export const toRelativeTime = (datetime: string | undefined): string | undefined
     return rtf.format(Math.abs(years) < 1 ? Math.sign(years) : Math.round(years), "years")
   }
 }
+
+export const saveState = (state: any[]): string => {
+  return JSON.stringify(state.map(x => JSON.stringify(x)))
+}
+
+export const loadState = (state: string, setters: any[]): void => {
+  JSON.parse(state).forEach((x: any, i: number) => setters[i](JSON.parse(x)))
+}
+
+export const useConst = (x: any) => useMemo(() => x, [x])
+

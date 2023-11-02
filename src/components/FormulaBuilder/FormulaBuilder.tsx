@@ -30,10 +30,11 @@ enum SearchType {
 
 interface FormulaBuilderProps {
   schema: Schema,
-  onChange?: (formula: string) => void
+  initialState?: string,
+  onChange?: (state: string, formula: string) => void
 }
 
-const FormulaBuilder: FC<FormulaBuilderProps> = ({ schema, onChange }) => {
+const FormulaBuilder: FC<FormulaBuilderProps> = ({ schema, initialState, onChange }) => {
   const ref = useRef<HTMLDivElement>(null)
 
   const [editor] = useState(() => withReferences(withReact(createEditor())))
@@ -47,7 +48,15 @@ const FormulaBuilder: FC<FormulaBuilderProps> = ({ schema, onChange }) => {
   const concepts = useAppSelector(selectConceptMap)
   const dataSpace = useAppSelector(selectActiveDataSpace)
 
-  const initialValue = useMemo(() => DEFAULT_VALUE, [])
+  const initialValue = useMemo(() => {
+    if (initialState && initialState !== "") {
+      return JSON.parse(initialState)
+    }
+
+    return DEFAULT_VALUE
+
+  // eslint-disable-next-line
+  }, [])
 
   const columns = useMemo(() => {
     return schema.columns
@@ -212,7 +221,7 @@ const FormulaBuilder: FC<FormulaBuilderProps> = ({ schema, onChange }) => {
     )
 
     if (isAstChange && onChange) {
-      onChange(value.map(v => serialize(v)).join("\n"))
+      onChange(JSON.stringify(value), value.map(v => serialize(v)).join("\n"))
     }
 
   }, [ editor, columnMatchers, onChange ])
