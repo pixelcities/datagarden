@@ -23,26 +23,40 @@ const OnboardingSteps: FC<OnboardingStepsI> = ({name, steps}) => {
   const [timeoutID, setTimeoutID] = useState<number | undefined>()
 
   const getItem = (key: string) => {
-    return fetch(process.env.REACT_APP_API_BASE_PATH + "/users/settings/" + key, {
-      method: "GET",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json"
-      }
-    }).then((response) => {
-      if (!response.ok) {
-        return Promise.reject(response)
-      } else {
-        return response.json()
-      }
-    }).then(result => {
-      return !!result ? result.value : result
-    }).catch((e) => {
-      console.error(e)
-    })
+    const maybe_value = localStorage.getItem(key)
+
+    if (maybe_value !== null) {
+      return Promise.resolve(maybe_value)
+
+    } else {
+      return fetch(process.env.REACT_APP_API_BASE_PATH + "/users/settings/" + key, {
+        method: "GET",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json"
+        }
+      }).then((response) => {
+        if (!response.ok) {
+          return Promise.reject(response)
+        } else {
+          return response.json()
+        }
+      }).then(result => {
+        if (!!result) {
+          localStorage.setItem(key, result.value)
+          return result.value
+        } else {
+          return result
+        }
+      }).catch((e) => {
+        console.error(e)
+      })
+    }
   }
 
   const putItem = (key: string, value: string) => {
+    localStorage.setItem(key, value)
+
     fetch(process.env.REACT_APP_API_BASE_PATH + "/users/settings", {
       method: "PUT",
       credentials: "include",
@@ -103,11 +117,17 @@ const OnboardingSteps: FC<OnboardingStepsI> = ({name, steps}) => {
   }
 
   useEffect(() => {
+    let isCancelled = false
+
     if (keyStoreIsReady) {
       getItem(name).then(value => {
-        setIsActive(parseInt(value || "0") !== -1)
+        if (!isCancelled) {
+          setIsActive(parseInt(value || "0") !== -1)
+        }
       })
     }
+
+    return () => { isCancelled = true }
   }, [ keyStoreIsReady, name ])
 
   // Disable after a while if the user doesn't interact with the onboarding
